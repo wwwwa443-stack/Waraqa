@@ -52,6 +52,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import './App.css'
+import { emojiDataUrl } from './emojiAssets.js'
 
 const STORAGE_KEY = 'waraqa-mind-map'
 const PROJECTS_KEY = 'waraqa-projects'
@@ -197,9 +198,8 @@ const nodeEmojis = [
   { emoji: '☁️', label: 'سحابة' },
 ]
 function EmojiGlyph({ emoji }) {
-  const codepoints = [...emoji].map((character) => character.codePointAt(0).toString(16)).filter((codepoint) => codepoint !== 'fe0f')
-  const assetUrl = `https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.3/assets/svg/${codepoints.join('-')}.svg`
-  return <span className="emoji-glyph" aria-hidden="true"><span>{emoji}</span><img src={assetUrl} alt="" onError={(event) => { event.currentTarget.style.display = 'none' }} /></span>
+  const assetUrl = emojiDataUrl(emoji)
+  return <span className="emoji-glyph" aria-hidden="true"><span>{emoji}</span>{assetUrl && <img src={assetUrl} alt="" onError={(event) => { event.currentTarget.style.display = 'none' }} />}</span>
 }
 const isHexColor = (color) => /^#[\da-f]{6}$/i.test(color || '')
 const arrowHeads = { closed: MarkerType.ArrowClosed, open: MarkerType.Arrow }
