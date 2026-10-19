@@ -3,6 +3,19 @@ const path = require('node:path')
 
 const isDevelopment = !app.isPackaged
 
+// Keep a single app instance; launching it again focuses the existing window.
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) app.quit()
+
+function focusExistingWindow() {
+  const [existing] = BrowserWindow.getAllWindows()
+  if (!existing) return
+  if (existing.isMinimized()) existing.restore()
+  existing.focus()
+}
+
+app.on('second-instance', focusExistingWindow)
+
 function createWindow() {
   const window = new BrowserWindow({
     width: 1440,
@@ -54,6 +67,7 @@ ipcMain.on('waraqa:window-close', (event) => BrowserWindow.fromWebContents(event
 ipcMain.handle('waraqa:window-is-maximized', (event) => BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false)
 
 app.whenReady().then(() => {
+  if (!gotTheLock) return
   app.setAppUserModelId('com.waraqa.mindmap')
   createWindow()
   app.on('activate', () => {

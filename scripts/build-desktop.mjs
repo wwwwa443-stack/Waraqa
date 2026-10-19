@@ -18,6 +18,13 @@ function run(script, args) {
 }
 
 try {
+  // electron-builder signs the installer/portable automatically when these
+  // environment variables point to a code signing certificate (.pfx).
+  if (process.env.CSC_LINK && process.env.CSC_KEY_PASSWORD) {
+    console.log('Code signing is configured (CSC_LINK).')
+  } else {
+    console.log('Code signing is not configured (set CSC_LINK and CSC_KEY_PASSWORD) — builds will stay unsigned.')
+  }
   run('node_modules/vite/bin/vite.js', ['build'])
   run('node_modules/electron-builder/cli.js', [
     '--win', 'nsis', 'portable',
