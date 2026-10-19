@@ -53,6 +53,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import './App.css'
 import { emojiDataUrl } from './emojiAssets.js'
+import pkg from '../package.json'
 
 const STORAGE_KEY = 'waraqa-mind-map'
 const PROJECTS_KEY = 'waraqa-projects'
@@ -429,7 +430,7 @@ function readSavedMap() {
 }
 
 function MapNode({ data, selected, width }) {
-  const Icon = data.kind === 'note' ? StickyNote : data.kind === 'branch' ? GitBranch : Lightbulb
+  const Icon = data.kind === 'branch' ? GitBranch : Lightbulb
   const customColor = isHexColor(data.customColor) ? data.customColor : ''
   const [editing, setEditing] = useState(false)
   const labelRef = useRef(null)
@@ -547,6 +548,7 @@ function App() {
   const [activeMenu, setActiveMenu] = useState(null)
   const [desktopMaximized, setDesktopMaximized] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [appLanguage, setAppLanguage] = useState(() => localStorage.getItem('waraqa-language') || 'ar')
   const [activeTone, setActiveTone] = useState('mint')
   const [activeCustomColor, setActiveCustomColor] = useState(toneColors.mint)
@@ -603,6 +605,37 @@ function App() {
           <button type="button" className={`settings-theme-option${theme === 'light' ? ' is-active' : ''}`} onClick={() => { setTheme('light'); localStorage.setItem('waraqa-theme', 'light') }}><Sun size={16} /> نهاري</button>
           <button type="button" className={`settings-theme-option${theme === 'dark' ? ' is-active' : ''}`} onClick={() => { setTheme('dark'); localStorage.setItem('waraqa-theme', 'dark') }}><Moon size={16} /> ليلي</button>
         </div>
+        <p className="settings-version">ورقة · الإصدار {pkg.version}</p>
+      </section>
+    </div>
+  )
+  const helpDialog = helpOpen && (
+    <div className="confirm-overlay settings-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setHelpOpen(false) }}>
+      <section className="confirm-dialog settings-dialog help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-dialog-title" dir="rtl">
+        <div className="settings-heading"><span className="confirm-icon settings-icon"><CircleHelp size={20} /></span><button type="button" className="settings-close" aria-label="إغلاق المساعدة" onClick={() => setHelpOpen(false)}><X size={17} /></button></div>
+        <h2 id="help-dialog-title">دليل ورقة السريع</h2>
+        <p>أهم أدوات الخريطة واختصارات لوحة المفاتيح.</p>
+        <span className="help-section-label">أساسيات الخريطة</span>
+        <ul className="help-list">
+          <li><Lightbulb size={14} /> <span>أضف «فكرة جديدة» من اللوحة أو بالسحب إلى المساحة، ثم حددها وأضف فروعًا يمينًا ويسارًا.</span></li>
+          <li><MousePointer2 size={14} /> <span>اربط عقدتين بالسحب من النقطة على طرف العقدة إلى عقدة أخرى، وكليك يمين على السهم يحذفه.</span></li>
+          <li><StickyNote size={14} /> <span>اضغط أيقونة العقدة لفتح الملاحظة والإيموجي واللون، وتُحفظ مع العقدة تلقائيًا.</span></li>
+          <li><Network size={14} /> <span>«ترتيب الخريطة» يرص العقد حسب تفرّعها، والنقطة على طرف العقدة تطوي فروعها أو تفتحها.</span></li>
+          <li><Copy size={14} /> <span>تحديد جماعي: Ctrl + كليك يمين ثم اسحب مربعًا، وبعدها «ربط المحدد» أو الحذف الجماعي.</span></li>
+        </ul>
+        <span className="help-section-label">اختصارات لوحة المفاتيح</span>
+        <div className="help-shortcuts">
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>S</kbd><span>حفظ المشروع</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>F</kbd><span>بحث في الخريطة</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>Z</kbd><span>تراجع</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>Y</kbd><span>إعادة</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>C</kbd><span>نسخ العقدة وفروعها</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>V</kbd><span>لصق العقدة</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>D</kbd><span>تكرار العقدة</span></div>
+          <div className="help-shortcut"><kbd>Del</kbd><span>حذف المحدد</span></div>
+          <div className="help-shortcut"><kbd>Esc</kbd><span>إغلاق القوائم والحوارات</span></div>
+        </div>
+        <p className="settings-version">ورقة · الإصدار {pkg.version}</p>
       </section>
     </div>
   )
@@ -760,7 +793,7 @@ function App() {
   )
 
   const remember = () => {
-    setUndoStack((current) => [...current, { nodes, edges }].slice(-50))
+    setUndoStack((current) => [...current, { nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead }].slice(-50))
     setRedoStack([])
   }
 
@@ -959,7 +992,7 @@ function App() {
       type: 'mapNode',
       position,
       data: {
-        label: kind === 'note' ? 'ملاحظة جديدة' : parent ? 'فكرة فرعية' : 'فكرتي الجديدة',
+        label: parent ? 'فكرة فرعية' : 'فكرتي الجديدة',
         kind,
         ...(kind === 'branch' ? {
           branchDirection,
@@ -1365,18 +1398,26 @@ function App() {
   const undo = () => {
     const previous = undoStack.at(-1)
     if (!previous) return
-    setRedoStack((current) => [...current, { nodes, edges }])
+    setRedoStack((current) => [...current, { nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead }])
     setNodes(previous.nodes)
     setEdges(previous.edges)
+    setEdgeStyle(previous.edgeStyle)
+    setEdgeColor(previous.edgeColor)
+    setEdgeWidth(previous.edgeWidth)
+    setArrowHead(previous.arrowHead)
     setUndoStack((current) => current.slice(0, -1))
   }
 
   const redo = () => {
     const next = redoStack.at(-1)
     if (!next) return
-    setUndoStack((current) => [...current, { nodes, edges }])
+    setUndoStack((current) => [...current, { nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead }])
     setNodes(next.nodes)
     setEdges(next.edges)
+    setEdgeStyle(next.edgeStyle)
+    setEdgeColor(next.edgeColor)
+    setEdgeWidth(next.edgeWidth)
+    setArrowHead(next.arrowHead)
     setRedoStack((current) => current.slice(0, -1))
   }
 
@@ -1394,6 +1435,8 @@ function App() {
       if (event.key === 'Escape') {
         setActiveMenu(null)
         setSearchOpen(false)
+        setHelpOpen(false)
+        setSettingsOpen(false)
         return
       }
       if (!(event.ctrlKey || event.metaKey) || isEditingText) return
@@ -1550,7 +1593,7 @@ function App() {
   }
 
   const onNodeDragStart = (_event, draggedNode) => {
-    dragSnapshot.current = { nodes, edges }
+    dragSnapshot.current = { nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead }
     setTautEdgeId(null)
     setBranchDropHint(null)
     if (draggedNode?.data.kind !== 'branch' || draggedNode.data.detached) return
@@ -1805,7 +1848,7 @@ function App() {
       </nav>
       <header className="library-header"><div className="library-brand"><span className="brand-mark"><Workflow size={20} /></span><strong>ورقة</strong><span>مساحة مشاريعك</span></div><div className="library-actions"><button className="library-button secondary theme-toggle" type="button" onClick={toggleTheme}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />} {theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}</button><label className="library-button secondary"><ArrowUpFromLine size={17} /> استيراد مشروع<input type="file" accept="application/json,.json" onChange={importProjectFile} /></label><button className="library-button primary" onClick={createProject}><Plus size={18} /> مشروع جديد</button></div></header>
       <section className="library-content"><span className="library-kicker">مساحة العمل</span><h1>مشاريعك</h1><p className="library-subtitle">كل خرائطك الذهنية في مكان واحد.</p>
-         {projects.length ? <div className="project-grid">{projects.map((project) => <article className="project-card" key={project.id}><button className="project-open" onClick={() => openProject(project)}><span className="project-art"><Workflow size={28} /></span><strong>{project.title || 'مشروع بدون عنوان'}</strong><small>{project.nodes?.length || 0} عقدة · {project.edges?.length || 0} رابط</small><small>آخر تعديل: {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString('ar-EG') : '—'}</small></button><button className="project-delete" aria-label="حذف المشروع" onClick={() => requestDeleteProject(project.id)}><Trash2 size={16} /></button></article>)}</div> : <div className="library-empty"><span className="empty-bulb"><Lightbulb size={28} /></span><h2>ابدأ أول مشروع لك</h2><p>أنشئ خريطة ذهنية جديدة أو استورد مشروعًا محفوظًا.</p><button className="library-button primary" onClick={createProject}><Plus size={18} /> إنشاء مشروع</button></div>}
+         {projects.length ? <div className="project-grid">{projects.map((project) => <article className="project-card" key={project.id}><button className="project-open" onClick={() => openProject(project)}><span className="project-art"><Workflow size={28} /></span><strong>{project.title || 'مشروع بدون عنوان'}</strong><small>{project.nodes?.length || 0} عقدة · {project.edges?.length || 0} رابط</small><small>آخر تعديل: {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString(appLanguage === 'en' ? 'en-GB' : 'ar-EG') : '—'}</small></button><button className="project-delete" aria-label="حذف المشروع" onClick={() => requestDeleteProject(project.id)}><Trash2 size={16} /></button></article>)}</div> : <div className="library-empty"><span className="empty-bulb"><Lightbulb size={28} /></span><h2>ابدأ أول مشروع لك</h2><p>أنشئ خريطة ذهنية جديدة أو استورد مشروعًا محفوظًا.</p><button className="library-button primary" onClick={createProject}><Plus size={18} /> إنشاء مشروع</button></div>}
       </section>
       {pendingDeleteProject && <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setPendingDeleteProject(null) }}>
         <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description" dir="rtl">
@@ -1817,6 +1860,7 @@ function App() {
       </div>}
       {closeProjectDialog}
       {settingsDialog}
+      {helpDialog}
     </main>
     </LocalizedContent>
   )
@@ -1923,7 +1967,7 @@ function App() {
               <span className="eyebrow">مساحة العمل</span>
               <h1>الأدوات</h1>
             </div>
-            <button className="help-button" type="button" title="مساعدة" aria-label="مساعدة"><CircleHelp size={18} /></button>
+            <button className="help-button" type="button" title="مساعدة" aria-label="مساعدة" onClick={() => setHelpOpen(true)}><CircleHelp size={18} /></button>
           </div>
 
           <div className="tool-section">
@@ -2167,6 +2211,7 @@ function App() {
       )}
       {closeProjectDialog}
       {settingsDialog}
+      {helpDialog}
     </main>
     </LocalizedContent>
   )
