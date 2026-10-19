@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+
+:root {
+  font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+  color: #21342e;
+  background: #f4f7f4;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  width: 100%;
+  min-width: 320px;
+  height: 100%;
+  margin: 0;
+}
+
+body { min-height: 100svh; }
+button, input { font-family: inherit; }
+button:focus-visible, input:focus-visible { outline: 2px solid #4b9a76; outline-offset: 2px; }
+::selection { color: #184c38; background: #c8ead7; }
