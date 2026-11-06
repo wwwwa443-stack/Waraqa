@@ -7,7 +7,8 @@ const isElectronBuild = appUrl.protocol === 'file:' && appUrl.pathname.toLowerCa
 if (isViteServer || isBuiltAsset || isElectronBuild) {
   import('./main.jsx')
 } else {
-  const devServerUrl = 'http://127.0.0.1:5173/'
+  const devServerHost = window.location.hostname || '127.0.0.1'
+  const devServerUrl = `${window.location.protocol}//${devServerHost}:5173/`
   fetch(devServerUrl, { mode: 'no-cors' })
     .then(() => window.location.replace(devServerUrl))
     .catch(() => {

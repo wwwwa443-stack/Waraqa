@@ -54,6 +54,19 @@ The build creates two x64 files in `release/`:
 - `Waraqa-Setup.exe` installs the app and adds Start Menu and desktop shortcuts.
 - `Waraqa-Portable.exe` runs without installation.
 
+## Build the Android phone app
+
+Install JDK 21 and the Android SDK, then set `JAVA_HOME` and `ANDROID_HOME` to
+their installation folders. Build the installable APK with:
+
+```sh
+npm run build:android
+```
+
+The APK is written to `release/Waraqa-Android.apk`. It bundles the app locally,
+so it works without an internet connection. This APK is for Android phones;
+iPhone installation packages require Apple's macOS build and signing tools.
+
 Projects are saved locally on the computer. Use the app's JSON export and import to move projects between browser and desktop versions.
 
 ## Project JSON format

@@ -1,5 +1,6 @@
 import { Children, cloneElement, isValidElement, useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
+import { Capacitor, registerPlugin } from '@capacitor/core'
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -17,6 +18,7 @@ import {
   Moon,
   MoveLeft,
   MoveRight,
+  Move,
   MousePointer2,
   Network,
   Pencil,
@@ -44,6 +46,7 @@ import {
   applyNodeChanges,
   Background,
   Controls,
+  ConnectionMode,
   Handle,
   MarkerType,
   MiniMap,
@@ -56,11 +59,48 @@ import './App.css'
 import { emojiDataUrl } from './emojiAssets.js'
 import pkg from '../package.json'
 
+const AndroidDownloads = registerPlugin('Downloads')
 const STORAGE_KEY = 'waraqa-mind-map'
 const PROJECTS_KEY = 'waraqa-projects'
 const WARAQA_LOGO_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#176b50"/><path d="M32 18v12M20 42V32h24v10" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/><circle cx="32" cy="16" r="5" fill="#fff"/><circle cx="18" cy="46" r="5" fill="#fff"/><circle cx="46" cy="46" r="5" fill="#fff"/></svg>'
-const newProjectId = () => crypto.randomUUID()
+const createId = () => globalThis.crypto?.randomUUID?.()
+  || `waraqa-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+const newProjectId = () => createId()
 const currentTimestamp = () => Date.now()
+const normalizeProjectHandles = (project) => {
+  const nodesById = new Map((Array.isArray(project?.nodes) ? project.nodes : []).map((node) => [node.id, node]))
+  const usedIds = new Set()
+  const edges = (Array.isArray(project?.edges) ? project.edges : [])
+    .filter((edge) => edge && nodesById.has(edge.source) && nodesById.has(edge.target))
+    .map((edge) => {
+      const source = nodesById.get(edge.source)
+      const target = nodesById.get(edge.target)
+      const sourceSide = edge.sourceHandle === 'source-left' || edge.sourceHandle === 'source-right'
+        ? edge.sourceHandle.slice('source-'.length)
+        : target.position.x < source.position.x ? 'left' : 'right'
+      const targetSide = sourceSide === 'left' ? 'right' : 'left'
+      const baseId = edge.id || `e-${edge.source}-${edge.target}`
+      let id = baseId
+      let duplicateIndex = 1
+      while (usedIds.has(id)) id = `${baseId}-${duplicateIndex++}`
+      usedIds.add(id)
+      return {
+        ...edge,
+        id,
+        sourceHandle: `source-${sourceSide}`,
+        targetHandle: `source-${targetSide}`,
+        hidden: false,
+      }
+    })
+  return { ...project, edges }
+}
+const startNodeIdOf = (nodes, edges) => (
+  nodes.find((node) => node.data?.isStart)?.id
+  || nodes.find((node) => node.data?.kind === 'idea' && !edges.some((edge) => edge.target === node.id))?.id
+  || nodes.find((node) => node.data?.kind === 'idea')?.id
+  || nodes[0]?.id
+  || null
+)
 const englishTranslations = {
   'مشروع جديد': 'New project', 'فكرة': 'Idea', 'إبداع': 'Creativity', 'هدف': 'Goal', 'تفكير': 'Thinking', 'حل': 'Solution', 'اتجاه': 'Direction', 'خريطة': 'Map', 'تعلم': 'Learning', 'قراءة': 'Reading', 'ملاحظة': 'Note', 'بحث': 'Search', 'استكشاف': 'Explore', 'تجربة علمية': 'Experiment', 'علوم': 'Science', 'مهم': 'Important', 'قيمة': 'Value', 'نمو': 'Growth', 'مكتمل': 'Completed', 'سريع': 'Quick', 'نقاش': 'Discussion', 'تعاون': 'Collaboration', 'فريق': 'Team', 'إعداد': 'Settings', 'عمل': 'Work', 'تثبيت': 'Pin', 'انطلاق': 'Launch', 'خواطر': 'Thoughts', 'رابط': 'Link', 'بيانات': 'Data', 'موعد': 'Appointment', 'خطة زمنية': 'Timeline', 'مدة': 'Duration', 'تنبيه': 'Reminder', 'إنجاز': 'Achievement', 'مرحلة': 'Stage', 'تحذير': 'Warning', 'متوقف': 'Paused', 'تقدم': 'Progress', 'تصنيف': 'Category', 'تقنية': 'Technology', 'سحابة': 'Cloud',
   'خريطة بدون عنوان': 'Untitled map', 'بدون عنوان': 'Untitled', 'يمينًا': 'on the right', 'يسارًا': 'on the left', 'افتح ملاحظة العقدة': 'Open node note', 'اسم العقدة': 'Node name', 'تحرير اسم العقدة': 'Edit node name', 'ملاحظة جديدة': 'New note', 'فكرة فرعية': 'Sub-idea', 'فكرتي الجديدة': 'My new idea',
@@ -127,18 +167,20 @@ function runPageTransition(update) {
 function readProjects() {
   try {
     const projects = JSON.parse(localStorage.getItem(PROJECTS_KEY) || 'null')
-    if (Array.isArray(projects)) return projects
+    if (Array.isArray(projects)) return projects.map(normalizeProjectHandles)
     const legacy = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
-    return legacy ? [{ id: newProjectId(), updatedAt: Date.now(), ...legacy }] : []
+    return legacy ? [normalizeProjectHandles({ id: newProjectId(), updatedAt: Date.now(), ...legacy })] : []
   } catch { return [] }
 }
 function readProjectFromStorage(id, fallback) {
   try {
     const projects = JSON.parse(localStorage.getItem(PROJECTS_KEY) || '[]')
-    return Array.isArray(projects) ? projects.find((project) => project.id === id) || fallback : fallback
+    const project = Array.isArray(projects) ? projects.find((item) => item.id === id) || fallback : fallback
+    return normalizeProjectHandles(project)
   } catch { return fallback }
 }
 function createProjectSavePoint(project) {
+  project = normalizeProjectHandles(project)
   const clean = (value, transientKeys) => Object.fromEntries(
     Object.entries(value).filter(([key]) => !transientKeys.has(key)),
   )
@@ -214,6 +256,7 @@ function EmojiGlyph({ emoji }) {
 }
 const isHexColor = (color) => /^#[\da-f]{6}$/i.test(color || '')
 const TOUCH_DEVICE = window.matchMedia('(pointer: coarse)').matches
+const TRAINING_DISABLED = TOUCH_DEVICE || window.matchMedia('(max-width: 760px)').matches
 const nodeHeightOf = (node) => Math.max(node.data.kind === 'idea' ? 76 : 50, node.measured?.height ?? node.height ?? 64)
 const nodeWidthOf = (node) => Math.max(node.data.kind === 'idea' ? 190 : 150, node.measured?.width ?? node.width ?? 190)
 const arrowHeads = { closed: MarkerType.ArrowClosed, open: MarkerType.Arrow }
@@ -333,13 +376,16 @@ function isSameBranchSide(firstEdge, secondEdge) {
   return firstSide === secondSide
 }
 
-function arrangeMapForward(nodes, edges, preserveRootPositions = false) {
+function arrangeMapForward(nodes, edges, preserveRootPositions = false, preferredParentEdgeId = null) {
   const visibleNodes = nodes.filter((node) => !node.hidden)
   if (!visibleNodes.length) return nodes
   const nodesById = new Map(visibleNodes.map((node) => [node.id, node]))
   const parentById = new Map()
   const directionByChild = new Map()
-  edges.forEach((edge) => {
+  const layoutEdges = preferredParentEdgeId
+    ? [...edges.filter((edge) => edge.id === preferredParentEdgeId), ...edges.filter((edge) => edge.id !== preferredParentEdgeId)]
+    : edges
+  layoutEdges.forEach((edge) => {
     if (edge.source !== edge.target && nodesById.has(edge.source) && nodesById.has(edge.target) && !parentById.has(edge.target)) {
       parentById.set(edge.target, edge.source)
       directionByChild.set(edge.target, edge.sourceHandle === 'source-left' ? 'left' : 'right')
@@ -505,7 +551,7 @@ function readSavedMap() {
     return {
       title: saved?.title || 'خريطة بدون عنوان',
       nodes: Array.isArray(saved?.nodes) ? saved.nodes : [],
-      edges: Array.isArray(saved?.edges) ? saved.edges : [],
+      edges: normalizeProjectHandles(saved || {}).edges,
       edgeStyle: saved?.edgeStyle || 'smoothstep',
       edgeColor: saved?.edgeColor || '#9aaea4',
       edgeWidth: saved?.edgeWidth || 2,
@@ -532,6 +578,7 @@ function MapNode({ data, selected, width }) {
       type="source"
       position={position}
       id={`source-${side}`}
+      data-tour={data.trainingRole === 'connect-source' && side === 'right' ? 'connect-source' : data.trainingRole === 'connect-target' && side === 'left' ? 'connect-target' : undefined}
       className={`branch-toggle-handle branch-toggle-${side}`}
       style={{ top: '48%' }}
       title={data.language === 'en'
@@ -541,7 +588,7 @@ function MapNode({ data, selected, width }) {
         event.stopPropagation()
         if (data.selectMode) { data.onToggleSelect?.(); return }
         data.onSelect?.()
-        data.onToggleBranch?.()
+        data.onToggleBranch?.(side)
       }}
     />
   )
@@ -557,6 +604,7 @@ function MapNode({ data, selected, width }) {
     if (data.selectMode) { data.onToggleSelect?.(); return }
     data.onSelect?.()
     data.onCloseNotes?.()
+    if (data.trainingStep === 2) data.onTrainingStepChange?.(3)
     setEditing(true)
   }
 
@@ -567,6 +615,7 @@ function MapNode({ data, selected, width }) {
   return (
     <div
       className={`map-node tone-${data.tone || 'mint'}${customColor ? ' has-custom-color' : ''}${selected ? ' is-selected' : ''}${data.isLinkSource ? ' is-link-source' : ''}${data.dropHint ? ` drop-${data.dropHint}` : ''}`}
+      data-tour={TOUCH_DEVICE && data.trainingRole ? data.trainingRole : undefined}
       style={{ width: '100%', height: '100%', boxSizing: 'border-box', ...(customColor ? { '--custom-node-color': customColor } : {}) }}
       onPointerDown={data.onTouchStart}
       onPointerMove={data.onTouchMove}
@@ -583,9 +632,18 @@ function MapNode({ data, selected, width }) {
         lineStyle={{ borderColor: '#4b9a76' }}
         handleStyle={{ width: TOUCH_DEVICE ? 13 : 8, height: TOUCH_DEVICE ? 13 : 8, borderRadius: 4, borderColor: '#fff', background: '#4b9a76' }}
       />
-      <Handle type="target" position={Position.Left} id="target-left" className="branch-target-handle branch-target-left" style={{ top: '52%' }} />
-      <Handle type="target" position={Position.Right} id="target-right" className="branch-target-handle branch-target-right" style={{ top: '52%' }} />
-      <button className="node-icon nodrag" type="button" title={data.language === 'en' ? 'Open node note' : 'افتح ملاحظة العقدة'} aria-label={data.language === 'en' ? 'Open node note' : 'افتح ملاحظة العقدة'}>
+      {selected && (
+        <button
+          className="node-drag-handle"
+          data-tour={data.trainingDragTarget ? 'drag-node' : undefined}
+          type="button"
+          aria-label={data.language === 'en' ? 'Drag node' : 'اسحب لتحريك العقدة'}
+          title={data.language === 'en' ? 'Drag to move node' : 'اسحب لتحريك العقدة'}
+        >
+          <Move size={15} />
+        </button>
+      )}
+      <button className="node-icon nodrag" data-tour={data.trainingNoteTarget ? 'note-icon' : undefined} type="button" title={data.language === 'en' ? 'Open node note' : 'افتح ملاحظة العقدة'} aria-label={data.language === 'en' ? 'Open node note' : 'افتح ملاحظة العقدة'}>
         <Icon size={16} strokeWidth={1.8} />
       </button>
       {data.emoji && <span className="node-emoji" aria-label={`${data.language === 'en' ? 'Emoji' : 'إيموجي'} ${data.emoji}`} title={data.emoji}><EmojiGlyph emoji={data.emoji} /></span>}
@@ -593,6 +651,7 @@ function MapNode({ data, selected, width }) {
         <textarea
           ref={labelRef}
           className="node-label-input nodrag"
+          data-tour={data.trainingLabelInputTarget ? 'edit-node-input' : undefined}
           aria-label={data.language === 'en' ? 'Node name' : 'اسم العقدة'}
           value={label}
           rows={1}
@@ -607,7 +666,7 @@ function MapNode({ data, selected, width }) {
           }}
         />
       ) : (
-        <button className="node-label node-label-button nodrag" type="button" onClick={startEditing} title={data.language === 'en' ? 'Edit node name' : 'تحرير اسم العقدة'}>
+        <button className="node-label node-label-button" data-tour={data.trainingLabelTarget ? 'edit-node' : undefined} type="button" onClick={startEditing} title={data.language === 'en' ? 'Edit node name' : 'تحرير اسم العقدة'}>
           {displayLabel || (data.language === 'en' ? 'Untitled' : 'بدون عنوان')}
         </button>
       )}
@@ -644,17 +703,24 @@ function App() {
   const [desktopMaximized, setDesktopMaximized] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [trainingOpen, setTrainingOpen] = useState(() => !TRAINING_DISABLED && localStorage.getItem('waraqa-interactive-training-v3-complete') !== 'true')
+  const [trainingStep, setTrainingStep] = useState(0)
+  const [trainingActionDone, setTrainingActionDone] = useState(false)
+  const [trainingTrialNodeIds, setTrainingTrialNodeIds] = useState([])
+  const [trainingTargets, setTrainingTargets] = useState([])
   const [appLanguage, setAppLanguage] = useState(() => localStorage.getItem('waraqa-language') || 'ar')
   const [activeTone, setActiveTone] = useState('mint')
   const [activeCustomColor, setActiveCustomColor] = useState(toneColors.mint)
   const [exportingImage, setExportingImage] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [notesMounted, setNotesMounted] = useState(false)
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(true)
   const [toolsOpen, setToolsOpen] = useState(true)
   const [miniMapVisible, setMiniMapVisible] = useState(() => localStorage.getItem('waraqa-minimap-visible') !== 'false')
   const [selectMode, setSelectMode] = useState(false)
   const [selectionDrag, setSelectionDrag] = useState(null)
   const [tautEdgeId, setTautEdgeId] = useState(null)
+  const [hoveredEdgeId, setHoveredEdgeId] = useState(null)
   const [branchDropHint, setBranchDropHint] = useState(null)
   const [undoStack, setUndoStack] = useState([])
   const [redoStack, setRedoStack] = useState([])
@@ -717,6 +783,7 @@ function App() {
         <div className="settings-heading"><span className="confirm-icon settings-icon"><CircleHelp size={20} /></span><button type="button" className="settings-close" aria-label="إغلاق المساعدة" onClick={() => setHelpOpen(false)}><X size={17} /></button></div>
         <h2 id="help-dialog-title">دليل ورقة السريع</h2>
         <p>أهم أدوات الخريطة واختصارات لوحة المفاتيح.</p>
+        {!TRAINING_DISABLED && <button type="button" className="training-restart-button" onClick={() => { setHelpOpen(false); setTrainingTrialNodeIds([]); setTrainingActionDone(false); setToolsOpen(true); setTrainingStep(0); setTrainingOpen(true) }}><Lightbulb size={15} /> ابدأ التدريب التفاعلي</button>}
         <span className="help-section-label">أساسيات الخريطة</span>
         <ul className="help-list">
           <li><Lightbulb size={14} /> <span>أضف «فكرة جديدة» من اللوحة أو بالسحب إلى المساحة، ثم حددها وأضف فروعًا يمينًا ويسارًا.</span></li>
@@ -747,9 +814,159 @@ function App() {
       </section>
     </div>
   )
+  const trainingSteps = [
+    { icon: <Lightbulb size={22} />, title: 'أضف أول فكرة', text: 'اضغط زر «فكرة جديدة» المضيء في لوحة الأدوات. هتظهر عقدة جديدة على الخريطة.' },
+    { icon: <Plus size={22} />, title: 'أضف فكرة ثانية للتجربة', text: 'اضغط الزر نفسه مرة ثانية عشان يبقى عندك عقدتين تجرب الربط بينهم.' },
+    { icon: <Pencil size={22} />, title: 'غيّر اسم الفكرة', text: 'اضغط على اسم العقدة المضيئة، ثم اكتب اسمًا للفكرة.' },
+    { icon: <Pencil size={22} />, title: 'اكتب اسم الفكرة', text: 'اكتب الاسم الذي تريده، ثم اضغط «تم التغيير» للمتابعة.' },
+    { icon: <Link2 size={22} />, title: 'جرّب ربط العقد', text: TOUCH_DEVICE ? 'اضغط مطولًا على العقدة الأولى، ثم اضغط على العقدة الثانية لإتمام الربط.' : 'اسحب من نقطة طرف العقدة الأولى إلى نقطة طرف العقدة الثانية. جرّب بنفسك؛ هنتابع لحد ما يظهر الرابط.' },
+    { icon: <GitBranch size={22} />, title: 'أضف فرعًا', text: 'اضغط «فرع يمين» في لوحة الأدوات. لو مش متاح، اضغط على عقدة أولًا لتحديدها.' },
+    { icon: <Move size={22} />, title: 'حرّك عقدة', text: 'اسحب الدائرة الخضراء فوق العقدة لمكان جديد. اسحبها فعلًا عشان نكمل.' },
+    { icon: <StickyNote size={22} />, title: 'افتح ملاحظة العقدة', text: 'اضغط أيقونة الفكرة داخل العقدة لفتح الملاحظة وأدوات الإيموجي واللون.' },
+    { icon: <Pencil size={22} />, title: 'اكتب ملاحظة', text: 'اكتب ملاحظة قصيرة، ثم اضغط «التالي» عندما تنتهي.' },
+    { icon: <Network size={22} />, title: 'رتّب الخريطة', text: 'اضغط زر «ترتيب الخريطة للأمام» في لوحة الأدوات لتنسيق أماكن العقد.' },
+    { icon: <CircleHelp size={22} />, title: 'أنت جاهز!', text: 'كده جرّبت أهم أدوات ورقة بنفسك. أمثلة التدريب هتفضل في خريطتك وتقدر تحذفها أو تتراجع عنها.' },
+  ]
+  const finishTraining = () => {
+    localStorage.setItem('waraqa-interactive-training-v3-complete', 'true')
+    setTrainingOpen(false)
+    setTrainingStep(0)
+    setTrainingActionDone(false)
+    setTrainingTargets([])
+  }
+  const goToTrainingStep = (step) => {
+    if ([0, 1, 5, 9].includes(step)) setToolsOpen(true)
+    if (step === 6) {
+      const nodeToMove = nodes.find((node) => node.selected)
+      if (nodeToMove) {
+        const width = nodeToMove.measured?.width ?? nodeToMove.width ?? 190
+        const height = nodeToMove.measured?.height ?? nodeToMove.height ?? 64
+        window.requestAnimationFrame(() => flowRef.current?.setCenter(nodeToMove.position.x + width / 2, nodeToMove.position.y + height / 2, { zoom: 1.12, duration: 520 }))
+      }
+    }
+    setTrainingActionDone(false)
+    setTrainingStep(step)
+  }
+  const confirmTrainingAction = () => {
+    const nextStep = ({ 0: 1, 1: 2, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10 })[trainingStep]
+    if (nextStep !== undefined && (trainingActionDone || [3, 8].includes(trainingStep))) goToTrainingStep(nextStep)
+  }
+  const trainingCardRef = useRef(null)
+  const [trainingCardPosition, setTrainingCardPosition] = useState({ left: 12, top: 12 })
+  useEffect(() => {
+    const closeTrainingOnMobile = () => {
+      if (!(TOUCH_DEVICE || window.matchMedia('(max-width: 760px)').matches) || !trainingOpen) return
+      setTrainingOpen(false)
+      setTrainingTargets([])
+    }
+    closeTrainingOnMobile()
+    window.addEventListener('resize', closeTrainingOnMobile)
+    return () => window.removeEventListener('resize', closeTrainingOnMobile)
+  }, [trainingOpen])
+  useEffect(() => {
+    if (!trainingOpen) return undefined
+    const placeCard = () => {
+      const card = trainingCardRef.current
+      if (!card) return
+      const cardWidth = card.offsetWidth
+      const cardHeight = card.offsetHeight
+      const margin = 12
+      const gap = 18
+      const maxLeft = Math.max(margin, window.innerWidth - cardWidth - margin)
+      const maxTop = Math.max(margin, window.innerHeight - cardHeight - margin)
+      const clamp = (left, top) => ({ left: Math.max(margin, Math.min(maxLeft, left)), top: Math.max(margin, Math.min(maxTop, top)) })
+      const candidates = [
+        clamp(margin, margin), clamp(maxLeft, margin), clamp(margin, maxTop), clamp(maxLeft, maxTop),
+        clamp((window.innerWidth - cardWidth) / 2, margin), clamp((window.innerWidth - cardWidth) / 2, maxTop),
+        ...trainingTargets.flatMap((target) => [
+          clamp(target.left + target.width / 2 - cardWidth / 2, target.top - cardHeight - gap),
+          clamp(target.left + target.width / 2 - cardWidth / 2, target.bottom + gap),
+          clamp(target.left - cardWidth - gap, target.top + target.height / 2 - cardHeight / 2),
+          clamp(target.right + gap, target.top + target.height / 2 - cardHeight / 2),
+        ]),
+      ]
+      const overlapArea = (position, target) => {
+        const width = Math.max(0, Math.min(position.left + cardWidth, target.right + 16) - Math.max(position.left, target.left - 16))
+        const height = Math.max(0, Math.min(position.top + cardHeight, target.bottom + 16) - Math.max(position.top, target.top - 16))
+        return width * height
+      }
+      const score = (position) => {
+        const collisions = trainingTargets.reduce((sum, target) => sum + overlapArea(position, target), 0)
+        const nearestTarget = trainingTargets.length ? Math.min(...trainingTargets.map((target) => {
+          const dx = position.left + cardWidth / 2 - (target.left + target.width / 2)
+          const dy = position.top + cardHeight / 2 - (target.top + target.height / 2)
+          return Math.hypot(dx, dy)
+        })) : 0
+        return collisions * 10000 - nearestTarget
+      }
+      const best = candidates.reduce((chosen, candidate) => score(candidate) < score(chosen) ? candidate : chosen, candidates[0])
+      setTrainingCardPosition((current) => current.left === best.left && current.top === best.top ? current : best)
+    }
+    placeCard()
+    window.addEventListener('resize', placeCard)
+    return () => window.removeEventListener('resize', placeCard)
+  }, [trainingOpen, trainingStep, trainingTargets])
+  const trainingDialog = trainingOpen && (
+    <>
+      {trainingTargets.map((target) => <span key={`${target.left}-${target.top}`} className="training-tour-spotlight" aria-hidden="true" style={{ left: target.left - 5, top: target.top - 5, width: target.width + 10, height: target.height + 10 }} />)}
+      {trainingStep === 4 && !trainingActionDone && trainingTargets.length === 2 && <svg className="training-link-guide" viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`} aria-hidden="true">
+        <defs><marker id="training-link-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" /></marker></defs>
+        <path className="training-link-guide-path" d={`M ${trainingTargets[0].left + trainingTargets[0].width / 2} ${trainingTargets[0].top + trainingTargets[0].height / 2} L ${trainingTargets[1].left + trainingTargets[1].width / 2} ${trainingTargets[1].top + trainingTargets[1].height / 2}`} markerEnd="url(#training-link-arrow)" />
+        <circle r="5" className="training-link-guide-dot"><animateMotion dur="1.25s" repeatCount="indefinite" path={`M ${trainingTargets[0].left + trainingTargets[0].width / 2} ${trainingTargets[0].top + trainingTargets[0].height / 2} L ${trainingTargets[1].left + trainingTargets[1].width / 2} ${trainingTargets[1].top + trainingTargets[1].height / 2}`} /></circle>
+      </svg>}
+      <section ref={trainingCardRef} className="training-tour-card" role="dialog" aria-modal="false" aria-labelledby="training-title" dir="rtl" style={trainingCardPosition}>
+        <div className="training-tour-copy" key={trainingStep}>
+          <h2 id="training-title">{trainingSteps[trainingStep].title}</h2>
+          <p className="training-description">{trainingSteps[trainingStep].text}</p>
+        </div>
+        <div className="training-actions">
+          {trainingStep < trainingSteps.length - 1 && trainingStep !== 2 && <button type="button" className="training-next" disabled={!trainingActionDone && ![3, 8].includes(trainingStep)} onClick={confirmTrainingAction}>{[3, 8].includes(trainingStep) ? 'تخطي' : trainingStep === 3 ? 'تم التغيير' : 'التالي'}</button>}
+          {trainingStep === trainingSteps.length - 1 && <button type="button" className="training-next" onClick={finishTraining}>إنهاء</button>}
+        </div>
+      </section>
+    </>
+  )
+  const visibleNodeIds = new Set(nodes.filter((node) => !node.hidden).map((node) => node.id))
+  const visibleEdges = edges.filter((edge) => visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target))
   const selectedNode = nodes.find((node) => node.selected)
   const selectedNodes = nodes.filter((node) => node.selected)
   const linkSourceNode = selectedNodes.find((node) => node.id === linkSourceNodeId) || selectedNodes[0]
+  useEffect(() => {
+    if (!trainingOpen) return undefined
+    const selectorsByStep = [
+      ['[data-tour="add-idea"]'], ['[data-tour="add-idea"]'],
+      ['[data-tour="edit-node"]'], ['[data-tour="edit-node-input"]'],
+      [TOUCH_DEVICE ? '[data-tour="connect-source"]' : '[data-tour="connect-source"] .branch-toggle-right', TOUCH_DEVICE ? '[data-tour="connect-target"]' : '[data-tour="connect-target"] .branch-toggle-left'],
+      ['[data-tour="add-branch"]'], ['[data-tour="drag-node"]'],
+      ['[data-tour="note-icon"]'], ['[data-tour="note-input"]'],
+      ['[data-tour="arrange-map"]'], [],
+    ]
+    const selectors = selectorsByStep[trainingStep] || []
+    let timer
+    const updateTargets = () => {
+      const targets = selectors.flatMap((selector) => {
+        const element = document.querySelector(selector)
+        if (!element) return []
+        const rect = element.getBoundingClientRect()
+        const computedStyle = window.getComputedStyle(element)
+        if (!rect.width || !rect.height || computedStyle.display === 'none' || computedStyle.visibility === 'hidden' || Number(computedStyle.opacity) === 0) return []
+        return [{ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }]
+      })
+      setTrainingTargets((current) => JSON.stringify(current) === JSON.stringify(targets) ? current : targets)
+      timer = window.setTimeout(updateTargets, 180)
+    }
+    updateTargets()
+    return () => window.clearTimeout(timer)
+  }, [trainingOpen, trainingStep, trainingTrialNodeIds, nodes, notesOpen, selectedNode?.id])
+  useEffect(() => {
+    if (!trainingOpen) return
+    const firstTarget = document.querySelector([
+      '[data-tour="add-idea"]', '[data-tour="add-idea"]', '[data-tour="edit-node"]',
+      '[data-tour="edit-node-input"]', '[data-tour="connect-source"]', '[data-tour="add-branch"]',
+      '[data-tour="drag-node"]', '[data-tour="note-icon"]', '[data-tour="note-input"]', '[data-tour="arrange-map"]',
+    ][trainingStep])
+    firstTarget?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+  }, [trainingOpen, trainingStep, trainingTrialNodeIds])
   const isLinkableTarget = (source, target) => Boolean(source && target)
     && source.id !== target.id
     && !edges.some((edge) => edge.target === target.id)
@@ -758,12 +975,12 @@ function App() {
     && !isIdeaConnectedToIdeaBranch(source, target, nodes, edges)
   const linkableSelectedNodes = selectedNodes.filter((node) => isLinkableTarget(linkSourceNode, node))
   const selectedIncomingSides = selectedNode
-    ? edges.filter((edge) => edge.target === selectedNode.id).map((edge) => edge.targetHandle === 'target-right' ? 'right' : 'left')
+    ? visibleEdges.filter((edge) => edge.target === selectedNode.id).map((edge) => edge.targetHandle?.endsWith('right') ? 'right' : 'left')
     : []
   const canBranchLeft = Boolean(selectedNode) && !selectedIncomingSides.includes('left')
   const canBranchRight = Boolean(selectedNode) && !selectedIncomingSides.includes('right')
   const canInsertBranchRight = Boolean(selectedNode) && (
-    canBranchRight || edges.some((edge) => edge.target === selectedNode.id && edge.sourceHandle === 'source-left')
+    canBranchRight || visibleEdges.some((edge) => edge.target === selectedNode.id && edge.sourceHandle === 'source-left')
   )
   const selectedDescendantIds = selectedNode ? getDescendantIds(selectedNode.id, edges) : new Set()
   const descendants = selectedNode ? nodes.filter((node) => selectedDescendantIds.has(node.id)) : []
@@ -807,6 +1024,7 @@ function App() {
   }
 
   const openNotes = (node = selectedNode) => {
+    if (trainingOpen && trainingStep === 7) setTrainingActionDone(true)
     setToolsOpen(false)
     setNotesMounted(true)
     window.requestAnimationFrame(() => {
@@ -838,13 +1056,13 @@ function App() {
   }
   const beginNodeTouch = (event, nodeId) => {
     if (event.pointerType === 'mouse' || !event.isPrimary) { cancelLinkPress(); return }
-    if (event.target instanceof Element && event.target.closest('.node-label-input, .branch-toggle-handle')) { cancelLinkPress(); return }
+    if (event.target instanceof Element && event.target.closest('.node-label-input, .branch-toggle-handle, .node-drag-handle')) { cancelLinkPress(); return }
     cancelLinkPress()
     linkPressRef.current = {
       timer: window.setTimeout(() => {
         linkPressRef.current = { timer: null, start: null }
         enterLinkMode(nodeId)
-      }, 480),
+      }, 650),
       start: { x: event.clientX, y: event.clientY },
     }
   }
@@ -917,6 +1135,7 @@ function App() {
   }
 
   const updateNodeLabel = (id, label) => {
+    if (trainingOpen && trainingStep === 3) setTrainingActionDone(Boolean(label.trim()))
     setNodes((current) => current.map((node) => (
       node.id === id ? { ...node, data: { ...node.data, label } } : node
     )))
@@ -928,29 +1147,45 @@ function App() {
       width: Math.max(190, node.width || 0),
       height: Math.max(76, node.height || 0),
     } : {}),
-    draggable: node.data.kind === 'branch' ? true : node.draggable,
+    draggable: node.data.kind === 'branch' || node.draggable !== false,
+    dragHandle: node.selected ? '.node-drag-handle' : undefined,
     data: {
       ...node.data,
       language: appLanguage,
+      trainingRole: trainingOpen && trainingStep === 4 && !trainingActionDone
+        ? trainingTrialNodeIds[0] === node.id ? 'connect-source' : trainingTrialNodeIds[1] === node.id ? 'connect-target' : undefined
+        : undefined,
+      trainingDragTarget: trainingOpen && trainingStep === 6 && !trainingActionDone && node.selected,
+      trainingNoteTarget: trainingOpen && trainingStep === 7 && !trainingActionDone && node.selected,
+      trainingLabelTarget: trainingOpen && trainingStep === 2 && node.selected,
+      trainingLabelInputTarget: trainingOpen && trainingStep === 3 && node.selected,
+      trainingStep,
+      onTrainingStepChange: goToTrainingStep,
       selectMode,
       isLinkSource: linkSourceNodeId === node.id,
-      incomingSides: edges
+        incomingSides: visibleEdges
         .filter((edge) => edge.target === node.id)
-        .map((edge) => edge.targetHandle === 'target-right' ? 'right' : 'left'),
+        .map((edge) => edge.targetHandle?.endsWith('right') ? 'right' : 'left'),
       onSelect: () => selectNode(node.id),
       onToggleSelect: () => toggleNodeSelection(node.id),
       onLabelChange: (label) => updateNodeLabel(node.id, label),
       onCloseNotes: closeNotes,
-      onToggleBranch: () => toggleBranch(node),
+      onToggleBranch: (side) => toggleBranch(node, side),
       onTouchStart: (event) => beginNodeTouch(event, node.id),
       onTouchMove: moveNodeTouch,
       onTouchEnd: cancelLinkPress,
       dropHint: branchDropHint?.nodeId === node.id ? branchDropHint.side : null,
     },
   }))
+  const protectedStartId = startNodeIdOf(nodes, edges)
   const renderedEdges = edges.map((edge) => ({
     ...edge,
-    className: edge.id === tautEdgeId ? 'thread-taut' : edge.className,
+    zIndex: edge.id === hoveredEdgeId ? 10 : edge.zIndex,
+    className: [
+      edge.className,
+      edge.id === tautEdgeId ? 'thread-taut' : '',
+      edge.id === hoveredEdgeId ? 'thread-hovered' : '',
+    ].filter(Boolean).join(' '),
     hidden: nodes.some((node) => node.id === edge.source && node.hidden)
       || nodes.some((node) => node.id === edge.target && node.hidden),
   }))
@@ -960,10 +1195,11 @@ function App() {
 
   const onNodesChange = useCallback(
     (changes) => setNodes((current) => applyNodeChanges(
-      selectMode ? changes.filter((change) => change.type !== 'select') : changes,
+      changes.filter((change) => (selectMode || change.type !== 'select')
+        && !(change.type === 'remove' && change.id === protectedStartId)),
       current,
     )),
-    [selectMode],
+    [protectedStartId, selectMode],
   )
   const onEdgesChange = useCallback(
     (changes) => setEdges((current) => applyEdgeChanges(changes, current)),
@@ -1063,45 +1299,87 @@ function App() {
     }
   }
 
+  const canStartConnectionFrom = (nodeId, handleId) => {
+    const outgoingSide = handleId === 'source-left' ? 'left' : 'right'
+    const incomingSides = visibleEdges
+      .filter((edge) => edge.target === nodeId)
+      .map((edge) => edge.targetHandle?.endsWith('right') ? 'right' : 'left')
+    return !incomingSides.includes(outgoingSide)
+  }
+  const isValidConnection = (connection) => (
+    canStartConnectionFrom(connection.source, connection.sourceHandle)
+    && connection.source !== connection.target
+    && !getDescendantIds(connection.target, edges).has(connection.source)
+  )
+
   const onConnect = (connection) => {
-    const sourceNode = nodes.find((node) => node.id === connection.source)
-    const targetNode = nodes.find((node) => node.id === connection.target)
+    // In loose mode either visible dot can start or finish a drag. Keep the
+    // drag origin as the edge source, and attach the target to the opposite side.
+    const direction = connection.sourceHandle === 'source-left' ? 'left' : 'right'
+    const normalizedConnection = {
+      ...connection,
+      sourceHandle: `source-${direction}`,
+      targetHandle: direction === 'left' ? 'source-right' : 'source-left',
+    }
+    if (!isValidConnection(normalizedConnection)) return
+    const sourceNode = nodes.find((node) => node.id === normalizedConnection.source)
+    const targetNode = nodes.find((node) => node.id === normalizedConnection.target)
     if (isIdeaConnectedToIdeaBranch(sourceNode, targetNode, nodes, edges)) return
+    if (trainingOpen && trainingStep === 4) setTrainingActionDone(true)
     setUndoStack((current) => [...current, { nodes, edges }].slice(-50))
     setRedoStack([])
-    const nextEdges = addEdge({
-      ...connection,
+    let nextEdges = addEdge({
+      ...normalizedConnection,
       type: edgeStyle,
       markerEnd: getMarkerEnd(arrowHead, edgeColor),
       style: { stroke: edgeColor, strokeWidth: edgeWidth },
     }, edges)
+    const preferredParentEdge = nextEdges.find((edge) => edge.source === normalizedConnection.source
+      && edge.target === normalizedConnection.target
+      && edge.sourceHandle === normalizedConnection.sourceHandle
+      && edge.targetHandle === normalizedConnection.targetHandle)
+    if (preferredParentEdge) {
+      nextEdges = [preferredParentEdge, ...nextEdges.filter((edge) => edge.id !== preferredParentEdge.id)]
+    }
     const nextNodes = nodes.map((node) => (
-      (node.id === connection.source || node.id === connection.target) && node.data.detached
+      (node.id === normalizedConnection.source || node.id === normalizedConnection.target) && node.data.detached
         ? { ...node, data: { ...node.data, detached: false } }
         : node
     ))
     setEdges(nextEdges)
-    const connectedChild = nextNodes.find((node) => node.id === connection.target)
-    const connectedParent = nextNodes.find((node) => node.id === connection.source)
+    const connectedChild = nextNodes.find((node) => node.id === normalizedConnection.target)
+    const connectedParent = nextNodes.find((node) => node.id === normalizedConnection.source)
+    let orderedNodes = arrangeMapForward(nextNodes, nextEdges, true, preferredParentEdge?.id)
     if (connectedChild?.data.kind === 'branch') {
-      const siblings = nextNodes
-        .filter((node) => node.data.kind === 'branch' && nextEdges.some((edge) => edge.source === connection.source && edge.target === node.id))
+      const siblings = orderedNodes
+        .filter((node) => node.data.kind === 'branch' && nextEdges.some((edge) => edge.source === normalizedConnection.source && edge.target === node.id))
         .sort(compareBranchOrder)
-      const orderedNodes = arrangeSiblingBranches(nextNodes, nextEdges, connection.source, siblings.map((node) => node.id), connection.target)
-      animateNodeLayout(arrangeMapForward(orderedNodes, nextEdges, true))
-    } else if (connectedChild && connectedParent) {
-      const sourceWidth = connectedParent.measured?.width ?? connectedParent.width ?? 190
-      const childWidth = connectedChild.measured?.width ?? connectedChild.width ?? 190
-      const direction = connection.sourceHandle === 'source-left' ? 'left' : 'right'
-      const childX = direction === 'left'
-        ? connectedParent.position.x - childWidth - 170
-        : connectedParent.position.x + sourceWidth + 170
-      const shiftX = childX - connectedChild.position.x
+      orderedNodes = arrangeSiblingBranches(orderedNodes, nextEdges, normalizedConnection.source, siblings.map((node) => node.id))
+    }
+    if (connectedChild && connectedParent) {
+      const arrangedParent = orderedNodes.find((node) => node.id === connectedParent.id) || connectedParent
+      const arrangedChild = orderedNodes.find((node) => node.id === connectedChild.id) || connectedChild
+      const parentWidth = nodeWidthOf(arrangedParent)
+      const childWidth = nodeWidthOf(arrangedChild)
+      const parentHeight = nodeHeightOf(arrangedParent)
+      const childHeight = nodeHeightOf(arrangedChild)
+      const columnWidth = Math.max(childWidth, ...nextEdges
+        .filter((edge) => edge.source === connectedParent.id && edge.sourceHandle === normalizedConnection.sourceHandle)
+        .map((edge) => nodeWidthOf(orderedNodes.find((node) => node.id === edge.target) || connectedChild)))
+      const desiredX = direction === 'left'
+        ? arrangedParent.position.x - columnWidth - 150
+        : arrangedParent.position.x + parentWidth + 150
+      const delta = {
+        x: desiredX - arrangedChild.position.x,
+        y: arrangedParent.position.y + (parentHeight - childHeight) / 2 - arrangedChild.position.y,
+      }
       const movedIds = new Set([connectedChild.id, ...getDescendantIds(connectedChild.id, nextEdges)])
-      animateNodeLayout(nextNodes.map((node) => movedIds.has(node.id)
-        ? { ...node, position: { ...node.position, x: node.position.x + shiftX } }
-        : node))
-    } else setNodes(nextNodes)
+      movedIds.delete(connectedParent.id)
+      orderedNodes = orderedNodes.map((node) => movedIds.has(node.id)
+        ? { ...node, position: { x: node.position.x + delta.x, y: node.position.y + delta.y } }
+        : node)
+      animateNodeLayout(orderedNodes)
+    } else setNodes(orderedNodes)
   }
 
   useEffect(() => {
@@ -1115,9 +1393,10 @@ function App() {
     if (!activeProjectId) return
     const timeout = window.setTimeout(() => {
       setProjects((current) => {
-        const next = current.map((project) => project.id === activeProjectId
-          ? { ...project, title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead, updatedAt: currentTimestamp() }
-          : project)
+        const snapshot = { id: activeProjectId, title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead, updatedAt: currentTimestamp() }
+        const next = current.some((project) => project.id === activeProjectId)
+          ? current.map((project) => project.id === activeProjectId ? { ...project, ...snapshot } : project)
+          : [snapshot, ...current]
         localStorage.setItem(PROJECTS_KEY, JSON.stringify(next))
         return next
       })
@@ -1126,17 +1405,31 @@ function App() {
   }, [activeProjectId, title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead])
 
   const saveNow = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead }))
+    const snapshot = normalizeProjectHandles({ title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead })
+    setEdges(snapshot.edges)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
     if (activeProjectId) {
-      const projectState = createProjectSavePoint({ title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead })
+      const projectState = createProjectSavePoint(snapshot)
       projectSavePoints.current.set(activeProjectId, projectState)
-      const next = projects.map((project) => project.id === activeProjectId
-        ? { ...project, ...projectState, updatedAt: currentTimestamp() }
-        : project)
+      const currentProject = { id: activeProjectId, ...projectState, updatedAt: currentTimestamp() }
+      let storedProjects = projects
+      try {
+        const parsed = JSON.parse(localStorage.getItem(PROJECTS_KEY) || 'null')
+        if (Array.isArray(parsed)) storedProjects = parsed
+      } catch { /* Keep the in-memory project list if storage is unreadable. */ }
+      const next = storedProjects.some((project) => project.id === activeProjectId)
+        ? storedProjects.map((project) => project.id === activeProjectId ? { ...project, ...currentProject } : project)
+        : [currentProject, ...storedProjects]
       setProjects(next)
       localStorage.setItem(PROJECTS_KEY, JSON.stringify(next))
     }
   }
+
+  useEffect(() => {
+    const saveOnPageExit = () => shortcutActionsRef.current?.saveNow()
+    window.addEventListener('pagehide', saveOnPageExit)
+    return () => window.removeEventListener('pagehide', saveOnPageExit)
+  }, [])
 
   const openRenameProject = () => {
     setRenameProjectDraft(title)
@@ -1153,12 +1446,16 @@ function App() {
 
   const addNode = (kind = 'idea', parent = null, dropPosition = null, keepParentSelected = false, branchDirection = 'right') => {
     if (kind === 'branch' && parent) {
-      const incomingSides = edges.filter((edge) => edge.target === parent.id).map((edge) => edge.targetHandle === 'target-right' ? 'right' : 'left')
+      const incomingSides = visibleEdges.filter((edge) => edge.target === parent.id).map((edge) => edge.targetHandle?.endsWith('right') ? 'right' : 'left')
       if (incomingSides.includes(branchDirection)) return
     }
     remember()
-    const id = crypto.randomUUID()
-    const position = dropPosition || (parent
+    const id = createId()
+    const trainingPosition = trainingOpen && kind === 'idea' && trainingStep < 2 && flowRef.current?.screenToFlowPosition({
+      x: window.innerWidth / 2 + (trainingStep === 0 ? -145 : 145),
+      y: window.innerHeight * 0.48,
+    })
+    const position = dropPosition || trainingPosition || (parent
       ? { x: branchDirection === 'left' ? parent.position.x - 250 : parent.position.x + 250, y: parent.position.y + 90 }
       : flowRef.current?.screenToFlowPosition({
           x: window.innerWidth * 0.48,
@@ -1172,6 +1469,7 @@ function App() {
       data: {
         label: parent ? 'فكرة فرعية' : 'فكرتي الجديدة',
         kind,
+        ...(kind === 'idea' && !nodes.some((item) => item.data.isStart) && !nodes.some((item) => item.data.kind === 'idea') ? { isStart: true } : {}),
         ...(kind === 'branch' ? {
           branchDirection,
           order: parent ? edges.filter((edge) => edge.source === parent.id && nodes.find((item) => item.id === edge.target)?.data.kind === 'branch').length : 0,
@@ -1182,13 +1480,18 @@ function App() {
       draggable: true,
       selected: !keepParentSelected,
     }
+    if (trainingOpen && kind === 'idea' && trainingStep < 2) {
+      setTrainingTrialNodeIds((current) => [...current, id].slice(-2))
+      setTrainingActionDone(true)
+    }
+    if (trainingOpen && kind === 'branch' && trainingStep === 5) setTrainingActionDone(true)
     if (kind === 'branch') {
       const newBranchEdge = parent ? {
         id: `e-${parent.id}-${id}`,
         source: parent.id,
         target: id,
         sourceHandle: branchDirection === 'left' ? 'source-left' : 'source-right',
-        targetHandle: branchDirection === 'left' ? 'target-right' : 'target-left',
+        targetHandle: branchDirection === 'left' ? 'source-right' : 'source-left',
         type: edgeStyle,
         markerEnd: getMarkerEnd(arrowHead, edgeColor),
         style: { stroke: edgeColor, strokeWidth: edgeWidth },
@@ -1235,7 +1538,7 @@ function App() {
     const insertTowardCenter = branchDirection === 'right' && parentEdge?.sourceHandle === 'source-left'
     if (branchDirection === 'left' || insertTowardCenter) {
       remember()
-      const id = crypto.randomUUID()
+      const id = createId()
       const direction = parentEdge?.sourceHandle === 'source-left' ? 'left' : 'right'
       const node = {
         id,
@@ -1264,7 +1567,7 @@ function App() {
         source: id,
         target: selectedNode.id,
         sourceHandle: direction === 'left' ? 'source-left' : 'source-right',
-        targetHandle: direction === 'left' ? 'target-right' : 'target-left',
+        targetHandle: direction === 'left' ? 'source-right' : 'source-left',
         type: edgeStyle,
         markerEnd: getMarkerEnd(arrowHead, edgeColor),
         style: { stroke: edgeColor, strokeWidth: edgeWidth },
@@ -1274,11 +1577,11 @@ function App() {
       animateNodeLayout(arrangeMapForward(nextNodes, nextEdges, true), id)
       return
     }
-    const incomingSides = edges.filter((edge) => edge.target === selectedNode.id).map((edge) => edge.targetHandle === 'target-right' ? 'right' : 'left')
+    const incomingSides = visibleEdges.filter((edge) => edge.target === selectedNode.id).map((edge) => edge.targetHandle?.endsWith('right') ? 'right' : 'left')
     if (incomingSides.includes(branchDirection)) return
 
     remember()
-    const id = crypto.randomUUID()
+    const id = createId()
     const node = {
       id,
       type: 'mapNode',
@@ -1315,7 +1618,7 @@ function App() {
       source: selectedNode.id,
       target: id,
       sourceHandle: branchDirection === 'left' ? 'source-left' : 'source-right',
-      targetHandle: branchDirection === 'left' ? 'target-right' : 'target-left',
+      targetHandle: branchDirection === 'left' ? 'source-right' : 'source-left',
       type: edgeStyle,
       markerEnd: getMarkerEnd(arrowHead, edgeColor),
       style: { stroke: edgeColor, strokeWidth: edgeWidth },
@@ -1349,9 +1652,12 @@ function App() {
     })))
   }
 
-  const toggleBranch = (rootNode = selectedNode) => {
+  const toggleBranch = (rootNode = selectedNode, side = null) => {
     if (!rootNode) return
-    const descendantIds = getDescendantIds(rootNode.id, edges)
+    const childIds = side
+      ? edges.filter((edge) => edge.source === rootNode.id && edge.sourceHandle === `source-${side}`).map((edge) => edge.target)
+      : edges.filter((edge) => edge.source === rootNode.id).map((edge) => edge.target)
+    const descendantIds = new Set(childIds.flatMap((id) => [id, ...getDescendantIds(id, edges)]))
     const branchNodes = nodes.filter((node) => descendantIds.has(node.id))
     if (!branchNodes.length) return
     remember()
@@ -1380,17 +1686,18 @@ function App() {
   }
 
   const updateSelected = (changes) => {
+    if (trainingOpen && trainingStep === 8 && Object.hasOwn(changes, 'note')) setTrainingActionDone(Boolean(changes.note?.trim()))
     setNodes((current) => current.map((node) => (
       node.id === selectedNode?.id ? { ...node, data: { ...node.data, ...changes } } : node
     )))
   }
 
-  const removeSelected = () => {
-    if (!selectedNode) return
+  const removeNodeById = (nodeId) => {
+    if (nodeId === startNodeIdOf(nodes, edges) || !nodes.some((node) => node.id === nodeId)) return
     remember()
-    const parentEdge = edges.find((edge) => edge.target === selectedNode.id)
-    const nextEdges = edges.filter((edge) => edge.source !== selectedNode.id && edge.target !== selectedNode.id)
-    const nextNodes = nodes.filter((node) => node.id !== selectedNode.id)
+    const parentEdge = edges.find((edge) => edge.target === nodeId)
+    const nextEdges = edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId)
+    const nextNodes = nodes.filter((node) => node.id !== nodeId)
     setEdges(nextEdges)
     if (parentEdge) {
       const siblings = nextNodes
@@ -1400,10 +1707,16 @@ function App() {
     } else setNodes(nextNodes)
   }
 
+  const removeSelected = () => {
+    if (selectedNode) removeNodeById(selectedNode.id)
+  }
+
   const removeSelectedNodes = () => {
-    if (!selectedNodes.length) return
+    const protectedId = startNodeIdOf(nodes, edges)
+    const removableNodes = selectedNodes.filter((node) => node.id !== protectedId)
+    if (!removableNodes.length) return
     remember()
-    const selectedIds = new Set(selectedNodes.map((node) => node.id))
+    const selectedIds = new Set(removableNodes.map((node) => node.id))
     const affectedParents = [...new Set(edges.filter((edge) => selectedIds.has(edge.target)).map((edge) => edge.source))]
     const nextEdges = edges.filter((edge) => !selectedIds.has(edge.source) && !selectedIds.has(edge.target))
     let nextNodes = nodes.filter((node) => !selectedIds.has(node.id))
@@ -1419,7 +1732,9 @@ function App() {
   }
 
   const onNodesDelete = (deletedNodes) => {
-    const deletedIds = new Set(deletedNodes.map((node) => node.id))
+    const protectedId = startNodeIdOf(nodes, edges)
+    const deletedIds = new Set(deletedNodes.filter((node) => node.id !== protectedId).map((node) => node.id))
+    if (!deletedIds.size) return
     const affectedParents = [...new Set(edges.filter((edge) => deletedIds.has(edge.target)).map((edge) => edge.source))]
     const nextEdges = edges.filter((edge) => !deletedIds.has(edge.source) && !deletedIds.has(edge.target))
     let nextNodes = nodes.filter((node) => !deletedIds.has(node.id))
@@ -1444,7 +1759,7 @@ function App() {
         source: linkSourceNode.id,
         target: node.id,
         sourceHandle: 'source-right',
-        targetHandle: 'target-left',
+        targetHandle: 'source-left',
         type: edgeStyle,
         markerEnd: getMarkerEnd(arrowHead, edgeColor),
         style: { stroke: edgeColor, strokeWidth: edgeWidth },
@@ -1475,12 +1790,13 @@ function App() {
       source: source.id,
       target: target.id,
       sourceHandle: 'source-right',
-      targetHandle: 'target-left',
+      targetHandle: 'source-left',
       type: edgeStyle,
       markerEnd: getMarkerEnd(arrowHead, edgeColor),
       style: { stroke: edgeColor, strokeWidth: edgeWidth },
     }
     const nextEdges = [...edges, edge]
+    if (trainingOpen && trainingStep === 4) setTrainingActionDone(true)
     const detachedIds = new Set([source.id, target.id].filter((id) => nodes.find((node) => node.id === id)?.data.detached))
     const nextNodes = nodes.map((node) => detachedIds.has(node.id) ? { ...node, data: { ...node.data, detached: false } } : node)
     setEdges(nextEdges)
@@ -1543,7 +1859,7 @@ function App() {
   const duplicateSelected = () => {
     if (!selectedNode) return
     remember()
-    const id = crypto.randomUUID()
+    const id = createId()
     const duplicate = {
       ...selectedNode,
       id,
@@ -1576,7 +1892,7 @@ function App() {
     remember()
     pasteCount.current += 1
     const offset = 34 + (pasteCount.current - 1) * 24
-    const idMap = new Map(copiedNode.nodes.map((node) => [node.id, crypto.randomUUID()]))
+    const idMap = new Map(copiedNode.nodes.map((node) => [node.id, createId()]))
     const pastedNodes = copiedNode.nodes.map((node) => {
       const { selected: _selected, dragging: _dragging, measured: _measured, positionAbsolute: _positionAbsolute, ...savedNode } = node
       const isRoot = node.id === copiedNode.rootId
@@ -1630,12 +1946,26 @@ function App() {
   }
 
   useEffect(() => {
-    shortcutActionsRef.current = { openSearch, saveNow, undo, redo, duplicateSelected, copySelected, pasteCopiedNode }
+    shortcutActionsRef.current = { openSearch, saveNow, undo, redo, arrangeAllNodes, duplicateSelected, copySelected, pasteCopiedNode }
   })
 
   useEffect(() => {
+    const guardTrainingKeys = (event) => {
+      if (!trainingOpen || event.key === 'Escape') return
+      const target = event.target
+      const isTrainingInput = target instanceof HTMLElement && target.matches('[data-tour="edit-node-input"], [data-tour="note-input"]')
+      const selectAll = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a'
+      if (isTrainingInput && ((!(event.ctrlKey || event.metaKey || event.altKey) && event.key !== 'Tab') || selectAll)) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+    }
+    const guardTrainingContextMenu = (event) => {
+      if (!trainingOpen) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+    }
     const handleShortcut = (event) => {
-      const key = event.key.toLowerCase()
+      const key = (event.code?.startsWith('Key') ? event.code.slice(3) : event.key).toLowerCase()
       const target = event.target
       const isEditingText = target instanceof HTMLElement
         && (target.isContentEditable || ['INPUT', 'TEXTAREA'].includes(target.tagName))
@@ -1645,10 +1975,12 @@ function App() {
         setSearchOpen(false)
         setHelpOpen(false)
         setSettingsOpen(false)
+        if (trainingOpen) finishTraining()
         setLinkSourceNodeId(null)
         setSelectMode(false)
         return
       }
+      if (trainingOpen) return
       if (!(event.ctrlKey || event.metaKey) || isEditingText) return
 
       if (key === 'f') {
@@ -1666,6 +1998,9 @@ function App() {
       } else if (key === 'y') {
         event.preventDefault()
         shortcutActionsRef.current?.redo()
+      } else if (key === 'l' && event.shiftKey) {
+        event.preventDefault()
+        shortcutActionsRef.current?.arrangeAllNodes()
       } else if (key === 'd') {
         event.preventDefault()
         shortcutActionsRef.current?.duplicateSelected()
@@ -1681,16 +2016,20 @@ function App() {
       if (event.target instanceof Element && !event.target.closest('.app-menubar')) setActiveMenu(null)
       if (event.target instanceof Element && !event.target.closest('.search-panel, .app-menubar')) setSearchOpen(false)
     }
+    window.addEventListener('keydown', guardTrainingKeys, true)
+    window.addEventListener('contextmenu', guardTrainingContextMenu, true)
     window.addEventListener('keydown', handleShortcut)
     window.addEventListener('pointerdown', handleOutsideClick)
     return () => {
+      window.removeEventListener('keydown', guardTrainingKeys, true)
+      window.removeEventListener('contextmenu', guardTrainingContextMenu, true)
       window.removeEventListener('keydown', handleShortcut)
       window.removeEventListener('pointerdown', handleOutsideClick)
     }
-  }, [])
+  }, [trainingOpen])
 
-  const exportMap = () => {
-    const file = new Blob([JSON.stringify({
+  const exportMap = async () => {
+    const json = JSON.stringify({
       _metadata: {
         app: 'Waraqa',
         formatVersion: 1,
@@ -1703,13 +2042,27 @@ function App() {
       edgeColor,
       edgeWidth,
       arrowHead,
-    }, null, 2)], {
+    }, null, 2)
+    const fileName = (title || 'mind-map').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'mind-map'
+
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+      try {
+        await AndroidDownloads.saveJson({ fileName: `${fileName}.json`, content: json })
+        window.alert('تم حفظ ملف JSON في مجلد التنزيلات.')
+        return
+      } catch (error) {
+        console.error('Could not save JSON to Downloads:', error)
+        window.alert('تعذر حفظ الملف في التنزيلات. حاول مرة أخرى.')
+        return
+      }
+    }
+
+    const file = new Blob([json], {
       type: 'application/json',
     })
     const url = URL.createObjectURL(file)
     const link = document.createElement('a')
     link.href = url
-    const fileName = (title || 'mind-map').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'mind-map'
     link.download = `${fileName}.json`
     link.click()
     URL.revokeObjectURL(url)
@@ -1791,7 +2144,7 @@ function App() {
       remember()
       setTitle(imported.title || 'خريطة مستوردة')
       setNodes(imported.nodes)
-      setEdges(imported.edges)
+      setEdges(normalizeProjectHandles(imported).edges)
       setEdgeStyle(imported.edgeStyle || 'smoothstep')
       setEdgeColor(imported.edgeColor || '#9aaea4')
       setEdgeWidth(imported.edgeWidth || 2)
@@ -1807,7 +2160,7 @@ function App() {
     dragSnapshot.current = { nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead }
     setTautEdgeId(null)
     setBranchDropHint(null)
-    if (draggedNode?.data.kind !== 'branch' || draggedNode.data.detached) return
+    if (!draggedNode || draggedNode.data.detached) return
     const parentEdge = edges.find((edge) => edge.target === draggedNode.id)
     const siblings = parentEdge && nodes
       .filter((node) => node.data.kind === 'branch' && edges.some((edge) => edge.source === parentEdge.source && edge.target === node.id) && node.id !== draggedNode.id)
@@ -1815,7 +2168,7 @@ function App() {
     if (!siblings?.length) return
   }
   const onNodeDrag = (_event, draggedNode) => {
-    if (draggedNode?.data.kind !== 'branch' || draggedNode.data.detached || !dragSnapshot.current) {
+    if (!draggedNode || draggedNode.data.detached || !dragSnapshot.current) {
       setBranchDropHint(null)
       return
     }
@@ -1837,7 +2190,7 @@ function App() {
     const siblings = dragSnapshot.current.nodes
       .filter((node) => {
         const siblingEdge = dragSnapshot.current.edges.find((item) => item.source === edge.source && item.target === node.id)
-        return node.data.kind === 'branch' && siblingEdge && isSameBranchSide(edge, siblingEdge) && node.id !== draggedNode.id
+        return siblingEdge && isSameBranchSide(edge, siblingEdge) && node.id !== draggedNode.id
       })
       .sort(compareBranchOrder)
     const insertAt = siblings.findIndex((node) => {
@@ -1852,6 +2205,7 @@ function App() {
     } else setBranchDropHint(null)
   }
   const onNodeDragStop = (_event, draggedNode) => {
+    if (trainingOpen && trainingStep === 6 && draggedNode) setTrainingActionDone(true)
     setBranchDropHint(null)
     if (dragSnapshot.current) {
       const snapshot = dragSnapshot.current
@@ -1859,12 +2213,12 @@ function App() {
       setRedoStack([])
       dragSnapshot.current = null
 
-      if (draggedNode?.data.kind !== 'branch') return
+      if (!draggedNode) return
       const parentEdge = snapshot.edges.find((edge) => edge.target === draggedNode.id)
       setTautEdgeId(null)
       if (draggedNode.data.detached) return
       if (!parentEdge) {
-        if (!draggedNode.data.insertedBranch) return
+        if (draggedNode.data.kind !== 'branch' || !draggedNode.data.insertedBranch) return
         const layoutBase = nodes.map((item) => item.id === draggedNode.id
           ? { ...item, position: snapshot.nodes.find((entry) => entry.id === item.id).position }
           : item)
@@ -1874,7 +2228,7 @@ function App() {
       const siblings = snapshot.nodes
         .filter((item) => {
           const siblingEdge = snapshot.edges.find((edge) => edge.source === parentEdge.source && edge.target === item.id)
-          return item.data.kind === 'branch' && siblingEdge && isSameBranchSide(parentEdge, siblingEdge)
+          return siblingEdge && isSameBranchSide(parentEdge, siblingEdge)
         })
         .sort((left, right) => left.position.y - right.position.y)
 
@@ -1884,13 +2238,20 @@ function App() {
         const height = item.measured?.height ?? item.height ?? 64
         return draggedNode.position.y + draggedHeight / 2 < item.position.y + height / 2
       })
+      if (siblings.length < 2) {
+        const original = snapshot.nodes.find((item) => item.id === draggedNode.id)
+        if (!original) return
+        const deltaX = draggedNode.position.x - original.position.x
+        const deltaY = draggedNode.position.y - original.position.y
+        const movedIds = getDescendantIds(draggedNode.id, snapshot.edges)
+        setNodes(nodes.map((node) => movedIds.has(node.id)
+          ? { ...node, position: { x: node.position.x + deltaX, y: node.position.y + deltaY } }
+          : node))
+        return
+      }
       const layoutBase = nodes.map((item) => item.id === draggedNode.id
         ? { ...item, position: snapshot.nodes.find((entry) => entry.id === item.id).position }
         : item)
-      if (siblings.length < 2) {
-        animateNodeLayout(arrangeMapForward(layoutBase, snapshot.edges, true), draggedNode.id)
-        return
-      }
       const orderedSiblings = [...remaining]
       orderedSiblings.splice(insertionIndex < 0 ? orderedSiblings.length : insertionIndex, 0, siblings.find((item) => item.id === draggedNode.id))
       const orderedNodes = arrangeSiblingBranches(layoutBase, snapshot.edges, parentEdge.source, orderedSiblings.map((item) => item.id), draggedNode.id)
@@ -1899,6 +2260,7 @@ function App() {
   }
 
   const openProject = (project) => {
+    if (trainingOpen) setToolsOpen(true)
     if (activeProjectId === project.id) {
       saveNow()
       projectSavePoints.current.set(project.id, createProjectSavePoint({ title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead }))
@@ -1930,6 +2292,19 @@ function App() {
     setRenameProjectDraft(project.title)
     setRenameProjectOpen(true)
   }
+  const createTrainingProject = () => {
+    if (TRAINING_DISABLED) return
+    const project = { id: newProjectId(), title: 'تجربة التدريب', nodes: [], edges: [], edgeStyle: 'smoothstep', edgeColor: '#9aaea4', edgeWidth: 2, arrowHead: 'closed', updatedAt: currentTimestamp() }
+    const nextProjects = [project, ...projects]
+    localStorage.setItem(PROJECTS_KEY, JSON.stringify(nextProjects))
+    setProjects(nextProjects)
+    setToolsOpen(true)
+    setTrainingTrialNodeIds([])
+    setTrainingActionDone(false)
+    setTrainingStep(0)
+    setTrainingOpen(true)
+    openProject(project)
+  }
   const importProjectFile = async (event) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -1937,7 +2312,7 @@ function App() {
       const imported = JSON.parse(await file.text())
       if (!Array.isArray(imported.nodes) || !Array.isArray(imported.edges)) throw new Error('Invalid project')
       delete imported._metadata
-      const project = { ...imported, id: newProjectId(), title: imported.title || file.name.replace(/\.json$/i, ''), updatedAt: currentTimestamp() }
+      const project = normalizeProjectHandles({ ...imported, id: newProjectId(), title: imported.title || file.name.replace(/\.json$/i, ''), updatedAt: currentTimestamp() })
       setProjects((current) => { const next = [project, ...current]; localStorage.setItem(PROJECTS_KEY, JSON.stringify(next)); return next })
       openProject(project)
     } catch { window.alert('الملف غير صالح أو لا يحتوي على خريطة محفوظة.') }
@@ -2061,6 +2436,7 @@ function App() {
       <section className="library-content"><span className="library-kicker">مساحة العمل</span><h1>مشاريعك</h1><p className="library-subtitle">كل خرائطك الذهنية في مكان واحد.</p>
          {projects.length ? <div className="project-grid">{projects.map((project) => <article className="project-card" key={project.id}><button className="project-open" onClick={() => openProject(project)}><span className="project-art"><Workflow size={28} /></span><strong>{project.title || 'مشروع بدون عنوان'}</strong><small>{project.nodes?.length || 0} عقدة · {project.edges?.length || 0} رابط</small><small>آخر تعديل: {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString(appLanguage === 'en' ? 'en-GB' : 'ar-EG') : '—'}</small></button><button className="project-delete" aria-label="حذف المشروع" onClick={() => requestDeleteProject(project.id)}><Trash2 size={16} /></button></article>)}</div> : <div className="library-empty"><span className="empty-bulb"><Lightbulb size={28} /></span><h2>ابدأ أول مشروع لك</h2><p>أنشئ خريطة ذهنية جديدة أو استورد مشروعًا محفوظًا.</p><button className="library-button primary" onClick={createProject}><Plus size={18} /> إنشاء مشروع</button></div>}
       </section>
+      {!TRAINING_DISABLED && <button type="button" className="library-training-restart" dir="rtl" onClick={createTrainingProject}><Lightbulb size={17} /> إعادة التدريب</button>}
       {pendingDeleteProject && <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setPendingDeleteProject(null) }}>
         <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description" dir="rtl">
           <span className="confirm-icon"><Trash2 size={21} /></span>
@@ -2078,7 +2454,7 @@ function App() {
 
   return (
     <LocalizedContent language={appLanguage}>
-    <main className={`app-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
+    <main className={`app-shell${theme === 'dark' ? ' theme-dark' : ''}${trainingOpen ? ' is-training' : ''}`} dir="rtl">
       <header className="topbar">
         <div className="brand-lockup topbar-brand" aria-label="ورقة">
           <span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span>
@@ -2108,6 +2484,7 @@ function App() {
             {activeMenu === 'edit' && <div className="app-menu-popover" role="menu">
               <button type="button" role="menuitem" onClick={() => { undo(); setActiveMenu(null) }} disabled={!undoStack.length}><Undo2 size={15} /><span>تراجع</span><kbd>Ctrl+Z</kbd></button>
               <button type="button" role="menuitem" onClick={() => { redo(); setActiveMenu(null) }} disabled={!redoStack.length}><Redo2 size={15} /><span>إعادة</span><kbd>Ctrl+Y</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { arrangeAllNodes(); setActiveMenu(null) }} disabled={nodes.length < 2}><Network size={15} /><span>ترتيب الخريطة</span><kbd>Ctrl+Shift+L</kbd></button>
               <span className="app-menu-separator" />
               <button type="button" role="menuitem" onClick={() => { copySelected(); setActiveMenu(null) }} disabled={!selectedNode}><Copy size={15} /><span>{selectedNode?.data.kind === 'branch' ? 'نسخ الفرع وفروعه' : 'نسخ العقدة وفروعها'}</span><kbd>Ctrl+C</kbd></button>
               <button type="button" role="menuitem" onClick={() => { pasteCopiedNode(); setActiveMenu(null) }} disabled={!copiedNode}><ClipboardPaste size={15} /><span>{copiedNode?.nodes?.length > 1 ? 'لصق الفرع وفروعه' : 'لصق العقدة'}</span><kbd>Ctrl+V</kbd></button>
@@ -2128,10 +2505,15 @@ function App() {
               <button type="button" role="menuitem" onClick={() => { toggleTheme(); setActiveMenu(null) }}>{theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}<span>{theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}</span></button>
               <button type="button" role="menuitem" onClick={() => { setToolsOpen((open) => !open); setActiveMenu(null) }}>{toolsOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}<span>{toolsOpen ? 'إخفاء شريط الأدوات' : 'إظهار شريط الأدوات'}</span></button>
               <button type="button" role="menuitem" onClick={() => { setMiniMapVisible((visible) => { localStorage.setItem('waraqa-minimap-visible', String(!visible)); return !visible }); setActiveMenu(null) }}><MapIcon size={15} /><span>{miniMapVisible ? 'إخفاء الخريطة المصغرة' : 'إظهار الخريطة المصغرة'}</span></button>
-              <button type="button" role="menuitem" onClick={() => { arrangeAllNodes(); setActiveMenu(null) }} disabled={nodes.length < 2}><Network size={15} /><span>ترتيب الخريطة</span></button>
+
             </div>}
           </div>
         </nav>
+
+        <div className="mobile-history-controls" role="group" aria-label="التراجع والإعادة">
+          <button type="button" className="mobile-history-button" title="تراجع" aria-label="تراجع" onClick={undo} disabled={!undoStack.length}><Undo2 size={17} /></button>
+          <button type="button" className="mobile-history-button" title="إعادة" aria-label="إعادة" onClick={redo} disabled={!redoStack.length}><Redo2 size={17} /></button>
+        </div>
 
         {desktopWindow && <div className="window-controls" aria-label="أزرار النافذة">
           <button type="button" className="window-control" title="تصغير" aria-label="تصغير النافذة" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
@@ -2188,8 +2570,8 @@ function App() {
                 localStorage.setItem('waraqa-minimap-visible', String(!visible))
                 return !visible
               })} aria-pressed={miniMapVisible}><MapIcon size={18} /><span>{miniMapVisible ? 'إخفاء الخريطة' : 'إظهار الخريطة'}</span></button>
-              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'idea')} onClick={() => addNode('idea')}><Lightbulb size={18} /><span>فكرة جديدة</span></button>
-              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'branch', 'right')} onClick={() => selectedNode && addNode('branch', selectedNode, null, true, 'right')} disabled={!canBranchRight}><MoveRight size={18} /><span>فرع يمين</span></button>
+              <button type="button" className="tool-tile" data-tour={trainingOpen && trainingStep < 2 && !trainingActionDone ? 'add-idea' : undefined} draggable="true" onDragStart={(event) => startToolDrag(event, 'idea')} onClick={() => addNode('idea')} disabled={trainingOpen && trainingStep < 2 && trainingActionDone}><Lightbulb size={18} /><span>فكرة جديدة</span></button>
+              <button type="button" className="tool-tile" data-tour={trainingOpen && trainingStep === 5 && !trainingActionDone ? 'add-branch' : undefined} draggable="true" onDragStart={(event) => startToolDrag(event, 'branch', 'right')} onClick={() => selectedNode && addNode('branch', selectedNode, null, true, 'right')} disabled={!canBranchRight || (trainingOpen && trainingStep === 5 && trainingActionDone)}><MoveRight size={18} /><span>فرع يمين</span></button>
               <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'branch', 'left')} onClick={() => selectedNode && addNode('branch', selectedNode, null, true, 'left')} disabled={!canBranchLeft}><MoveLeft size={18} /><span>فرع يسار</span></button>
               <button type="button" className="tool-tile" title="ينقل الفروع المرتبطة بالعقدة المحددة لتصبح متفرعة من الفرع الجديد" onClick={() => insertBranchBeforeChildren('right')} disabled={!canInsertBranchRight}><MoveRight size={18} /><span>إدراج فرع يمين</span></button>
               <button type="button" className="tool-tile" title="يضيف فرعًا قبل العقدة المحددة، ويضع العقدة الحالية تحته" onClick={() => insertBranchBeforeChildren('left')} disabled={!selectedNode}><MoveLeft size={18} /><span>إدراج فرع يسار</span></button>
@@ -2206,7 +2588,7 @@ function App() {
               <button type="button" className={layoutMode === 'tree' ? 'is-active' : ''} onClick={() => changeLayoutMode('tree')}><Spline size={14} /> شجرة</button>
               <button type="button" className={layoutMode === 'auto' ? 'is-active' : ''} onClick={() => changeLayoutMode('auto')}><Network size={14} /> تلقائي</button>
             </div>
-            <button className="layout-button" type="button" onClick={arrangeAllNodes} disabled={nodes.length < 2}>
+            <button className="layout-button" type="button" data-tour={trainingOpen && trainingStep === 9 && !trainingActionDone ? 'arrange-map' : undefined} onClick={() => { arrangeAllNodes(); if (trainingOpen && trainingStep === 9) setTrainingActionDone(true) }} disabled={nodes.length < 2 || (trainingOpen && trainingStep === 9 && trainingActionDone)}>
               <Network size={17} />
               <span>ترتيب الخريطة للأمام</span>
             </button>
@@ -2333,12 +2715,21 @@ function App() {
             onNodesDelete={onNodesDelete}
             onEdgesChange={onEdgesChange}
             onEdgeClick={handleEdgeClick}
+            onEdgeMouseEnter={(_event, edge) => setHoveredEdgeId(edge.id)}
+            onEdgeMouseLeave={() => setHoveredEdgeId(null)}
             onEdgeContextMenu={removeEdgeFromContextMenu}
             onConnect={onConnect}
+            connectionMode={ConnectionMode.Loose}
+            isValidConnection={isValidConnection}
             onInit={(instance) => { flowRef.current = instance }}
             onNodeDragStart={onNodeDragStart}
             onNodeDrag={onNodeDrag}
             onNodeDragStop={onNodeDragStop}
+            onNodeContextMenu={(event, node) => {
+              event.preventDefault()
+              event.stopPropagation()
+              removeNodeById(node.id)
+            }}
             fitView
             fitViewOptions={{ padding: 0.28, maxZoom: 1 }}
             minZoom={0.25}
@@ -2353,6 +2744,7 @@ function App() {
                 toggleNodeSelection(node.id)
                 return
               }
+              selectNode(node.id)
               if (linkSourceNodeId && node.id !== linkSourceNodeId) {
                 if (connectToLinkSource(node)) setLinkSourceNodeId(null)
                 closeNotes()
@@ -2363,7 +2755,12 @@ function App() {
               if (event.target.closest?.('.node-icon')) openNotes(node)
               else closeNotes()
             }}
-            onPaneClick={() => { if (!selectMode) setLinkSourceNodeId(null) }}
+            onPaneClick={() => {
+              if (selectMode) return
+              setLinkSourceNodeId(null)
+              setNodes((current) => current.map((node) => node.selected ? { ...node, selected: false } : node))
+              if (notesOpen) closeNotes()
+            }}
             deleteKeyCode={['Backspace', 'Delete']}
             defaultEdgeOptions={{ type: edgeStyle }}
           >
@@ -2396,18 +2793,28 @@ function App() {
             </div>
             <textarea
               className="node-note-input"
+              data-tour={trainingOpen && trainingStep === 8 ? 'note-input' : undefined}
               aria-label="ملاحظة العقدة المحددة"
               placeholder="اكتب ملاحظتك هنا..."
               value={selectedNode.data.note || ''}
               onChange={(event) => updateSelected({ note: event.target.value })}
             />
             <div className="notes-settings">
-              <h3>إيموجي العقدة</h3>
-              <div className="notes-emoji-picker" role="group" aria-label="اختيار إيموجي للعقدة">
-                <button type="button" className={`notes-emoji-choice emoji-none${!selectedNode.data.emoji ? ' is-active' : ''}`} aria-label="بدون إيموجي" aria-pressed={!selectedNode.data.emoji} onClick={() => updateSelected({ emoji: '' })}>×</button>
-                {nodeEmojis.map(({ emoji, label }) => <button key={emoji} type="button" className={`notes-emoji-choice${selectedNode.data.emoji === emoji ? ' is-active' : ''}`} aria-label={label} title={label} aria-pressed={selectedNode.data.emoji === emoji} onClick={() => updateSelected({ emoji })}><EmojiGlyph emoji={emoji} /></button>)}
+              <div className="emoji-picker-heading">
+                <h3>إيموجي العقدة</h3>
+                <button className="emoji-picker-toggle" type="button" aria-expanded={emojiPickerOpen} aria-controls="notes-emoji-picker" onClick={() => setEmojiPickerOpen((open) => !open)}>
+                  {emojiPickerOpen ? 'إخفاء' : 'إظهار'}
+                </button>
               </div>
-              <a className="emoji-credit" href="https://github.com/jdecked/twemoji" target="_blank" rel="noreferrer">الرسومات من Twemoji</a>
+              <div id="notes-emoji-picker" hidden={!emojiPickerOpen}>
+                {emojiPickerOpen && <>
+                  <div className="notes-emoji-picker" role="group" aria-label="اختيار إيموجي للعقدة">
+                    <button type="button" className={`notes-emoji-choice emoji-none${!selectedNode.data.emoji ? ' is-active' : ''}`} aria-label="بدون إيموجي" aria-pressed={!selectedNode.data.emoji} onClick={() => updateSelected({ emoji: '' })}>×</button>
+                    {nodeEmojis.map(({ emoji, label }) => <button key={emoji} type="button" className={`notes-emoji-choice${selectedNode.data.emoji === emoji ? ' is-active' : ''}`} aria-label={label} title={label} aria-pressed={selectedNode.data.emoji === emoji} onClick={() => updateSelected({ emoji })}><EmojiGlyph emoji={emoji} /></button>)}
+                  </div>
+                  <a className="emoji-credit" href="https://github.com/jdecked/twemoji" target="_blank" rel="noreferrer">الرسومات من Twemoji</a>
+                </>}
+              </div>
               <h3>لون العقدة</h3>
               <div className="notes-swatches" role="group" aria-label="لون العقدة المحددة">
                 {tones.map((tone) => (
@@ -2449,6 +2856,7 @@ function App() {
       {closeProjectDialog}
       {settingsDialog}
       {helpDialog}
+      {trainingDialog}
     </main>
     </LocalizedContent>
   )
