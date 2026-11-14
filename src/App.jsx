@@ -162,53 +162,53 @@ const startNodeIdOf = (nodes, edges) => (
   || null
 )
 const englishTranslations = {
-  'Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©': 'Mind map', 'Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª': 'Notes', 'Ø£Ø¯ÙˆØ§Øª ÙˆØ±Ù‚Ø©': 'Waraqa tools',
-  'Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª': 'Notes workspace', 'Ø¥Ù†Ø´Ø§Ø¡ Ù…Ù„Ø§Ø­Ø¸Ø©': 'Create note', 'Ø§Ù„Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª': 'Search notes',
-  'Ø§Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª...': 'Search notes...', 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬ Ù…Ø·Ø§Ø¨Ù‚Ø©.': 'No matching results.',
-  'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø¨Ø¹Ø¯.': 'No notes yet.', 'Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ø­ØªÙˆÙ‰ Ø¨Ø¹Ø¯': 'No content yet',
-  'ØªÙØ­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§': 'Changes are saved automatically', 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª': 'Could not save changes',
-  'Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©': 'Note title', 'Ù…Ø­ØªÙˆÙ‰ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©': 'Note content', 'Ø­Ø°Ù Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©': 'Delete note',
-  'Ø­Ø°Ù Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©ØŸ': 'Delete note?', 'Ù„Ù† ØªØªÙ…ÙƒÙ† Ù…Ù† Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ù‡Ø°Ù‡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¹Ø¯ Ø­Ø°ÙÙ‡Ø§.': 'You will not be able to recover this note after deleting it.',
-  'Ø§Ø¨Ø¯Ø£ Ù…Ù„Ø§Ø­Ø¸Ø© Ø¬Ø¯ÙŠØ¯Ø©': 'Start a new note', 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬': 'No results', 'Ø¬Ø±Ù‘Ø¨ Ø§Ù„Ø¨Ø­Ø« Ø¨ÙƒÙ„Ù…Ø§Øª Ù…Ø®ØªÙ„ÙØ©.': 'Try different search terms.',
-  'Ø£Ù†Ø´Ø¦ Ù…Ù„Ø§Ø­Ø¸Ø© Ù…Ø³ØªÙ‚Ù„Ø© ÙˆØ§Ø­ÙØ¸ Ø£ÙÙƒØ§Ø±Ùƒ Ù‡Ù†Ø§.': 'Create a standalone note and save your ideas here.',
-  'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯': 'New project', 'ÙÙƒØ±Ø©': 'Idea', 'Ø¥Ø¨Ø¯Ø§Ø¹': 'Creativity', 'Ù‡Ø¯Ù': 'Goal', 'ØªÙÙƒÙŠØ±': 'Thinking', 'Ø­Ù„': 'Solution', 'Ø§ØªØ¬Ø§Ù‡': 'Direction', 'Ø®Ø±ÙŠØ·Ø©': 'Map', 'ØªØ¹Ù„Ù…': 'Learning', 'Ù‚Ø±Ø§Ø¡Ø©': 'Reading', 'Ù…Ù„Ø§Ø­Ø¸Ø©': 'Note', 'Ø¨Ø­Ø«': 'Search', 'Ø§Ø³ØªÙƒØ´Ø§Ù': 'Explore', 'ØªØ¬Ø±Ø¨Ø© Ø¹Ù„Ù…ÙŠØ©': 'Experiment', 'Ø¹Ù„ÙˆÙ…': 'Science', 'Ù…Ù‡Ù…': 'Important', 'Ù‚ÙŠÙ…Ø©': 'Value', 'Ù†Ù…Ùˆ': 'Growth', 'Ù…ÙƒØªÙ…Ù„': 'Completed', 'Ø³Ø±ÙŠØ¹': 'Quick', 'Ù†Ù‚Ø§Ø´': 'Discussion', 'ØªØ¹Ø§ÙˆÙ†': 'Collaboration', 'ÙØ±ÙŠÙ‚': 'Team', 'Ø¥Ø¹Ø¯Ø§Ø¯': 'Settings', 'Ø¹Ù…Ù„': 'Work', 'ØªØ«Ø¨ÙŠØª': 'Pin', 'Ø§Ù†Ø·Ù„Ø§Ù‚': 'Launch', 'Ø®ÙˆØ§Ø·Ø±': 'Thoughts', 'Ø±Ø§Ø¨Ø·': 'Link', 'Ø¨ÙŠØ§Ù†Ø§Øª': 'Data', 'Ù…ÙˆØ¹Ø¯': 'Appointment', 'Ø®Ø·Ø© Ø²Ù…Ù†ÙŠØ©': 'Timeline', 'Ù…Ø¯Ø©': 'Duration', 'ØªÙ†Ø¨ÙŠÙ‡': 'Reminder', 'Ø¥Ù†Ø¬Ø§Ø²': 'Achievement', 'Ù…Ø±Ø­Ù„Ø©': 'Stage', 'ØªØ­Ø°ÙŠØ±': 'Warning', 'Ù…ØªÙˆÙ‚Ù': 'Paused', 'ØªÙ‚Ø¯Ù…': 'Progress', 'ØªØµÙ†ÙŠÙ': 'Category', 'ØªÙ‚Ù†ÙŠØ©': 'Technology', 'Ø³Ø­Ø§Ø¨Ø©': 'Cloud',
-  'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†': 'Untitled map', 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†': 'Untitled', 'ÙŠÙ…ÙŠÙ†Ù‹Ø§': 'on the right', 'ÙŠØ³Ø§Ø±Ù‹Ø§': 'on the left', 'Ø§ÙØªØ­ Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Open node note', 'Ø§Ø³Ù… Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Node name', 'ØªØ­Ø±ÙŠØ± Ø§Ø³Ù… Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Edit node name', 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¬Ø¯ÙŠØ¯Ø©': 'New note', 'ÙÙƒØ±Ø© ÙØ±Ø¹ÙŠØ©': 'Sub-idea', 'ÙÙƒØ±ØªÙŠ Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©': 'My new idea',
-  'ØªØ¹Ø°Ø± ØªØµØ¯ÙŠØ± Ø§Ù„ØµÙˆØ±Ø©. Ø¬Ø±Ù‘Ø¨ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ø¨Ø¹Ø¯ Ø¸Ù‡ÙˆØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„.': 'Could not export the image. Try again after the map has fully loaded.', 'ØªØ¹Ø°Ø± ØªØµØ¯ÙŠØ± SVG. Ø¬Ø±Ù‘Ø¨ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ø¨Ø¹Ø¯ Ø¸Ù‡ÙˆØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„.': 'Could not export SVG. Try again after the map has fully loaded.', '- Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¹Ù‚Ø¯': '- No nodes', '- Ù„Ø§ ØªÙˆØ¬Ø¯ Ø±ÙˆØ§Ø¨Ø·': '- No links', 'Ø®Ø±ÙŠØ·Ø© Ù…Ø³ØªÙˆØ±Ø¯Ø©': 'Imported map', 'Ø§Ù„Ù…Ù„Ù ØºÙŠØ± ØµØ§Ù„Ø­ Ø£Ùˆ Ù„Ø§ ÙŠØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ø®Ø±ÙŠØ·Ø© Ù…Ø­ÙÙˆØ¸Ø©.': 'The file is invalid or does not contain a saved map.',
-  'Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬': 'App settings', 'ØºÙŠÙ‘Ø± Ù„ØºØ© Ø§Ù„ÙˆØ§Ø¬Ù‡Ø© ÙˆÙ…Ø¸Ù‡Ø± Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬.': 'Change the app language and appearance.', 'Ø§Ù„Ù„ØºØ©': 'Language', 'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©': 'Arabic', 'Ø§Ù„Ù…Ø¸Ù‡Ø±': 'Appearance', 'Ù†Ù‡Ø§Ø±ÙŠ': 'Light', 'Ù„ÙŠÙ„ÙŠ': 'Dark', 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª': 'Close settings', 'Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'Save project backup',
-  'Ø­ÙØ¸ ØªØºÙŠÙŠØ±Ø§Øª Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ØŸ': 'Save project changes?', 'Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'the project', 'Ù‚Ø¨Ù„ Ø¥ØºÙ„Ø§Ù‚Ù‡ØŸ': 'before closing it?', 'Ø­ÙØ¸ ÙˆØ¥ØºÙ„Ø§Ù‚': 'Save and close', 'Ø¥ØºÙ„Ø§Ù‚ Ø¨Ø¯ÙˆÙ† Ø­ÙØ¸': 'Close without saving', 'Ø¥Ù„ØºØ§Ø¡': 'Cancel', 'ÙƒÙ„ Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹': 'All projects', 'ÙˆØ±Ù‚Ø©': 'Waraqa', 'Ù…Ø³Ø§Ø­Ø© Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ': 'Your projects', 'Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù†Ù‡Ø§Ø±ÙŠ': 'Light mode', 'Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù„ÙŠÙ„ÙŠ': 'Dark mode', 'Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ù…Ø´Ø±ÙˆØ¹': 'Import project', 'Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„': 'Workspace', 'Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ': 'Your projects', 'ÙƒÙ„ Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯.': 'All your mind maps in one place.', 'Ø§Ø¨Ø¯Ø£ Ø£ÙˆÙ„ Ù…Ø´Ø±ÙˆØ¹ Ù„Ùƒ': 'Start your first project', 'Ø£Ù†Ø´Ø¦ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© Ø¬Ø¯ÙŠØ¯Ø© Ø£Ùˆ Ø§Ø³ØªÙˆØ±Ø¯ Ù…Ø´Ø±ÙˆØ¹Ù‹Ø§ Ù…Ø­ÙÙˆØ¸Ù‹Ø§.': 'Create a new mind map or import a saved project.', 'Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø´Ø±ÙˆØ¹': 'Create project', 'Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ØŸ': 'Delete project?', 'ØŸ Ø³ÙŠØªÙ… Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ Ù†Ù‡Ø§Ø¦ÙŠÙ‹Ø§.': '? This project will be deleted permanently.', 'Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'Delete project',
-  'Ù…Ø´Ø±ÙˆØ¹ÙŠ Ø§Ù„Ø³Ø§Ø¨Ù‚': 'Previous project', 'ÙƒÙ„ Ù…Ø´Ø±ÙˆØ¹ ÙŠØ¶Ù… Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ.': 'Each project contains its mind maps and notes.', 'Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø®Ø±ÙŠØ·Ø©': 'Import map', 'Ø£Ù†Ø´Ø¦ Ù…Ø´Ø±ÙˆØ¹Ù‹Ø§ ÙŠØ¬Ù…Ø¹ Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ.': 'Create a project to organize mind maps and notes.', 'Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'Project workspace', 'Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯.': 'Your mind maps and notes in one place.', 'Ø®Ø±ÙŠØ·Ø© Ø¬Ø¯ÙŠØ¯Ø©': 'New mind map', 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø©ØŸ': 'Delete mind map?', 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Delete mind map', 'ÙƒÙ„ Ø§Ù„Ø®Ø±Ø§Ø¦Ø· ÙˆØ§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ù„Ù…ÙˆØ¬ÙˆØ¯Ø© Ø¨Ø¯Ø§Ø®Ù„Ù‡ Ù†Ù‡Ø§Ø¦ÙŠÙ‹Ø§.': 'and all its mind maps and notes permanently.', 'ØªØ¹Ø°Ø± Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.': 'Could not create the note. Browser storage may be full.',
-  'Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„ØªØ·Ø¨ÙŠÙ‚': 'Application menu', 'Ù…Ù„Ù': 'File', 'Ø­ÙØ¸ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'Save project', 'Ø¥Ø¹Ø§Ø¯Ø© ØªØ³Ù…ÙŠØ© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹...': 'Rename project...', 'Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø®Ø±ÙŠØ·Ø©...': 'Import map...', 'ØªØµØ¯ÙŠØ± ØµÙˆØ±Ø© PNG': 'Export PNG image', 'ØªØµØ¯ÙŠØ± ØµÙˆØ±Ø© SVG': 'Export SVG image', 'ØªØµØ¯ÙŠØ± Markdown': 'Export Markdown', 'ØªØµØ¯ÙŠØ± JSON': 'Export JSON', 'ØªØ­Ø±ÙŠØ±': 'Edit', 'ØªØ±Ø§Ø¬Ø¹': 'Undo', 'Ø¥Ø¹Ø§Ø¯Ø©': 'Redo', 'Ù†Ø³Ø® Ø§Ù„ÙØ±Ø¹ ÙˆÙØ±ÙˆØ¹Ù‡': 'Copy branch and descendants', 'Ù†Ø³Ø® Ø§Ù„Ø¹Ù‚Ø¯Ø© ÙˆÙØ±ÙˆØ¹Ù‡Ø§': 'Copy node and descendants', 'Ù„ØµÙ‚ Ø§Ù„ÙØ±Ø¹ ÙˆÙØ±ÙˆØ¹Ù‡': 'Paste branch and descendants', 'Ù„ØµÙ‚ Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Paste node', 'ØªÙƒØ±Ø§Ø± Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Duplicate node', 'Ø­Ø°Ù Ø§Ù„Ù…Ø­Ø¯Ø¯': 'Delete selected', 'Ø¹Ø±Ø¶': 'View', 'Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ø®Ø±ÙŠØ·Ø©...': 'Search the map...', 'Ø¥Ø®ÙØ§Ø¡ Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª': 'Hide tools panel', 'Ø¥Ø¸Ù‡Ø§Ø± Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª': 'Show tools panel', 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ù…ØµØºØ±Ø©': 'Hide minimap', 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ù…ØµØºØ±Ø©': 'Show minimap', 'ØªØ±ØªÙŠØ¨ Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Arrange map',
-  'Ø§Ù„Ø£Ø¯ÙˆØ§Øª': 'Tools', 'Ø£Ø¶Ù Ø¥Ù„Ù‰ Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Add to map', 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Hide map', 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Show map', 'ÙÙƒØ±Ø© Ø¬Ø¯ÙŠØ¯Ø©': 'New idea', 'ÙØ±Ø¹ ÙŠÙ…ÙŠÙ†': 'Branch right', 'ÙØ±Ø¹ ÙŠØ³Ø§Ø±': 'Branch left', 'Ø¥Ø¯Ø±Ø§Ø¬ ÙØ±Ø¹ ÙŠÙ…ÙŠÙ†': 'Insert branch right', 'Ø¥Ø¯Ø±Ø§Ø¬ ÙØ±Ø¹ ÙŠØ³Ø§Ø±': 'Insert branch left', 'ØªÙ†Ø¸ÙŠÙ… Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Organize map', 'ØªØ±ØªÙŠØ¨ Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ù„Ù„Ø£Ù…Ø§Ù…': 'Arrange map forward', 'Ø±Ø¨Ø· Ø§Ù„Ø£ÙÙƒØ§Ø±': 'Connect ideas', 'Ø§Ø³Ø­Ø¨ Ù…Ù† Ø§Ù„Ù†Ù‚Ø·Ø© Ø¹Ù„Ù‰ Ø·Ø±Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø¥Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ø±Ø¨Ø·Ù‡Ù…Ø§. Ø§Ø¶ØºØ· ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø³Ù‡Ù… Ù„Ø­Ø°ÙÙ‡.': 'Drag from a node handle to another node to connect them. Right-click a connector to delete it.', 'Ø´ÙƒÙ„ Ø§Ù„Ø³Ù‡Ù…': 'Connector style', 'Ù…ØªØ¯Ø±Ø¬': 'Smooth step', 'Ù…Ù†Ø­Ù†ÙŠ': 'Curved', 'Ù…Ø³ØªÙ‚ÙŠÙ…': 'Straight', 'Ù„ÙˆÙ† ÙˆØ³ÙÙ…Ùƒ Ø§Ù„Ø³Ù‡Ù…': 'Connector color and width', 'Ø±ÙÙŠØ¹': 'Thin', 'Ù…ØªÙˆØ³Ø·': 'Medium', 'Ø¹Ø±ÙŠØ¶': 'Thick', 'Ø¹Ø±ÙŠØ¶ Ø¬Ø¯Ù‹Ø§': 'Extra thick', 'Ø±Ø£Ø³ Ø§Ù„Ø³Ù‡Ù…': 'Arrowhead', 'Ù…Ù…ØªÙ„Ø¦': 'Filled', 'Ù…ÙØªÙˆØ­': 'Open', 'Ø¨Ø¯ÙˆÙ† Ø±Ø£Ø³': 'None', 'ØªÙ†Ø³ÙŠÙ‚ Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Node appearance', 'Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©': 'New node color', 'Ù†Øµ Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©': 'Selected node text', 'Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©': 'Choose new node color', 'Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ù…Ø®ØµØµ': 'Choose a custom color', 'ØªØ­ÙƒÙ… Ø³Ø±ÙŠØ¹': 'Quick controls', 'ÙØªØ­': 'Expand', 'Ø·ÙŠ': 'Collapse', 'ØªÙƒØ±Ø§Ø±': 'Duplicate', 'Ø­Ø°Ù': 'Delete', 'Ø±Ø¨Ø· Ø§Ù„Ù…Ø­Ø¯Ø¯': 'Connect selected', 'ÙƒÙ„ ÙÙƒØ±Ø© ØªØ¨Ø¯Ø£ Ù…Ù† Ù‡Ù†Ø§': 'Every idea starts here', 'Ù…Ø³Ø§Ø­Ø© Ø£ÙÙƒØ§Ø±Ùƒ Ù…ÙØªÙˆØ­Ø©': 'Your idea space is ready', 'Ø£Ø¶Ù ÙÙƒØ±ØªÙƒ Ø§Ù„Ø£ÙˆÙ„Ù‰ØŒ Ø«Ù… Ø¯Ø¹ Ø§Ù„Ø£ÙÙƒØ§Ø± ØªØªÙØ±Ø¹ ÙˆØªØªØµÙ„ Ø¨Ø¨Ø¹Ø¶Ù‡Ø§.': 'Add your first idea, then let it branch out and connect to others.', 'Ø£Ø¶Ù Ø£ÙˆÙ„ ÙÙƒØ±Ø©': 'Add your first idea', 'Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø±Ø³Ù…': 'Canvas', 'Ø§Ø³Ø­Ø¨ Ø§Ù„Ø¹Ù‚Ø¯ Ù„ØªØ±ØªÙŠØ¨Ù‡Ø§': 'Drag nodes to arrange them', 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Node note', 'Ø¥ÙŠÙ…ÙˆØ¬ÙŠ Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Node emoji', 'Ø§Ù„Ø±Ø³ÙˆÙ…Ø§Øª Ù…Ù† Twemoji': 'Emoji artwork by Twemoji', 'Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Node color', 'ØªÙØ­ÙØ¸ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø© Ù…Ø¹ Ù‡Ø°Ù‡ Ø§Ù„Ø¹Ù‚Ø¯Ø© ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§': 'This note is saved with the node automatically', 'ØªÙ†Ø¸ÙŠÙ… Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ': 'Organize your projects', 'Ù…Ø§ Ø§Ø³Ù… Ù…Ø´Ø±ÙˆØ¹ÙƒØŸ': 'What is your project called?', 'Ø§Ø®ØªØ± Ø§Ø³Ù…Ù‹Ø§ ÙˆØ§Ø¶Ø­Ù‹Ø§ ÙŠØ³Ù‡Ù„ Ø¹Ù„ÙŠÙƒ Ø§Ù„ÙˆØµÙˆÙ„ Ø¥Ù„ÙŠÙ‡ Ù„Ø§Ø­Ù‚Ù‹Ø§.': 'Choose a clear name so you can find it easily later.', 'Ø§Ø³Ù… Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'Project name', 'Ø­ÙØ¸ Ø§Ù„Ø§Ø³Ù…': 'Save name', 'Ù…Ø³Ø§Ø¹Ø¯Ø©': 'Help', 'Ù…Ø³Ø­ Ø§Ù„ØªØ­Ø¯ÙŠØ¯': 'Clear selection', 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø¨Ø­Ø«': 'Close search', 'Ø§Ù„Ø¹ÙˆØ¯Ø© Ø¥Ù„Ù‰ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹': 'Back to all projects', 'Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Window bar', 'Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Window controls', 'ØªØµØºÙŠØ±': 'Minimize', 'ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Minimize window', 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©': 'Restore', 'ØªÙƒØ¨ÙŠØ±': 'Maximize', 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Restore window', 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Maximize window', 'Ø¥ØºÙ„Ø§Ù‚': 'Close', 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Close window',
-  'Ù…Ø´Ø±ÙˆØ¹ Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†': 'Untitled project', 'Ø¹Ù‚Ø¯Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†': 'Untitled node', 'Ø§ÙƒØªØ¨ Ù…Ù„Ø§Ø­Ø¸ØªÙƒ Ù‡Ù†Ø§...': 'Write your note here...',
-  'Ù„ÙˆØ­Ø© Ø§Ù„Ø£Ø¯ÙˆØ§Øª': 'Tools panel', 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©': 'Hide note', 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©': 'Selected node note', 'Ø§Ø®ØªÙŠØ§Ø± Ø¥ÙŠÙ…ÙˆØ¬ÙŠ Ù„Ù„Ø¹Ù‚Ø¯Ø©': 'Choose node emoji', 'Ø¨Ø¯ÙˆÙ† Ø¥ÙŠÙ…ÙˆØ¬ÙŠ': 'No emoji', 'Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©': 'Selected node color', 'Ù„ÙˆÙ† Ù…Ø®ØµØµ Ù„Ù„Ø¹Ù‚Ø¯Ø©': 'Custom node color',
-  'Ø§Ø¶ØºØ· Ù„Ø·ÙŠ Ø£Ùˆ ÙØªØ­ Ø§Ù„ÙØ±ÙˆØ¹ ÙŠÙ…ÙŠÙ†Ù‹Ø§': 'Click to collapse or expand branches on the right', 'Ø§Ø¶ØºØ· Ù„Ø·ÙŠ Ø£Ùˆ ÙØªØ­ Ø§Ù„ÙØ±ÙˆØ¹ ÙŠØ³Ø§Ø±Ù‹Ø§': 'Click to collapse or expand branches on the left',
-  'ØªØ­Ø¯ÙŠØ¯ Ø¬Ù…Ø§Ø¹ÙŠ': 'Multi-select', 'Ø¥Ù†Ù‡Ø§Ø¡ Ø§Ù„ØªØ­Ø¯ÙŠØ¯': 'Done selecting', 'ØªØ­Ø¯ÙŠØ¯ Ø¹Ø¯Ø© Ø¹Ù‚Ø¯ Ø¨Ø§Ù„Ø¶ØºØ· Ø£Ùˆ Ø¨Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø³Ø§Ø­Ø©': 'Select several nodes by tapping or dragging a box on the canvas',
-  'Ø§Ø¶ØºØ· Ø§Ù„Ø¹Ù‚Ø¯ Ù„ØªØ­Ø¯ÙŠØ¯Ù‡Ø§ Ø£Ùˆ Ø§Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹Ù‹Ø§': 'Tap nodes to select them, or drag a box', 'Ø§Ø®ØªØ± Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ù„Ø±Ø¨Ø·': 'Choose another node to link', 'Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø±Ø¨Ø·': 'Cancel linking',
-  'Ù†Ù…Ø· Ø§Ù„ØªØ±ØªÙŠØ¨': 'Layout style', 'Ø´Ø¬Ø±Ø©': 'Tree', 'ØªÙ„Ù‚Ø§Ø¦ÙŠ': 'Auto',
-  'Ø£Ø³Ø§Ø³ÙŠØ§Øª Ø§Ù„Ù„Ù…Ø³': 'Touch basics',
-  'Ø¥ØµØ¨Ø¹ ÙˆØ§Ø­Ø¯ ÙŠØ­Ø±Ù‘Ùƒ Ø§Ù„Ø®Ø±ÙŠØ·Ø©ØŒ ÙˆØ¥ØµØ¨Ø¹Ø§Ù† Ù„Ù„ØªÙƒØ¨ÙŠØ± ÙˆØ§Ù„ØªØµØºÙŠØ±.': 'One finger moves the map, two fingers zoom in and out.',
-  'Ø§Ø¶ØºØ· Ù…Ø·ÙˆÙ„Ù‹Ø§ Ø¹Ù„Ù‰ Ø£ÙŠ Ø¹Ù‚Ø¯Ø© Ù„Ø¨Ø¯Ø¡ Ø§Ù„Ø±Ø¨Ø·ØŒ Ø«Ù… Ø§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ø¥ØªÙ…Ø§Ù…Ù‡.': 'Long-press any node to start linking, then tap another node to finish.',
-  'Ø²Ø± Ø§Ù„Ø±Ø¬ÙˆØ¹ ÙÙŠ Ø§Ù„Ù‡Ø§ØªÙ ÙŠØºÙ„Ù‚ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª ÙˆØ§Ù„Ù‚ÙˆØ§Ø¦Ù… ÙˆØ§Ø­Ø¯Ù‹Ø§ ÙˆØ§Ø­Ø¯Ù‹Ø§.': 'On phones, the back button closes the notes panel and menus one by one.',
-  'Ø§Ø±Ø¨Ø· Ø¹Ù‚Ø¯ØªÙŠÙ† Ø¨Ø§Ù„Ø³Ø­Ø¨ Ù…Ù† Ù†Ù‚Ø·Ø© Ø·Ø±Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø¥Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ØŒ Ø£Ùˆ Ø¨Ø§Ù„Ø¶ØºØ· Ø§Ù„Ù…Ø·ÙˆÙ„ Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø«Ù… Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰. ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø³Ù‡Ù… ÙŠØ­Ø°ÙÙ‡.': 'Link two nodes by dragging from a node handle to another node, or long-press a node then tap another. Right-click a connector deletes it.',
-  'Ø²Ø± Â«ØªØ­Ø¯ÙŠØ¯ Ø¬Ù…Ø§Ø¹ÙŠÂ» ÙÙŠ Ø§Ù„Ù„ÙˆØ­Ø© ÙŠÙØ¹Ù‘Ù„ ØªØ­Ø¯ÙŠØ¯ Ø¹Ø¯Ø© Ø¹Ù‚Ø¯ Ø¨Ø§Ù„Ø¶ØºØ· Ø£Ùˆ Ø¨Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø³Ø§Ø­Ø© (ÙÙŠ Ø§Ù„Ø­Ø§Ø³ÙˆØ¨ Ø£ÙŠØ¶Ù‹Ø§ Ctrl + ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ†).': 'The â€œMulti-selectâ€ tool selects several nodes by tapping or dragging a box on the canvas (also Ctrl + right-click drag on desktop).',
+  'الخريطة الذهنية': 'Mind map', 'الملاحظات': 'Notes', 'أدوات ورقة': 'Waraqa tools',
+  'مساحة الملاحظات': 'Notes workspace', 'إنشاء ملاحظة': 'Create note', 'البحث في الملاحظات': 'Search notes',
+  'ابحث في الملاحظات...': 'Search notes...', 'لا توجد نتائج مطابقة.': 'No matching results.',
+  'لا توجد ملاحظات بعد.': 'No notes yet.', 'لا يوجد محتوى بعد': 'No content yet',
+  'تُحفظ التغييرات تلقائيًا': 'Changes are saved automatically', 'تعذر حفظ التغييرات': 'Could not save changes',
+  'عنوان الملاحظة': 'Note title', 'محتوى الملاحظة': 'Note content', 'حذف الملاحظة': 'Delete note',
+  'حذف الملاحظة؟': 'Delete note?', 'لن تتمكن من استعادة هذه الملاحظة بعد حذفها.': 'You will not be able to recover this note after deleting it.',
+  'ابدأ ملاحظة جديدة': 'Start a new note', 'لا توجد نتائج': 'No results', 'جرّب البحث بكلمات مختلفة.': 'Try different search terms.',
+  'أنشئ ملاحظة مستقلة واحفظ أفكارك هنا.': 'Create a standalone note and save your ideas here.',
+  'مشروع جديد': 'New project', 'فكرة': 'Idea', 'إبداع': 'Creativity', 'هدف': 'Goal', 'تفكير': 'Thinking', 'حل': 'Solution', 'اتجاه': 'Direction', 'خريطة': 'Map', 'تعلم': 'Learning', 'قراءة': 'Reading', 'ملاحظة': 'Note', 'بحث': 'Search', 'استكشاف': 'Explore', 'تجربة علمية': 'Experiment', 'علوم': 'Science', 'مهم': 'Important', 'قيمة': 'Value', 'نمو': 'Growth', 'مكتمل': 'Completed', 'سريع': 'Quick', 'نقاش': 'Discussion', 'تعاون': 'Collaboration', 'فريق': 'Team', 'إعداد': 'Settings', 'عمل': 'Work', 'تثبيت': 'Pin', 'انطلاق': 'Launch', 'خواطر': 'Thoughts', 'رابط': 'Link', 'بيانات': 'Data', 'موعد': 'Appointment', 'خطة زمنية': 'Timeline', 'مدة': 'Duration', 'تنبيه': 'Reminder', 'إنجاز': 'Achievement', 'مرحلة': 'Stage', 'تحذير': 'Warning', 'متوقف': 'Paused', 'تقدم': 'Progress', 'تصنيف': 'Category', 'تقنية': 'Technology', 'سحابة': 'Cloud',
+  'خريطة بدون عنوان': 'Untitled map', 'بدون عنوان': 'Untitled', 'يمينًا': 'on the right', 'يسارًا': 'on the left', 'افتح ملاحظة العقدة': 'Open node note', 'اسم العقدة': 'Node name', 'تحرير اسم العقدة': 'Edit node name', 'ملاحظة جديدة': 'New note', 'فكرة فرعية': 'Sub-idea', 'فكرتي الجديدة': 'My new idea',
+  'تعذر تصدير الصورة. جرّب مرة أخرى بعد ظهور الخريطة بالكامل.': 'Could not export the image. Try again after the map has fully loaded.', 'تعذر تصدير SVG. جرّب مرة أخرى بعد ظهور الخريطة بالكامل.': 'Could not export SVG. Try again after the map has fully loaded.', '- لا توجد عقد': '- No nodes', '- لا توجد روابط': '- No links', 'خريطة مستوردة': 'Imported map', 'الملف غير صالح أو لا يحتوي على خريطة محفوظة.': 'The file is invalid or does not contain a saved map.',
+  'إعدادات البرنامج': 'App settings', 'غيّر لغة الواجهة ومظهر البرنامج.': 'Change the app language and appearance.', 'اللغة': 'Language', 'العربية': 'Arabic', 'المظهر': 'Appearance', 'نهاري': 'Light', 'ليلي': 'Dark', 'إغلاق الإعدادات': 'Close settings', 'حفظ نسخة المشروع': 'Save project backup',
+  'حفظ تغييرات المشروع؟': 'Save project changes?', 'المشروع': 'the project', 'قبل إغلاقه؟': 'before closing it?', 'حفظ وإغلاق': 'Save and close', 'إغلاق بدون حفظ': 'Close without saving', 'إلغاء': 'Cancel', 'كل المشاريع': 'All projects', 'ورقة': 'Waraqa', 'مساحة مشاريعك': 'Your projects', 'الوضع النهاري': 'Light mode', 'الوضع الليلي': 'Dark mode', 'استيراد مشروع': 'Import project', 'مساحة العمل': 'Workspace', 'مشاريعك': 'Your projects', 'كل خرائطك الذهنية في مكان واحد.': 'All your mind maps in one place.', 'ابدأ أول مشروع لك': 'Start your first project', 'أنشئ خريطة ذهنية جديدة أو استورد مشروعًا محفوظًا.': 'Create a new mind map or import a saved project.', 'إنشاء مشروع': 'Create project', 'حذف المشروع؟': 'Delete project?', '؟ سيتم حذف المشروع نهائيًا.': '? This project will be deleted permanently.', 'حذف المشروع': 'Delete project',
+  'مشروعي السابق': 'Previous project', 'كل مشروع يضم خرائطك الذهنية وملاحظاتك.': 'Each project contains its mind maps and notes.', 'استيراد خريطة': 'Import map', 'أنشئ مشروعًا يجمع خرائطك الذهنية وملاحظاتك.': 'Create a project to organize mind maps and notes.', 'مساحة المشروع': 'Project workspace', 'خرائطك الذهنية وملاحظاتك في مكان واحد.': 'Your mind maps and notes in one place.', 'خريطة جديدة': 'New mind map', 'حذف الخريطة؟': 'Delete mind map?', 'حذف الخريطة': 'Delete mind map', 'كل الخرائط والملاحظات الموجودة بداخله نهائيًا.': 'and all its mind maps and notes permanently.', 'تعذر إنشاء الملاحظة. قد تكون مساحة التخزين ممتلئة.': 'Could not create the note. Browser storage may be full.',
+  'قائمة التطبيق': 'Application menu', 'ملف': 'File', 'حفظ المشروع': 'Save project', 'إعادة تسمية المشروع...': 'Rename project...', 'استيراد خريطة...': 'Import map...', 'تصدير صورة PNG': 'Export PNG image', 'تصدير صورة SVG': 'Export SVG image', 'تصدير Markdown': 'Export Markdown', 'تصدير JSON': 'Export JSON', 'تحرير': 'Edit', 'تراجع': 'Undo', 'إعادة': 'Redo', 'نسخ الفرع وفروعه': 'Copy branch and descendants', 'نسخ العقدة وفروعها': 'Copy node and descendants', 'لصق الفرع وفروعه': 'Paste branch and descendants', 'لصق العقدة': 'Paste node', 'تكرار العقدة': 'Duplicate node', 'حذف المحدد': 'Delete selected', 'عرض': 'View', 'بحث في الخريطة...': 'Search the map...', 'إخفاء شريط الأدوات': 'Hide tools panel', 'إظهار شريط الأدوات': 'Show tools panel', 'إخفاء الخريطة المصغرة': 'Hide minimap', 'إظهار الخريطة المصغرة': 'Show minimap', 'ترتيب الخريطة': 'Arrange map',
+  'الأدوات': 'Tools', 'أضف إلى الخريطة': 'Add to map', 'إخفاء الخريطة': 'Hide map', 'إظهار الخريطة': 'Show map', 'فكرة جديدة': 'New idea', 'فرع يمين': 'Branch right', 'فرع يسار': 'Branch left', 'إدراج فرع يمين': 'Insert branch right', 'إدراج فرع يسار': 'Insert branch left', 'تنظيم الخريطة': 'Organize map', 'ترتيب الخريطة للأمام': 'Arrange map forward', 'ربط الأفكار': 'Connect ideas', 'اسحب من النقطة على طرف العقدة إلى عقدة أخرى لربطهما. اضغط كليك يمين على السهم لحذفه.': 'Drag from a node handle to another node to connect them. Right-click a connector to delete it.', 'شكل السهم': 'Connector style', 'متدرج': 'Smooth step', 'منحني': 'Curved', 'مستقيم': 'Straight', 'لون وسُمك السهم': 'Connector color and width', 'رفيع': 'Thin', 'متوسط': 'Medium', 'عريض': 'Thick', 'عريض جدًا': 'Extra thick', 'رأس السهم': 'Arrowhead', 'ممتلئ': 'Filled', 'مفتوح': 'Open', 'بدون رأس': 'None', 'تنسيق العقدة': 'Node appearance', 'لون العقدة الجديدة': 'New node color', 'نص العقدة المحددة': 'Selected node text', 'اختيار لون العقدة الجديدة': 'Choose new node color', 'اختيار لون مخصص': 'Choose a custom color', 'تحكم سريع': 'Quick controls', 'فتح': 'Expand', 'طي': 'Collapse', 'تكرار': 'Duplicate', 'حذف': 'Delete', 'ربط المحدد': 'Connect selected', 'كل فكرة تبدأ من هنا': 'Every idea starts here', 'مساحة أفكارك مفتوحة': 'Your idea space is ready', 'أضف فكرتك الأولى، ثم دع الأفكار تتفرع وتتصل ببعضها.': 'Add your first idea, then let it branch out and connect to others.', 'أضف أول فكرة': 'Add your first idea', 'مساحة الرسم': 'Canvas', 'اسحب العقد لترتيبها': 'Drag nodes to arrange them', 'ملاحظة العقدة': 'Node note', 'إيموجي العقدة': 'Node emoji', 'الرسومات من Twemoji': 'Emoji artwork by Twemoji', 'لون العقدة': 'Node color', 'تُحفظ الملاحظة مع هذه العقدة تلقائيًا': 'This note is saved with the node automatically', 'تنظيم مشاريعك': 'Organize your projects', 'ما اسم مشروعك؟': 'What is your project called?', 'اختر اسمًا واضحًا يسهل عليك الوصول إليه لاحقًا.': 'Choose a clear name so you can find it easily later.', 'اسم المشروع': 'Project name', 'حفظ الاسم': 'Save name', 'مساعدة': 'Help', 'مسح التحديد': 'Clear selection', 'إغلاق البحث': 'Close search', 'العودة إلى قائمة المشاريع': 'Back to all projects', 'شريط النافذة': 'Window bar', 'أزرار النافذة': 'Window controls', 'تصغير': 'Minimize', 'تصغير النافذة': 'Minimize window', 'استعادة': 'Restore', 'تكبير': 'Maximize', 'استعادة النافذة': 'Restore window', 'تكبير النافذة': 'Maximize window', 'إغلاق': 'Close', 'إغلاق النافذة': 'Close window',
+  'مشروع بدون عنوان': 'Untitled project', 'عقدة بدون عنوان': 'Untitled node', 'اكتب ملاحظتك هنا...': 'Write your note here...',
+  'لوحة الأدوات': 'Tools panel', 'إخفاء الملاحظة': 'Hide note', 'ملاحظة العقدة المحددة': 'Selected node note', 'اختيار إيموجي للعقدة': 'Choose node emoji', 'بدون إيموجي': 'No emoji', 'لون العقدة المحددة': 'Selected node color', 'لون مخصص للعقدة': 'Custom node color',
+  'اضغط لطي أو فتح الفروع يمينًا': 'Click to collapse or expand branches on the right', 'اضغط لطي أو فتح الفروع يسارًا': 'Click to collapse or expand branches on the left',
+  'تحديد جماعي': 'Multi-select', 'إنهاء التحديد': 'Done selecting', 'تحديد عدة عقد بالضغط أو بسحب مربع على المساحة': 'Select several nodes by tapping or dragging a box on the canvas',
+  'اضغط العقد لتحديدها أو اسحب مربعًا': 'Tap nodes to select them, or drag a box', 'اختر عقدة أخرى للربط': 'Choose another node to link', 'إلغاء الربط': 'Cancel linking',
+  'نمط الترتيب': 'Layout style', 'شجرة': 'Tree', 'تلقائي': 'Auto',
+  'أساسيات اللمس': 'Touch basics',
+  'إصبع واحد يحرّك الخريطة، وإصبعان للتكبير والتصغير.': 'One finger moves the map, two fingers zoom in and out.',
+  'اضغط مطولًا على أي عقدة لبدء الربط، ثم اضغط على عقدة أخرى لإتمامه.': 'Long-press any node to start linking, then tap another node to finish.',
+  'زر الرجوع في الهاتف يغلق الملاحظات والقوائم واحدًا واحدًا.': 'On phones, the back button closes the notes panel and menus one by one.',
+  'اربط عقدتين بالسحب من نقطة طرف العقدة إلى عقدة أخرى، أو بالضغط المطول على عقدة ثم الضغط على عقدة أخرى. كليك يمين على السهم يحذفه.': 'Link two nodes by dragging from a node handle to another node, or long-press a node then tap another. Right-click a connector deletes it.',
+  'زر «تحديد جماعي» في اللوحة يفعّل تحديد عدة عقد بالضغط أو بسحب مربع على المساحة (في الحاسوب أيضًا Ctrl + كليك يمين).': 'The â€œMulti-selectâ€ tool selects several nodes by tapping or dragging a box on the canvas (also Ctrl + right-click drag on desktop).',
 }
 function translateToEnglish(value) {
   const trimmed = value.trim()
   if (englishTranslations[trimmed]) return `${value.slice(0, value.indexOf(trimmed))}${englishTranslations[trimmed]}${value.slice(value.indexOf(trimmed) + trimmed.length)}`
-  const nodeCount = trimmed.match(/^(\d+) Ø¹Ù‚Ø¯Ø©$/)
+  const nodeCount = trimmed.match(/^(\d+) عقدة$/)
   if (nodeCount) return `${nodeCount[1]} nodes`
-  const linkCount = trimmed.match(/^(\d+) Ø±Ø§Ø¨Ø·$/)
+  const linkCount = trimmed.match(/^(\d+) رابط$/)
   if (linkCount) return `${linkCount[1]} links`
-  const selectedCount = trimmed.match(/^(\d+) Ø¹Ù‚Ø¯ Ù…Ø­Ø¯Ø¯Ø©$/)
+  const selectedCount = trimmed.match(/^(\d+) عقد محددة$/)
   if (selectedCount) return `${selectedCount[1]} nodes selected`
-  const projectCounts = trimmed.match(/^(\d+) Ø¹Ù‚Ø¯Ø© Â· (\d+) Ø±Ø§Ø¨Ø·$/)
+  const projectCounts = trimmed.match(/^(\d+) عقدة Â· (\d+) رابط$/)
   if (projectCounts) return `${projectCounts[1]} nodes Â· ${projectCounts[2]} links`
-  const tone = trimmed.match(/^Ù„ÙˆÙ† (.+)$/)
+  const tone = trimmed.match(/^لون (.+)$/)
   if (tone) return `Color ${tone[1]}`
-  const emoji = trimmed.match(/^Ø¥ÙŠÙ…ÙˆØ¬ÙŠ (.+)$/)
+  const emoji = trimmed.match(/^إيموجي (.+)$/)
   if (emoji) return `Emoji ${emoji[1]}`
-  if (trimmed.startsWith('Ø¢Ø®Ø± ØªØ¹Ø¯ÙŠÙ„: ')) return `Last edited: ${trimmed.slice('Ø¢Ø®Ø± ØªØ¹Ø¯ÙŠÙ„: '.length)}`
-  if (trimmed.startsWith('Ø¥ØºÙ„Ø§Ù‚ ')) return `Close ${trimmed.slice('Ø¥ØºÙ„Ø§Ù‚ '.length)}`
+  if (trimmed.startsWith('آخر تعديل: ')) return `Last edited: ${trimmed.slice('آخر تعديل: '.length)}`
+  if (trimmed.startsWith('إغلاق ')) return `Close ${trimmed.slice('إغلاق '.length)}`
   return value
 }
 function LocalizedContent({ language, children }) {
@@ -255,19 +255,19 @@ function runPageTransition(update, direction = 'forward') {
 }
 function WorkspaceBackupButton({ onClick, busy, disabled, language }) {
   const label = busy
-    ? language === 'en' ? 'Savingâ€¦' : 'Ø¬Ø§Ø±Ù Ø§Ù„Ø­ÙØ¸â€¦'
-    : language === 'en' ? 'Export item' : 'ØªØµØ¯ÙŠØ± Ø§Ù„Ø¹Ù†ØµØ±'
+    ? language === 'en' ? 'Savingâ€¦' : 'جارٍ الحفظ…'
+    : language === 'en' ? 'Export item' : 'تصدير العنصر'
   return (
-    <button className="workspace-backup-button" type="button" onClick={onClick} disabled={busy || disabled} title={language === 'en' ? 'Export a separate copy of the open item' : 'ØªØµØ¯ÙŠØ± Ù†Ø³Ø®Ø© Ù…Ø³ØªÙ‚Ù„Ø© Ù…Ù† Ø§Ù„Ø¹Ù†ØµØ± Ø§Ù„Ù…ÙØªÙˆØ­'}>
+    <button className="workspace-backup-button" type="button" onClick={onClick} disabled={busy || disabled} title={language === 'en' ? 'Export a separate copy of the open item' : 'تصدير نسخة مستقلة من العنصر المفتوح'}>
       <ArrowDownToLine size={16} />
       <span>{label}</span>
     </button>
   )
 }
 function DocumentImportButton({ onClick, language }) {
-  return <button className="workspace-backup-button document-import-button" type="button" onClick={onClick} title={language === 'en' ? 'Import an item into this project' : 'Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø¹Ù†ØµØ± Ø¥Ù„Ù‰ Ù‡Ø°Ø§ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹'}>
+  return <button className="workspace-backup-button document-import-button" type="button" onClick={onClick} title={language === 'en' ? 'Import an item into this project' : 'استيراد عنصر إلى هذا المشروع'}>
     <ArrowUpFromLine size={16} />
-    <span>{language === 'en' ? 'Import item' : 'Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø¹Ù†ØµØ±'}</span>
+    <span>{language === 'en' ? 'Import item' : 'استيراد عنصر'}</span>
   </button>
 }
 function readProjects() {
@@ -294,7 +294,7 @@ function readWorkspaces() {
     const notes = Array.isArray(storedNotes) ? storedNotes : []
     if (Array.isArray(storedWorkspaces)) {
       if (!storedWorkspaces.length && (projects.length || notes.length)) {
-        const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ÙŠ Ø§Ù„Ø³Ø§Ø¨Ù‚', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+        const workspace = { id: newProjectId(), title: 'مشروعي السابق', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
         localStorage.setItem(WORKSPACES_KEY, JSON.stringify([workspace]))
         localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects.map((project) => ({ ...project, workspaceId: workspace.id }))))
         localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes.map((note) => ({ ...note, workspaceId: workspace.id }))))
@@ -320,7 +320,7 @@ function readWorkspaces() {
       localStorage.setItem(WORKSPACES_KEY, JSON.stringify([]))
       return []
     }
-    const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ÙŠ Ø§Ù„Ø³Ø§Ø¨Ù‚', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+    const workspace = { id: newProjectId(), title: 'مشروعي السابق', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
     localStorage.setItem(WORKSPACES_KEY, JSON.stringify([workspace]))
     localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects.map((project) => ({ ...project, workspaceId: workspace.id }))))
     localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes.map((note) => ({ ...note, workspaceId: workspace.id }))))
@@ -343,7 +343,7 @@ function createProjectSavePoint(project) {
     Object.entries(value).filter(([key]) => !transientKeys.has(key)),
   )
   return {
-    title: project.title || 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯',
+    title: project.title || 'مشروع جديد',
     nodes: (project.nodes || []).map((node) => clean(node, new Set(['selected', 'dragging', 'measured', 'positionAbsolute']))),
     edges: (project.edges || []).map((edge) => clean(edge, new Set(['selected']))),
     edgeStyle: project.edgeStyle || 'smoothstep',
@@ -365,48 +365,48 @@ const toneColors = {
 }
 const tones = Object.keys(toneColors)
 const nodeEmojis = [
-  { emoji: 'ðŸ’¡', label: 'ÙÙƒØ±Ø©' },
-  { emoji: 'ðŸª„', label: 'Ø¥Ø¨Ø¯Ø§Ø¹' },
-  { emoji: 'ðŸŽ¯', label: 'Ù‡Ø¯Ù' },
-  { emoji: 'ðŸ§ ', label: 'ØªÙÙƒÙŠØ±' },
-  { emoji: 'ðŸ§©', label: 'Ø­Ù„' },
-  { emoji: 'ðŸ§­', label: 'Ø§ØªØ¬Ø§Ù‡' },
-  { emoji: 'ðŸ—ºï¸', label: 'Ø®Ø±ÙŠØ·Ø©' },
-  { emoji: 'ðŸ“š', label: 'ØªØ¹Ù„Ù…' },
-  { emoji: 'ðŸ“–', label: 'Ù‚Ø±Ø§Ø¡Ø©' },
-  { emoji: 'ðŸ“', label: 'Ù…Ù„Ø§Ø­Ø¸Ø©' },
-  { emoji: 'ðŸ”', label: 'Ø¨Ø­Ø«' },
-  { emoji: 'ðŸ”¬', label: 'Ø§Ø³ØªÙƒØ´Ø§Ù' },
-  { emoji: 'ðŸ§ª', label: 'ØªØ¬Ø±Ø¨Ø© Ø¹Ù„Ù…ÙŠØ©' },
-  { emoji: 'ðŸ§¬', label: 'Ø¹Ù„ÙˆÙ…' },
-  { emoji: 'â­', label: 'Ù…Ù‡Ù…' },
-  { emoji: 'ðŸ’Ž', label: 'Ù‚ÙŠÙ…Ø©' },
-  { emoji: 'ðŸŒ±', label: 'Ù†Ù…Ùˆ' },
-  { emoji: 'âœ…', label: 'Ù…ÙƒØªÙ…Ù„' },
-  { emoji: 'âš¡', label: 'Ø³Ø±ÙŠØ¹' },
-  { emoji: 'ðŸ’¬', label: 'Ù†Ù‚Ø§Ø´' },
-  { emoji: 'ðŸ¤', label: 'ØªØ¹Ø§ÙˆÙ†' },
-  { emoji: 'ðŸ‘¥', label: 'ÙØ±ÙŠÙ‚' },
-  { emoji: 'ðŸŽ¨', label: 'Ø¥Ø¨Ø¯Ø§Ø¹' },
-  { emoji: 'âš™ï¸', label: 'Ø¥Ø¹Ø¯Ø§Ø¯' },
-  { emoji: 'ðŸ› ï¸', label: 'Ø¹Ù…Ù„' },
-  { emoji: 'ðŸ“Œ', label: 'ØªØ«Ø¨ÙŠØª' },
-  { emoji: 'ðŸš€', label: 'Ø§Ù†Ø·Ù„Ø§Ù‚' },
-  { emoji: 'ðŸ’­', label: 'Ø®ÙˆØ§Ø·Ø±' },
-  { emoji: 'ðŸ”—', label: 'Ø±Ø§Ø¨Ø·' },
-  { emoji: 'ðŸ“Š', label: 'Ø¨ÙŠØ§Ù†Ø§Øª' },
-  { emoji: 'ðŸ“…', label: 'Ù…ÙˆØ¹Ø¯' },
-  { emoji: 'ðŸ—“ï¸', label: 'Ø®Ø·Ø© Ø²Ù…Ù†ÙŠØ©' },
-  { emoji: 'â³', label: 'Ù…Ø¯Ø©' },
-  { emoji: 'ðŸ””', label: 'ØªÙ†Ø¨ÙŠÙ‡' },
-  { emoji: 'ðŸ†', label: 'Ø¥Ù†Ø¬Ø§Ø²' },
-  { emoji: 'ðŸ', label: 'Ù…Ø±Ø­Ù„Ø©' },
-  { emoji: 'âš ï¸', label: 'ØªØ­Ø°ÙŠØ±' },
-  { emoji: 'â›”', label: 'Ù…ØªÙˆÙ‚Ù' },
-  { emoji: 'ðŸ“ˆ', label: 'ØªÙ‚Ø¯Ù…' },
-  { emoji: 'ðŸ—‚ï¸', label: 'ØªØµÙ†ÙŠÙ' },
-  { emoji: 'ðŸ’»', label: 'ØªÙ‚Ù†ÙŠØ©' },
-  { emoji: 'â˜ï¸', label: 'Ø³Ø­Ø§Ø¨Ø©' },
+  { emoji: 'ðŸ’¡', label: 'فكرة' },
+  { emoji: 'ðŸª„', label: 'إبداع' },
+  { emoji: 'ðŸŽ¯', label: 'هدف' },
+  { emoji: 'ðŸ§ ', label: 'تفكير' },
+  { emoji: 'ðŸ§©', label: 'حل' },
+  { emoji: 'ðŸ§­', label: 'اتجاه' },
+  { emoji: 'ðŸ—ºï¸', label: 'خريطة' },
+  { emoji: 'ðŸ“š', label: 'تعلم' },
+  { emoji: 'ðŸ“–', label: 'قراءة' },
+  { emoji: 'ðŸ“', label: 'ملاحظة' },
+  { emoji: 'ðŸ”', label: 'بحث' },
+  { emoji: 'ðŸ”¬', label: 'استكشاف' },
+  { emoji: 'ðŸ§ª', label: 'تجربة علمية' },
+  { emoji: 'ðŸ§¬', label: 'علوم' },
+  { emoji: 'â­', label: 'مهم' },
+  { emoji: 'ðŸ’Ž', label: 'قيمة' },
+  { emoji: 'ðŸŒ±', label: 'نمو' },
+  { emoji: 'âœ…', label: 'مكتمل' },
+  { emoji: 'âš¡', label: 'سريع' },
+  { emoji: 'ðŸ’¬', label: 'نقاش' },
+  { emoji: 'ðŸ¤', label: 'تعاون' },
+  { emoji: 'ðŸ‘¥', label: 'فريق' },
+  { emoji: 'ðŸŽ¨', label: 'إبداع' },
+  { emoji: 'âš™ï¸', label: 'إعداد' },
+  { emoji: 'ðŸ› ï¸', label: 'عمل' },
+  { emoji: 'ðŸ“Œ', label: 'تثبيت' },
+  { emoji: 'ðŸš€', label: 'انطلاق' },
+  { emoji: 'ðŸ’­', label: 'خواطر' },
+  { emoji: 'ðŸ”—', label: 'رابط' },
+  { emoji: 'ðŸ“Š', label: 'بيانات' },
+  { emoji: 'ðŸ“…', label: 'موعد' },
+  { emoji: 'ðŸ—“ï¸', label: 'خطة زمنية' },
+  { emoji: 'â³', label: 'مدة' },
+  { emoji: 'ðŸ””', label: 'تنبيه' },
+  { emoji: 'ðŸ†', label: 'إنجاز' },
+  { emoji: 'ðŸ', label: 'مرحلة' },
+  { emoji: 'âš ï¸', label: 'تحذير' },
+  { emoji: 'â›”', label: 'متوقف' },
+  { emoji: 'ðŸ“ˆ', label: 'تقدم' },
+  { emoji: 'ðŸ—‚ï¸', label: 'تصنيف' },
+  { emoji: 'ðŸ’»', label: 'تقنية' },
+  { emoji: 'â˜ï¸', label: 'سحابة' },
 ]
 function EmojiGlyph({ emoji }) {
   const assetUrl = emojiDataUrl(emoji)
@@ -706,7 +706,7 @@ function readSavedMap() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
     return {
-      title: saved?.title || 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†',
+      title: saved?.title || 'خريطة بدون عنوان',
       nodes: Array.isArray(saved?.nodes) ? saved.nodes : [],
       edges: normalizeProjectHandles(saved || {}).edges,
       edgeStyle: saved?.edgeStyle || 'smoothstep',
@@ -715,7 +715,7 @@ function readSavedMap() {
       arrowHead: saved?.arrowHead || 'closed',
     }
   } catch {
-    return { title: 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†', nodes: [], edges: [], edgeStyle: 'smoothstep', edgeColor: '#9aaea4', edgeWidth: 2, arrowHead: 'closed' }
+    return { title: 'خريطة بدون عنوان', nodes: [], edges: [], edgeStyle: 'smoothstep', edgeColor: '#9aaea4', edgeWidth: 2, arrowHead: 'closed' }
   }
 }
 
@@ -728,7 +728,7 @@ function MapNode({ data, selected, width }) {
   const pendingLabelCaretRef = useRef(null)
   const label = data.label || ''
   const displayLabel = data.language === 'en' ? translateToEnglish(label) : label
-  const resizeText = displayLabel || (data.language === 'en' ? 'Untitled' : 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')
+  const resizeText = displayLabel || (data.language === 'en' ? 'Untitled' : 'بدون عنوان')
   const minNodeWidth = data.kind === 'idea' ? 190 : 150
   const minNodeHeight = Math.max(data.kind === 'idea' ? 76 : 64, Math.ceil((resizeText.length * 7.2) / Math.max(54, (width ?? 190) - 82)) * 18 + 30)
   const sourceHandle = (side, position) => (
@@ -741,7 +741,7 @@ function MapNode({ data, selected, width }) {
       style={{ top: '48%' }}
       title={data.language === 'en'
         ? `Click to collapse or expand branches ${side === 'right' ? 'on the right' : 'on the left'}`
-        : `Ø§Ø¶ØºØ· Ù„Ø·ÙŠ Ø£Ùˆ ÙØªØ­ Ø§Ù„ÙØ±ÙˆØ¹ ${side === 'right' ? 'ÙŠÙ…ÙŠÙ†Ù‹Ø§' : 'ÙŠØ³Ø§Ø±Ù‹Ø§'}`}
+        : `اضغط لطي أو فتح الفروع ${side === 'right' ? 'يمينًا' : 'يسارًا'}`}
       onClick={(event) => {
         event.stopPropagation()
         if (data.selectMode) { data.onToggleSelect?.(); return }
@@ -776,10 +776,10 @@ function MapNode({ data, selected, width }) {
   }
 
   const labelMentionTypes = [
-    { id: 'mind-map', title: data.language === 'en' ? 'Mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©' },
-    { id: 'task', title: data.language === 'en' ? 'Task' : 'Ù…Ù‡Ù…Ø©' },
-    { id: 'note', title: data.language === 'en' ? 'Note' : 'Ù…Ù„Ø§Ø­Ø¸Ø©' },
-    { id: 'flowchart', title: data.language === 'en' ? 'Flowchart' : 'Ù…Ø®Ø·Ø· Ø§Ù†Ø³ÙŠØ§Ø¨ÙŠ' },
+    { id: 'mind-map', title: data.language === 'en' ? 'Mind map' : 'خريطة ذهنية' },
+    { id: 'task', title: data.language === 'en' ? 'Task' : 'مهمة' },
+    { id: 'note', title: data.language === 'en' ? 'Note' : 'ملاحظة' },
+    { id: 'flowchart', title: data.language === 'en' ? 'Flowchart' : 'مخطط انسيابي' },
   ]
   const labelMentionContainers = labelMentionPicker?.kind === 'mind-map' ? data.workspaceProjects || [] : data.workspaceFlowcharts || []
   const labelMentionContainer = labelMentionContainers.find((item) => item.id === labelMentionPicker?.containerId)
@@ -814,7 +814,7 @@ function MapNode({ data, selected, width }) {
         ? (data.workspaceFlowcharts || []).find((flowchart) => flowchart.id === labelMentionPicker.containerId)
         : null
     if (!['task', 'note'].includes(labelMentionPicker.kind) && !container) return
-    const itemTitle = labelMentionPicker.kind === 'task' ? item.title || 'Ù…Ù‡Ù…Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†' : labelMentionPicker.kind === 'note' ? item.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†' : item.data?.label || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'
+    const itemTitle = labelMentionPicker.kind === 'task' ? item.title || 'مهمة بدون عنوان' : labelMentionPicker.kind === 'note' ? item.title || 'ملاحظة بدون عنوان' : item.data?.label || 'بدون عنوان'
     const containerTitle = container?.title || ''
     const prefix = labelMentionPicker.kind === 'mind-map' ? 'ðŸ§ ' : labelMentionPicker.kind === 'task' ? 'âœ“' : labelMentionPicker.kind === 'note' ? 'ðŸ“' : 'â†—'
     const mentionText = `@${prefix} ${containerTitle ? `${containerTitle} / ` : ''}${itemTitle}`
@@ -881,21 +881,21 @@ function MapNode({ data, selected, width }) {
         <button
           className="node-drag-handle"
           type="button"
-          aria-label={data.language === 'en' ? 'Drag node' : 'Ø§Ø³Ø­Ø¨ Ù„ØªØ­Ø±ÙŠÙƒ Ø§Ù„Ø¹Ù‚Ø¯Ø©'}
-          title={data.language === 'en' ? 'Drag to move node' : 'Ø§Ø³Ø­Ø¨ Ù„ØªØ­Ø±ÙŠÙƒ Ø§Ù„Ø¹Ù‚Ø¯Ø©'}
+          aria-label={data.language === 'en' ? 'Drag node' : 'اسحب لتحريك العقدة'}
+          title={data.language === 'en' ? 'Drag to move node' : 'اسحب لتحريك العقدة'}
         >
           <Move size={15} />
         </button>
       )}
-      <button className="node-icon nodrag" type="button" title={data.language === 'en' ? 'Open node note' : 'Ø§ÙØªØ­ Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø©'} aria-label={data.language === 'en' ? 'Open node note' : 'Ø§ÙØªØ­ Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø©'}>
+      <button className="node-icon nodrag" type="button" title={data.language === 'en' ? 'Open node note' : 'افتح ملاحظة العقدة'} aria-label={data.language === 'en' ? 'Open node note' : 'افتح ملاحظة العقدة'}>
         <Icon size={16} strokeWidth={1.8} />
       </button>
-      {data.emoji && <span className="node-emoji" aria-label={`${data.language === 'en' ? 'Emoji' : 'Ø¥ÙŠÙ…ÙˆØ¬ÙŠ'} ${data.emoji}`} title={data.emoji}><EmojiGlyph emoji={data.emoji} /></span>}
+      {data.emoji && <span className="node-emoji" aria-label={`${data.language === 'en' ? 'Emoji' : 'إيموجي'} ${data.emoji}`} title={data.emoji}><EmojiGlyph emoji={data.emoji} /></span>}
       {editing ? (
         <textarea
           ref={labelRef}
           className="node-label-input nodrag"
-          aria-label={data.language === 'en' ? 'Node name' : 'Ø§Ø³Ù… Ø§Ù„Ø¹Ù‚Ø¯Ø©'}
+          aria-label={data.language === 'en' ? 'Node name' : 'اسم العقدة'}
           value={label}
           rows={1}
           autoFocus
@@ -910,24 +910,24 @@ function MapNode({ data, selected, width }) {
           }}
         />
       ) : (
-        <div className="node-label node-label-button" role="button" tabIndex={0} onClick={startEditing} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); startEditing(event) } }} title={data.language === 'en' ? 'Edit node name' : 'ØªØ­Ø±ÙŠØ± Ø§Ø³Ù… Ø§Ù„Ø¹Ù‚Ø¯Ø©'}>
-          {data.labelMentions?.length ? renderLabelMentions() : (displayLabel || (data.language === 'en' ? 'Untitled' : 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'))}
+        <div className="node-label node-label-button" role="button" tabIndex={0} onClick={startEditing} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); startEditing(event) } }} title={data.language === 'en' ? 'Edit node name' : 'تحرير اسم العقدة'}>
+          {data.labelMentions?.length ? renderLabelMentions() : (displayLabel || (data.language === 'en' ? 'Untitled' : 'بدون عنوان'))}
         </div>
       )}
-      {editing && labelMentionPicker && <div className="map-node-mention-picker nodrag nopan" role="listbox" aria-label={data.language === 'en' ? 'Choose an item to mention' : 'Ø§Ø®ØªØ± Ø¹Ù†ØµØ±Ù‹Ø§ Ù„Ù…Ù†Ø´Ù†Ù‡'} onPointerDown={(event) => event.preventDefault()} onMouseDown={(event) => event.preventDefault()}>
+      {editing && labelMentionPicker && <div className="map-node-mention-picker nodrag nopan" role="listbox" aria-label={data.language === 'en' ? 'Choose an item to mention' : 'اختر عنصرًا لمنشنه'} onPointerDown={(event) => event.preventDefault()} onMouseDown={(event) => event.preventDefault()}>
         <div className="notes-mention-heading">
-          <strong>{labelMentionPicker.step === 'type' ? (data.language === 'en' ? 'Choose type' : 'Ø§Ø®ØªØ± Ø§Ù„Ù†ÙˆØ¹') : labelMentionPicker.step === 'container' ? (data.language === 'en' ? 'Choose map' : 'Ø§Ø®ØªØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø©') : (data.language === 'en' ? 'Choose item' : 'Ø§Ø®ØªØ± Ø§Ù„Ø¹Ù†ØµØ±')}</strong>
-          {labelMentionPicker.step !== 'type' && <button type="button" onClick={() => updateLabelMentionSearch(labelMentionPicker.step === 'item' && !['task', 'note'].includes(labelMentionPicker.kind) ? 'container' : 'type', labelMentionPicker.step === 'item' && !['task', 'note'].includes(labelMentionPicker.kind) ? labelMentionPicker.kind : null, labelMentionPicker.step === 'item' && !['task', 'note'].includes(labelMentionPicker.kind) ? labelMentionPicker.containerId : null)}>{data.language === 'en' ? 'Back' : 'Ø±Ø¬ÙˆØ¹'}</button>}
+          <strong>{labelMentionPicker.step === 'type' ? (data.language === 'en' ? 'Choose type' : 'اختر النوع') : labelMentionPicker.step === 'container' ? (data.language === 'en' ? 'Choose map' : 'اختر الخريطة') : (data.language === 'en' ? 'Choose item' : 'اختر العنصر')}</strong>
+          {labelMentionPicker.step !== 'type' && <button type="button" onClick={() => updateLabelMentionSearch(labelMentionPicker.step === 'item' && !['task', 'note'].includes(labelMentionPicker.kind) ? 'container' : 'type', labelMentionPicker.step === 'item' && !['task', 'note'].includes(labelMentionPicker.kind) ? labelMentionPicker.kind : null, labelMentionPicker.step === 'item' && !['task', 'note'].includes(labelMentionPicker.kind) ? labelMentionPicker.containerId : null)}>{data.language === 'en' ? 'Back' : 'رجوع'}</button>}
         </div>
         <div className="notes-mention-options">
           {labelMentionOptions.map((item) => labelMentionPicker.step === 'type' ? (
           <button type="button" role="option" key={item.id} onClick={() => updateLabelMentionSearch(item.id === 'task' || item.id === 'note' ? 'item' : 'container', item.id, null)}><strong>{item.title}</strong><small>{item.id === 'mind-map' ? data.workspaceProjects?.length || 0 : item.id === 'task' ? data.workspaceTasks?.length || 0 : item.id === 'note' ? data.workspaceNotes?.length || 0 : data.workspaceFlowcharts?.length || 0}</small></button>
           ) : labelMentionPicker.step === 'container' ? (
-            <button type="button" role="option" key={item.id} onClick={() => updateLabelMentionSearch('item', labelMentionPicker.kind, item.id)}><strong>{item.title || (data.language === 'en' ? 'Untitled' : 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</strong><small>{item.nodes?.length || 0}</small></button>
+            <button type="button" role="option" key={item.id} onClick={() => updateLabelMentionSearch('item', labelMentionPicker.kind, item.id)}><strong>{item.title || (data.language === 'en' ? 'Untitled' : 'بدون عنوان')}</strong><small>{item.nodes?.length || 0}</small></button>
           ) : (
-            <button type="button" role="option" key={item.id} onClick={() => insertLabelMention(item)}><strong>{labelMentionPicker.kind === 'task' || labelMentionPicker.kind === 'note' ? item.title : item.data?.label || (data.language === 'en' ? 'Untitled' : 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</strong></button>
+            <button type="button" role="option" key={item.id} onClick={() => insertLabelMention(item)}><strong>{labelMentionPicker.kind === 'task' || labelMentionPicker.kind === 'note' ? item.title : item.data?.label || (data.language === 'en' ? 'Untitled' : 'بدون عنوان')}</strong></button>
           ))}
-          {!labelMentionOptions.length && <span className="notes-mention-empty">{data.language === 'en' ? 'No matching items' : 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¹Ù†Ø§ØµØ± Ù…Ø·Ø§Ø¨Ù‚Ø©'}</span>}
+          {!labelMentionOptions.length && <span className="notes-mention-empty">{data.language === 'en' ? 'No matching items' : 'لا توجد عناصر مطابقة'}</span>}
         </div>
       </div>}
       {sourceHandle('left', Position.Left)}
@@ -1188,7 +1188,7 @@ function App() {
           await saveProjectsFolderHandle(handle)
         }
         if (!handle) {
-          window.alert(appLanguage === 'en' ? 'Choose a folder from the installed Waraqa desktop app, or use a browser that supports folder access.' : 'Ø§Ø®ØªØ± Ø§Ù„Ù…Ø¬Ù„Ø¯ Ù…Ù† Ù†Ø³Ø®Ø© ÙˆØ±Ù‚Ø© Ù„Ù„ÙƒÙ…Ø¨ÙŠÙˆØªØ± Ø£Ùˆ Ø§ÙØªØ­ Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬ Ø¨Ù…ØªØµÙØ­ ÙŠØ¯Ø¹Ù… Ø§Ù„ÙˆØµÙˆÙ„ Ù„Ù„Ù…Ø¬Ù„Ø¯Ø§Øª.')
+          window.alert(appLanguage === 'en' ? 'Choose a folder from the installed Waraqa desktop app, or use a browser that supports folder access.' : 'اختر المجلد من نسخة ورقة للكمبيوتر أو افتح البرنامج بمتصفح يدعم الوصول للمجلدات.')
           return false
         }
         let permission = await handle.queryPermission?.({ mode: 'readwrite' })
@@ -1225,7 +1225,7 @@ function App() {
     if (!(await ensureProjectsFolder())) return
     const workspace = {
       id: newProjectId(),
-      title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯',
+      title: 'مشروع جديد',
       createdAt: currentTimestamp(),
       updatedAt: currentTimestamp(),
     }
@@ -1244,7 +1244,7 @@ function App() {
     const note = {
       id: newProjectId(),
       workspaceId: activeWorkspaceId,
-      title: 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¬Ø¯ÙŠØ¯Ø©',
+      title: 'ملاحظة جديدة',
       content: '',
       pages: [''],
       updatedAt: currentTimestamp(),
@@ -1254,7 +1254,7 @@ function App() {
       localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(nextNotes))
     } catch (error) {
       console.error('Could not create workspace note.', error)
-      window.alert('ØªØ¹Ø°Ø± Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.')
+      window.alert('تعذر إنشاء الملاحظة. قد تكون مساحة التخزين ممتلئة.')
       return
     }
     runPageTransition(() => {
@@ -1273,7 +1273,7 @@ function App() {
       return runPageTransition(() => {
         let targetWorkspaceId = activeWorkspaceId || workspaces[0]?.id || null
         if (!targetWorkspaceId) {
-          const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+          const workspace = { id: newProjectId(), title: 'مشروع جديد', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
           targetWorkspaceId = workspace.id
           saveWorkspaces([workspace, ...workspaces])
         }
@@ -1293,7 +1293,7 @@ function App() {
       return runPageTransition(() => {
         let targetWorkspaceId = activeWorkspaceId || workspaces[0]?.id || null
         if (!targetWorkspaceId) {
-          const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+          const workspace = { id: newProjectId(), title: 'مشروع جديد', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
           targetWorkspaceId = workspace.id
           saveWorkspaces([workspace, ...workspaces])
         }
@@ -1313,7 +1313,7 @@ function App() {
       return runPageTransition(() => {
         let targetWorkspaceId = activeWorkspaceId || workspaces[0]?.id || null
         if (!targetWorkspaceId) {
-          const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+          const workspace = { id: newProjectId(), title: 'مشروع جديد', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
           targetWorkspaceId = workspace.id
           saveWorkspaces([workspace, ...workspaces])
         }
@@ -1329,7 +1329,7 @@ function App() {
       return runPageTransition(() => {
         let targetWorkspaceId = activeWorkspaceId || workspaces[0]?.id || null
         if (!targetWorkspaceId) {
-          const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+          const workspace = { id: newProjectId(), title: 'مشروع جديد', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
           targetWorkspaceId = workspace.id
           saveWorkspaces([workspace, ...workspaces])
         }
@@ -1347,7 +1347,7 @@ function App() {
       setMindMapHomeOpen(false)
       const targetWorkspaceId = activeWorkspaceId || workspaces[0]?.id || null
       if (!targetWorkspaceId) {
-        const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+        const workspace = { id: newProjectId(), title: 'مشروع جديد', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
         saveWorkspaces([workspace])
         setActiveWorkspaceId(workspace.id)
         setWorkspaceOpen(false)
@@ -1409,7 +1409,7 @@ function App() {
       setTasks(nextTasks)
     } catch (error) {
       console.error('Could not save workspace tasks.', error)
-      window.alert(appLanguage === 'en' ? 'Could not save tasks. Browser storage may be full.' : 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„Ù…Ù‡Ø§Ù…. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.')
+      window.alert(appLanguage === 'en' ? 'Could not save tasks. Browser storage may be full.' : 'تعذر حفظ المهام. قد تكون مساحة التخزين ممتلئة.')
     }
   }
   const handleWorkspaceTaskListsChange = (nextWorkspaceTaskLists) => {
@@ -1419,7 +1419,7 @@ function App() {
       setTaskLists(nextLists)
     } catch (error) {
       console.error('Could not save task lists.', error)
-      window.alert(appLanguage === 'en' ? 'Could not save task lists. Browser storage may be full.' : 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ù‚ÙˆØ§Ø¦Ù… Ø§Ù„Ù…Ù‡Ø§Ù…. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.')
+      window.alert(appLanguage === 'en' ? 'Could not save task lists. Browser storage may be full.' : 'تعذر حفظ قوائم المهام. قد تكون مساحة التخزين ممتلئة.')
     }
   }
   const handleWorkspaceFlowchartsChange = (nextWorkspaceFlowcharts) => {
@@ -1432,7 +1432,7 @@ function App() {
       setFlowcharts(nextFlowcharts)
     } catch (error) {
       console.error('Could not save workspace flowcharts.', error)
-      window.alert(appLanguage === 'en' ? 'Could not save flowcharts. Browser storage may be full.' : 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„Ù…Ø®Ø·Ø·Ø§Øª Ø§Ù„Ø§Ù†Ø³ÙŠØ§Ø¨ÙŠØ©. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.')
+      window.alert(appLanguage === 'en' ? 'Could not save flowcharts. Browser storage may be full.' : 'تعذر حفظ المخططات الانسيابية. قد تكون مساحة التخزين ممتلئة.')
     }
   }
   const handleWorkspaceUiDesignsChange = (nextWorkspaceDesigns) => {
@@ -1445,7 +1445,7 @@ function App() {
       localStorage.setItem(UI_DESIGNS_STORAGE_KEY, JSON.stringify(nextDesigns))
     } catch (error) {
       console.error('Could not save workspace interface designs.', error)
-      window.alert(appLanguage === 'en' ? 'Could not save interface designs. Browser storage may be full.' : 'ØªØ¹Ø°Ø± Ø­ÙØ¸ ØªØµÙ…ÙŠÙ… Ø§Ù„ÙˆØ§Ø¬Ù‡Ø§Øª. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.')
+      window.alert(appLanguage === 'en' ? 'Could not save interface designs. Browser storage may be full.' : 'تعذر حفظ تصميم الواجهات. قد تكون مساحة التخزين ممتلئة.')
     }
   }
   const closeNoteTab = (noteId) => {
@@ -1475,23 +1475,23 @@ function App() {
     openProject(project)
   }
   const sharedProjectTabs = (
-    <nav className="project-tabs" aria-label="Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹ ÙˆØ§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ù„Ù…ÙØªÙˆØ­Ø©">
+    <nav className="project-tabs" aria-label="المشاريع والملاحظات المفتوحة">
       <div className="project-tabs-list">
         {openProjectIds.filter((id) => workspaceProjects.some((item) => item.id === id)).map((id) => {
           const project = workspaceProjects.find((item) => item.id === id)
           if (!project) return null
           return <div className={`project-tab${activeTool === 'mind-map' && id === activeProjectId ? ' is-active' : ''}`} key={id}>
-            <button className="project-tab-select" type="button" onClick={() => selectProjectTab(project)} title={project.title}>{project.title || 'Ù…Ø´Ø±ÙˆØ¹ Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</button>
-            <button className="project-tab-close" type="button" onClick={() => closeProjectTab(id)} aria-label={`Ø¥ØºÙ„Ø§Ù‚ ${project.title}`}><X size={13} /></button>
+            <button className="project-tab-select" type="button" onClick={() => selectProjectTab(project)} title={project.title}>{project.title || 'مشروع بدون عنوان'}</button>
+            <button className="project-tab-close" type="button" onClick={() => closeProjectTab(id)} aria-label={`إغلاق ${project.title}`}><X size={13} /></button>
           </div>
         })}
         {workspaceNotes.filter((note) => openNoteIds.includes(note.id)).map((note) => (
           <div className={`project-tab note-project-tab${activeTool === 'notes' && note.id === (activeNoteId || workspaceNotes.find((item) => openNoteIds.includes(item.id))?.id) ? ' is-active' : ''}`} key={note.id}>
-            <button className="project-tab-select" type="button" onClick={() => selectNoteTab(note.id)} title={note.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}>
+            <button className="project-tab-select" type="button" onClick={() => selectNoteTab(note.id)} title={note.title || 'ملاحظة بدون عنوان'}>
               <StickyNote size={13} />
-              {note.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}
+              {note.title || 'ملاحظة بدون عنوان'}
             </button>
-            <button type="button" className="project-tab-close" aria-label={`${appLanguage === 'en' ? 'Close' : 'Ø¥ØºÙ„Ø§Ù‚'} ${note.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}`} title={appLanguage === 'en' ? 'Close note tab' : 'Ø¥ØºÙ„Ø§Ù‚ ØªØ¨ÙˆÙŠØ¨ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©'} onClick={() => closeNoteTab(note.id)}><X size={13} /></button>
+            <button type="button" className="project-tab-close" aria-label={`${appLanguage === 'en' ? 'Close' : 'إغلاق'} ${note.title || 'ملاحظة بدون عنوان'}`} title={appLanguage === 'en' ? 'Close note tab' : 'إغلاق تبويب الملاحظة'} onClick={() => closeNoteTab(note.id)}><X size={13} /></button>
           </div>
         ))}
       </div>
@@ -1500,9 +1500,9 @@ function App() {
           {isWorkspaceDocumentOpen && <>
             <WorkspaceBackupButton onClick={saveOpenDocumentCopy} busy={exportingWorkspace} language={appLanguage} />
           </>}
-          <button className="workspace-backup-button" type="button" onClick={() => exportWorkspaceArchive(activeWorkspace)} disabled={exportingWorkspace} title={appLanguage === 'en' ? 'Export the full project with all maps, notes, tasks, flowcharts, and interface designs' : 'ØªØµØ¯ÙŠØ± Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ ÙƒØ§Ù…Ù„Ù‹Ø§ Ø¨ÙƒÙ„ Ø§Ù„Ø®Ø±Ø§Ø¦Ø· ÙˆØ§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª ÙˆØ§Ù„Ù…Ù‡Ø§Ù… ÙˆØ§Ù„Ù…Ø®Ø·Ø·Ø§Øª ÙˆØ§Ù„ØªØµÙ…ÙŠÙ…Ø§Øª'}>
+          <button className="workspace-backup-button" type="button" onClick={() => exportWorkspaceArchive(activeWorkspace)} disabled={exportingWorkspace} title={appLanguage === 'en' ? 'Export the full project with all maps, notes, tasks, flowcharts, and interface designs' : 'تصدير المشروع كاملًا بكل الخرائط والملاحظات والمهام والمخططات والتصميمات'}>
             <ArrowDownToLine size={16} />
-            <span>{appLanguage === 'en' ? 'Export full project' : 'ØªØµØ¯ÙŠØ± Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ ÙƒØ§Ù…Ù„Ù‹Ø§'}</span>
+            <span>{appLanguage === 'en' ? 'Export full project' : 'تصدير المشروع كاملًا'}</span>
           </button>
           <DocumentImportButton onClick={() => documentImportRef.current?.click()} language={appLanguage} />
           <input ref={documentImportRef} type="file" accept="application/json,.json,.zip,application/zip" onChange={importOpenDocument} hidden />
@@ -1537,65 +1537,65 @@ function App() {
               setLibraryOpen(true)
             }, 'backward')
           }}
-          title="Ø§Ù„Ø¹ÙˆØ¯Ø© Ø¥Ù„Ù‰ Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©"
-          aria-label="Ø§Ù„Ø¹ÙˆØ¯Ø© Ø¥Ù„Ù‰ Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©"
-        ><Home size={14} /><span>Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©</span></button>
+          title="العودة إلى الصفحة الرئيسية"
+          aria-label="العودة إلى الصفحة الرئيسية"
+        ><Home size={14} /><span>الرئيسية</span></button>
       </div>
     </nav>
   )
   const settingsDialog = settingsOpen && (
     <div className="confirm-overlay settings-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setSettingsOpen(false) }}>
       <section className="confirm-dialog settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title" dir="rtl">
-        <div className="settings-heading"><span className="confirm-icon settings-icon"><Settings2 size={20} /></span><button type="button" className="settings-close" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª" onClick={() => setSettingsOpen(false)}><X size={17} /></button></div>
-        <h2 id="settings-dialog-title">Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬</h2>
-        <p>ØºÙŠÙ‘Ø± Ù„ØºØ© Ø§Ù„ÙˆØ§Ø¬Ù‡Ø© ÙˆÙ…Ø¸Ù‡Ø± Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬.</p>
-        <label className="settings-field-label" htmlFor="app-language-select">Ø§Ù„Ù„ØºØ©</label>
+        <div className="settings-heading"><span className="confirm-icon settings-icon"><Settings2 size={20} /></span><button type="button" className="settings-close" aria-label="إغلاق الإعدادات" onClick={() => setSettingsOpen(false)}><X size={17} /></button></div>
+        <h2 id="settings-dialog-title">إعدادات البرنامج</h2>
+        <p>غيّر لغة الواجهة ومظهر البرنامج.</p>
+        <label className="settings-field-label" htmlFor="app-language-select">اللغة</label>
         <select id="app-language-select" className="settings-select" value={appLanguage} onChange={changeLanguage}>
-          <option value="ar">Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©</option>
+          <option value="ar">العربية</option>
           <option value="en">English</option>
         </select>
-        <span className="settings-field-label">Ø§Ù„Ù…Ø¸Ù‡Ø±</span>
+        <span className="settings-field-label">المظهر</span>
         <div className="settings-theme-options">
-          <button type="button" className={`settings-theme-option${theme === 'light' ? ' is-active' : ''}`} onClick={() => { setTheme('light'); localStorage.setItem('waraqa-theme', 'light') }}><Sun size={16} /> Ù†Ù‡Ø§Ø±ÙŠ</button>
-          <button type="button" className={`settings-theme-option${theme === 'dark' ? ' is-active' : ''}`} onClick={() => { setTheme('dark'); localStorage.setItem('waraqa-theme', 'dark') }}><Moon size={16} /> Ù„ÙŠÙ„ÙŠ</button>
+          <button type="button" className={`settings-theme-option${theme === 'light' ? ' is-active' : ''}`} onClick={() => { setTheme('light'); localStorage.setItem('waraqa-theme', 'light') }}><Sun size={16} /> نهاري</button>
+          <button type="button" className={`settings-theme-option${theme === 'dark' ? ' is-active' : ''}`} onClick={() => { setTheme('dark'); localStorage.setItem('waraqa-theme', 'dark') }}><Moon size={16} /> ليلي</button>
         </div>
-        <p className="settings-version">ÙˆØ±Ù‚Ø© Â· Ø§Ù„Ø¥ØµØ¯Ø§Ø± {pkg.version}</p>
+        <p className="settings-version">ورقة Â· الإصدار {pkg.version}</p>
       </section>
     </div>
   )
   const helpDialog = helpOpen && (
     <div className="confirm-overlay settings-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setHelpOpen(false) }}>
       <section className="confirm-dialog settings-dialog help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-dialog-title" dir="rtl">
-        <div className="settings-heading"><span className="confirm-icon settings-icon"><CircleHelp size={20} /></span><button type="button" className="settings-close" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯Ø©" onClick={() => setHelpOpen(false)}><X size={17} /></button></div>
-        <h2 id="help-dialog-title">Ø¯Ù„ÙŠÙ„ ÙˆØ±Ù‚Ø© Ø§Ù„Ø³Ø±ÙŠØ¹</h2>
-        <p>Ø£Ù‡Ù… Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø© ÙˆØ§Ø®ØªØµØ§Ø±Ø§Øª Ù„ÙˆØ­Ø© Ø§Ù„Ù…ÙØ§ØªÙŠØ­.</p>
-        <span className="help-section-label">Ø£Ø³Ø§Ø³ÙŠØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø©</span>
+        <div className="settings-heading"><span className="confirm-icon settings-icon"><CircleHelp size={20} /></span><button type="button" className="settings-close" aria-label="إغلاق المساعدة" onClick={() => setHelpOpen(false)}><X size={17} /></button></div>
+        <h2 id="help-dialog-title">دليل ورقة السريع</h2>
+        <p>أهم أدوات الخريطة واختصارات لوحة المفاتيح.</p>
+        <span className="help-section-label">أساسيات الخريطة</span>
         <ul className="help-list">
-          <li><Lightbulb size={14} /> <span>Ø£Ø¶Ù Â«ÙÙƒØ±Ø© Ø¬Ø¯ÙŠØ¯Ø©Â» Ù…Ù† Ø§Ù„Ù„ÙˆØ­Ø© Ø£Ùˆ Ø¨Ø§Ù„Ø³Ø­Ø¨ Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø³Ø§Ø­Ø©ØŒ Ø«Ù… Ø­Ø¯Ø¯Ù‡Ø§ ÙˆØ£Ø¶Ù ÙØ±ÙˆØ¹Ù‹Ø§ ÙŠÙ…ÙŠÙ†Ù‹Ø§ ÙˆÙŠØ³Ø§Ø±Ù‹Ø§.</span></li>
-          <li><MousePointer2 size={14} /> <span>Ø§Ø±Ø¨Ø· Ø¹Ù‚Ø¯ØªÙŠÙ† Ø¨Ø§Ù„Ø³Ø­Ø¨ Ù…Ù† Ù†Ù‚Ø·Ø© Ø·Ø±Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø¥Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ØŒ Ø£Ùˆ Ø¨Ø§Ù„Ø¶ØºØ· Ø§Ù„Ù…Ø·ÙˆÙ„ Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø«Ù… Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰. ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø³Ù‡Ù… ÙŠØ­Ø°ÙÙ‡.</span></li>
-          <li><StickyNote size={14} /> <span>Ø§Ø¶ØºØ· Ø£ÙŠÙ‚ÙˆÙ†Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø© Ù„ÙØªØ­ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø© ÙˆØ§Ù„Ø¥ÙŠÙ…ÙˆØ¬ÙŠ ÙˆØ§Ù„Ù„ÙˆÙ†ØŒ ÙˆØªÙØ­ÙØ¸ Ù…Ø¹ Ø§Ù„Ø¹Ù‚Ø¯Ø© ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§.</span></li>
-          <li><Network size={14} /> <span>Â«ØªØ±ØªÙŠØ¨ Ø§Ù„Ø®Ø±ÙŠØ·Ø©Â» ÙŠØ±Øµ Ø§Ù„Ø¹Ù‚Ø¯ Ø­Ø³Ø¨ ØªÙØ±Ù‘Ø¹Ù‡Ø§ØŒ ÙˆØ§Ù„Ù†Ù‚Ø·Ø© Ø¹Ù„Ù‰ Ø·Ø±Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© ØªØ·ÙˆÙŠ ÙØ±ÙˆØ¹Ù‡Ø§ Ø£Ùˆ ØªÙØªØ­Ù‡Ø§.</span></li>
-          <li><Copy size={14} /> <span>Ø²Ø± Â«ØªØ­Ø¯ÙŠØ¯ Ø¬Ù…Ø§Ø¹ÙŠÂ» ÙÙŠ Ø§Ù„Ù„ÙˆØ­Ø© ÙŠÙØ¹Ù‘Ù„ ØªØ­Ø¯ÙŠØ¯ Ø¹Ø¯Ø© Ø¹Ù‚Ø¯ Ø¨Ø§Ù„Ø¶ØºØ· Ø£Ùˆ Ø¨Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø³Ø§Ø­Ø© (ÙÙŠ Ø§Ù„Ø­Ø§Ø³ÙˆØ¨ Ø£ÙŠØ¶Ù‹Ø§ Ctrl + ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ†).</span></li>
+          <li><Lightbulb size={14} /> <span>أضف «فكرة جديدة» من اللوحة أو بالسحب إلى المساحة، ثم حددها وأضف فروعًا يمينًا ويسارًا.</span></li>
+          <li><MousePointer2 size={14} /> <span>اربط عقدتين بالسحب من نقطة طرف العقدة إلى عقدة أخرى، أو بالضغط المطول على عقدة ثم الضغط على عقدة أخرى. كليك يمين على السهم يحذفه.</span></li>
+          <li><StickyNote size={14} /> <span>اضغط أيقونة العقدة لفتح الملاحظة والإيموجي واللون، وتُحفظ مع العقدة تلقائيًا.</span></li>
+          <li><Network size={14} /> <span>«ترتيب الخريطة» يرص العقد حسب تفرّعها، والنقطة على طرف العقدة تطوي فروعها أو تفتحها.</span></li>
+          <li><Copy size={14} /> <span>زر «تحديد جماعي» في اللوحة يفعّل تحديد عدة عقد بالضغط أو بسحب مربع على المساحة (في الحاسوب أيضًا Ctrl + كليك يمين).</span></li>
         </ul>
-        <span className="help-section-label">Ø£Ø³Ø§Ø³ÙŠØ§Øª Ø§Ù„Ù„Ù…Ø³</span>
+        <span className="help-section-label">أساسيات اللمس</span>
         <ul className="help-list">
-          <li><MapIcon size={14} /> <span>Ø¥ØµØ¨Ø¹ ÙˆØ§Ø­Ø¯ ÙŠØ­Ø±Ù‘Ùƒ Ø§Ù„Ø®Ø±ÙŠØ·Ø©ØŒ ÙˆØ¥ØµØ¨Ø¹Ø§Ù† Ù„Ù„ØªÙƒØ¨ÙŠØ± ÙˆØ§Ù„ØªØµØºÙŠØ±.</span></li>
-          <li><Link2 size={14} /> <span>Ø§Ø¶ØºØ· Ù…Ø·ÙˆÙ„Ù‹Ø§ Ø¹Ù„Ù‰ Ø£ÙŠ Ø¹Ù‚Ø¯Ø© Ù„Ø¨Ø¯Ø¡ Ø§Ù„Ø±Ø¨Ø·ØŒ Ø«Ù… Ø§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ø¥ØªÙ…Ø§Ù…Ù‡.</span></li>
-          <li><MoveLeft size={14} /> <span>Ø²Ø± Ø§Ù„Ø±Ø¬ÙˆØ¹ ÙÙŠ Ø§Ù„Ù‡Ø§ØªÙ ÙŠØºÙ„Ù‚ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª ÙˆØ§Ù„Ù‚ÙˆØ§Ø¦Ù… ÙˆØ§Ø­Ø¯Ù‹Ø§ ÙˆØ§Ø­Ø¯Ù‹Ø§.</span></li>
+          <li><MapIcon size={14} /> <span>إصبع واحد يحرّك الخريطة، وإصبعان للتكبير والتصغير.</span></li>
+          <li><Link2 size={14} /> <span>اضغط مطولًا على أي عقدة لبدء الربط، ثم اضغط على عقدة أخرى لإتمامه.</span></li>
+          <li><MoveLeft size={14} /> <span>زر الرجوع في الهاتف يغلق الملاحظات والقوائم واحدًا واحدًا.</span></li>
         </ul>
-        <span className="help-section-label">Ø§Ø®ØªØµØ§Ø±Ø§Øª Ù„ÙˆØ­Ø© Ø§Ù„Ù…ÙØ§ØªÙŠØ­</span>
+        <span className="help-section-label">اختصارات لوحة المفاتيح</span>
         <div className="help-shortcuts">
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>S</kbd><span>Ø­ÙØ¸ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>F</kbd><span>Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ø®Ø±ÙŠØ·Ø©</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>Z</kbd><span>ØªØ±Ø§Ø¬Ø¹</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>Y</kbd><span>Ø¥Ø¹Ø§Ø¯Ø©</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>C</kbd><span>Ù†Ø³Ø® Ø§Ù„Ø¹Ù‚Ø¯Ø© ÙˆÙØ±ÙˆØ¹Ù‡Ø§</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>V</kbd><span>Ù„ØµÙ‚ Ø§Ù„Ø¹Ù‚Ø¯Ø©</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>D</kbd><span>ØªÙƒØ±Ø§Ø± Ø§Ù„Ø¹Ù‚Ø¯Ø©</span></div>
-          <div className="help-shortcut"><kbd>Del</kbd><span>Ø­Ø°Ù Ø§Ù„Ù…Ø­Ø¯Ø¯</span></div>
-          <div className="help-shortcut"><kbd>Esc</kbd><span>Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù‚ÙˆØ§Ø¦Ù… ÙˆØ§Ù„Ø­ÙˆØ§Ø±Ø§Øª</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>S</kbd><span>حفظ المشروع</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>F</kbd><span>بحث في الخريطة</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>Z</kbd><span>تراجع</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>Y</kbd><span>إعادة</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>C</kbd><span>نسخ العقدة وفروعها</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>V</kbd><span>لصق العقدة</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>D</kbd><span>تكرار العقدة</span></div>
+          <div className="help-shortcut"><kbd>Del</kbd><span>حذف المحدد</span></div>
+          <div className="help-shortcut"><kbd>Esc</kbd><span>إغلاق القوائم والحوارات</span></div>
         </div>
-        <p className="settings-version">ÙˆØ±Ù‚Ø© Â· Ø§Ù„Ø¥ØµØ¯Ø§Ø± {pkg.version}</p>
+        <p className="settings-version">ورقة Â· الإصدار {pkg.version}</p>
       </section>
     </div>
   )
@@ -2076,7 +2076,7 @@ function App() {
 
   async function saveWorkspaceBackup() {
     if (!activeWorkspace) {
-      window.alert('Ø§ÙØªØ­ Ù…Ø´Ø±ÙˆØ¹Ù‹Ø§ Ø£ÙˆÙ„Ù‹Ø§ Ù„Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ù…Ù†Ù‡.')
+      window.alert('افتح مشروعًا أولًا لحفظ نسخة منه.')
       return
     }
 
@@ -2112,13 +2112,13 @@ function App() {
 
       if (desktopWindow?.exportWorkspace) {
         const folder = await desktopWindow.exportWorkspace(bundle)
-        window.alert(`ØªÙ… Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ ÙƒØ§Ù…Ù„Ø© ÙÙŠ:\n${folder}`)
+        window.alert(`تم حفظ نسخة المشروع كاملة في:\n${folder}`)
       } else {
         const json = JSON.stringify(bundle, null, 2)
         const fileName = `warqa-${(activeWorkspace.title || 'project').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'project'}.json`
         if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
           await AndroidDownloads.saveJson({ fileName, content: json })
-          window.alert('ØªÙ… Ø­ÙØ¸ Ù…Ù„Ù Ù†Ø³Ø®Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ ÙÙŠ Ù…Ø¬Ù„Ø¯ Ø§Ù„ØªÙ†Ø²ÙŠÙ„Ø§Øª.')
+          window.alert('تم حفظ ملف نسخة المشروع في مجلد التنزيلات.')
         } else {
           const file = new Blob([json], { type: 'application/json' })
           const url = URL.createObjectURL(file)
@@ -2127,12 +2127,12 @@ function App() {
           link.download = fileName
           link.click()
           URL.revokeObjectURL(url)
-          window.alert('ØªÙ… ØªÙ†Ø²ÙŠÙ„ Ù…Ù„Ù Ù†Ø³Ø®Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹. Ù„Ø­ÙØ¸Ù‡ ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§ Ø¯Ø§Ø®Ù„ Ù…Ø¬Ù„Ø¯ warqa Ø§Ø³ØªØ®Ø¯Ù… ØªØ·Ø¨ÙŠÙ‚ Ø³Ø·Ø­ Ø§Ù„Ù…ÙƒØªØ¨.')
+          window.alert('تم تنزيل ملف نسخة المشروع. لحفظه تلقائيًا داخل مجلد warqa استخدم تطبيق سطح المكتب.')
         }
       }
     } catch (error) {
       console.error('Could not export workspace backup.', error)
-      window.alert('ØªØ¹Ø°Ø± Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹. ØªØ­Ù‚Ù‚ Ù…Ù† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† ÙˆØ­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.')
+      window.alert('تعذر حفظ نسخة المشروع. تحقق من مساحة التخزين وحاول مرة أخرى.')
     } finally {
       setExportingWorkspace(false)
     }
@@ -2184,7 +2184,7 @@ function App() {
       window.setTimeout(() => URL.revokeObjectURL(url), 5000)
     } catch (error) {
       console.error('Could not export complete project archive.', error)
-      window.alert(appLanguage === 'en' ? 'Could not create the project archive.' : 'ØªØ¹Ø°Ø± Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø²Ù…Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹.')
+      window.alert(appLanguage === 'en' ? 'Could not create the project archive.' : 'تعذر إنشاء حزمة المشروع.')
     } finally {
       setExportingWorkspace(false)
     }
@@ -2229,7 +2229,7 @@ function App() {
         const defaultListId = `${activeWorkspaceId}-default-task-list`
         const taskListData = [...workspaceTaskLists]
         if (workspaceTasks.some((task) => !task.listId) && !taskListData.some((list) => list.id === defaultListId)) {
-          taskListData.push({ id: defaultListId, title: appLanguage === 'en' ? 'My tasks' : 'Ù…Ù‡Ø§Ù…ÙŠ', workspaceId: activeWorkspaceId })
+          taskListData.push({ id: defaultListId, title: appLanguage === 'en' ? 'My tasks' : 'مهامي', workspaceId: activeWorkspaceId })
         }
         documentData = {
           format: 'waraqa-tasks',
@@ -2271,7 +2271,7 @@ function App() {
       }
       if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android' && activeTool !== 'notes') {
         await AndroidDownloads.saveJson({ fileName, content })
-        window.alert(appLanguage === 'en' ? 'The open item was saved to Downloads.' : 'ØªÙ… Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ø§Ù„Ø¹Ù†ØµØ± Ø§Ù„Ù…ÙØªÙˆØ­ ÙÙŠ Ù…Ø¬Ù„Ø¯ Ø§Ù„ØªÙ†Ø²ÙŠÙ„Ø§Øª.')
+        window.alert(appLanguage === 'en' ? 'The open item was saved to Downloads.' : 'تم حفظ نسخة العنصر المفتوح في مجلد التنزيلات.')
       } else {
         const url = URL.createObjectURL(fileBlob)
         const link = document.createElement('a')
@@ -2282,7 +2282,7 @@ function App() {
       }
     } catch (error) {
       console.error('Could not save the open item.', error)
-      window.alert(appLanguage === 'en' ? 'Could not save a copy of the open item.' : 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ù…Ù† Ø§Ù„Ø¹Ù†ØµØ± Ø§Ù„Ù…ÙØªÙˆØ­.')
+      window.alert(appLanguage === 'en' ? 'Could not save a copy of the open item.' : 'تعذر حفظ نسخة من العنصر المفتوح.')
     } finally {
       setExportingWorkspace(false)
     }
@@ -2319,7 +2319,7 @@ function App() {
       if (importedType === 'ui-design') {
         if (!imported.design || !Array.isArray(imported.design.screens) || imported.design.screens.some((screen) => !screen || typeof screen.title !== 'string' || !Array.isArray(screen.components))) throw new Error('Invalid interface design.')
         const currentDesign = isWorkspaceDocumentOpen ? workspaceUiDesigns.find((item) => item.id === activeUiDesignId) : null
-        const design = { ...imported.design, id: currentDesign?.id || newProjectId(), workspaceId: activeWorkspaceId, title: imported.design.title || (appLanguage === 'en' ? 'Imported interface design' : 'ØªØµÙ…ÙŠÙ… ÙˆØ§Ø¬Ù‡Ø§Øª Ù…Ø³ØªÙˆØ±Ø¯'), updatedAt: currentTimestamp() }
+        const design = { ...imported.design, id: currentDesign?.id || newProjectId(), workspaceId: activeWorkspaceId, title: imported.design.title || (appLanguage === 'en' ? 'Imported interface design' : 'تصميم واجهات مستورد'), updatedAt: currentTimestamp() }
         handleWorkspaceUiDesignsChange(currentDesign
           ? workspaceUiDesigns.map((item) => item.id === currentDesign.id ? design : item)
           : [design, ...workspaceUiDesigns])
@@ -2339,7 +2339,7 @@ function App() {
           ...imported.flowchart,
           id: existingFlowchart?.id || newProjectId(),
           workspaceId: activeWorkspaceId,
-          title: imported.flowchart.title || (appLanguage === 'en' ? 'Imported flowchart' : 'Ù…Ø®Ø·Ø· Ø§Ù†Ø³ÙŠØ§Ø¨ÙŠ Ù…Ø³ØªÙˆØ±Ø¯'),
+          title: imported.flowchart.title || (appLanguage === 'en' ? 'Imported flowchart' : 'مخطط انسيابي مستورد'),
           nodes: imported.flowchart.nodes,
           edges: imported.flowchart.edges,
           updatedAt: currentTimestamp(),
@@ -2358,7 +2358,7 @@ function App() {
       } else if (importedType === 'mind-map') {
         if (!Array.isArray(imported.nodes) || !Array.isArray(imported.edges)) throw new Error('Invalid mind map.')
         const importedMap = normalizeProjectHandles(imported)
-        const mapTitle = imported.title || (appLanguage === 'en' ? 'Imported mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© Ù…Ø³ØªÙˆØ±Ø¯Ø©')
+        const mapTitle = imported.title || (appLanguage === 'en' ? 'Imported mind map' : 'خريطة ذهنية مستوردة')
         if (isWorkspaceDocumentOpen) {
           remember()
           setTitle(mapTitle)
@@ -2425,7 +2425,7 @@ function App() {
         const defaultListId = `${activeWorkspaceId}-default-task-list`
         const needsDefaultList = imported.tasks.some((task) => !idMap.has(task.listId))
         const nextImportedLists = imported.taskLists.map((list) => ({ ...list, id: idMap.get(list.id), workspaceId: activeWorkspaceId }))
-        if (needsDefaultList) nextImportedLists.push({ id: defaultListId, title: appLanguage === 'en' ? 'My tasks' : 'Ù…Ù‡Ø§Ù…ÙŠ', workspaceId: activeWorkspaceId })
+        if (needsDefaultList) nextImportedLists.push({ id: defaultListId, title: appLanguage === 'en' ? 'My tasks' : 'مهامي', workspaceId: activeWorkspaceId })
         const nextImportedTasks = imported.tasks.map((task) => ({
           ...task,
           id: newProjectId(),
@@ -2447,7 +2447,7 @@ function App() {
       }
     } catch (error) {
       console.error('Could not import a copy into the open item.', error)
-      window.alert(appLanguage === 'en' ? 'This file is invalid or does not match the open item type.' : 'Ø§Ù„Ù…Ù„Ù ØºÙŠØ± ØµØ§Ù„Ø­ Ø£Ùˆ Ù„Ø§ ÙŠØ·Ø§Ø¨Ù‚ Ù†ÙˆØ¹ Ø§Ù„Ø¹Ù†ØµØ± Ø§Ù„Ù…ÙØªÙˆØ­.')
+      window.alert(appLanguage === 'en' ? 'This file is invalid or does not match the open item type.' : 'الملف غير صالح أو لا يطابق نوع العنصر المفتوح.')
     }
   }
   useEffect(() => {
@@ -2488,7 +2488,7 @@ function App() {
       type: 'mapNode',
       position,
       data: {
-        label: parent ? 'ÙÙƒØ±Ø© ÙØ±Ø¹ÙŠØ©' : 'ÙÙƒØ±ØªÙŠ Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©',
+        label: parent ? 'فكرة فرعية' : 'فكرتي الجديدة',
         kind,
         ...(kind === 'idea' && !nodes.some((item) => item.data.isStart) && !nodes.some((item) => item.data.kind === 'idea') ? { isStart: true } : {}),
         ...(kind === 'branch' ? {
@@ -2564,7 +2564,7 @@ function App() {
           y: selectedNode.position.y,
         },
         data: {
-          label: 'ÙÙƒØ±Ø© ÙØ±Ø¹ÙŠØ©',
+          label: 'فكرة فرعية',
           kind: 'branch',
           branchDirection: parentEdge ? direction : 'left',
           insertedBranch: true,
@@ -2606,7 +2606,7 @@ function App() {
         y: selectedNode.position.y,
       },
       data: {
-        label: 'ÙÙƒØ±Ø© ÙØ±Ø¹ÙŠØ©',
+        label: 'فكرة فرعية',
         kind: 'branch',
         branchDirection,
         insertedBranch: true,
@@ -2755,7 +2755,7 @@ function App() {
     const container = picker.kind === 'mind-map' ? workspaceProjects.find((project) => project.id === picker.containerId)
       : picker.kind === 'flowchart' ? workspaceFlowcharts.find((flowchart) => flowchart.id === picker.containerId) : null
     if (!['task', 'note'].includes(picker.kind) && !container) return
-    const itemTitle = picker.kind === 'task' ? (item.title || 'Ù…Ù‡Ù…Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†') : picker.kind === 'note' ? (item.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†') : (item.data?.label || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')
+    const itemTitle = picker.kind === 'task' ? (item.title || 'مهمة بدون عنوان') : picker.kind === 'note' ? (item.title || 'ملاحظة بدون عنوان') : (item.data?.label || 'بدون عنوان')
     const containerTitle = container?.title || ''
     const prefix = picker.kind === 'mind-map' ? 'ðŸ§ ' : picker.kind === 'task' ? 'âœ“' : picker.kind === 'note' ? 'ðŸ“' : 'â†—'
     const mentionText = `@${prefix} ${containerTitle ? `${containerTitle} / ` : ''}${itemTitle}`
@@ -3109,11 +3109,11 @@ function App() {
     if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
       try {
         await AndroidDownloads.saveJson({ fileName: `${fileName}.json`, content: json })
-        window.alert('ØªÙ… Ø­ÙØ¸ Ù…Ù„Ù JSON ÙÙŠ Ù…Ø¬Ù„Ø¯ Ø§Ù„ØªÙ†Ø²ÙŠÙ„Ø§Øª.')
+        window.alert('تم حفظ ملف JSON في مجلد التنزيلات.')
         return
       } catch (error) {
         console.error('Could not save JSON to Downloads:', error)
-        window.alert('ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„Ù…Ù„Ù ÙÙŠ Ø§Ù„ØªÙ†Ø²ÙŠÙ„Ø§Øª. Ø­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.')
+        window.alert('تعذر حفظ الملف في التنزيلات. حاول مرة أخرى.')
         return
       }
     }
@@ -3151,7 +3151,7 @@ function App() {
       link.href = image
       link.click()
     } catch {
-      window.alert('ØªØ¹Ø°Ø± ØªØµØ¯ÙŠØ± Ø§Ù„ØµÙˆØ±Ø©. Ø¬Ø±Ù‘Ø¨ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ø¨Ø¹Ø¯ Ø¸Ù‡ÙˆØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„.')
+      window.alert('تعذر تصدير الصورة. جرّب مرة أخرى بعد ظهور الخريطة بالكامل.')
     } finally {
       setExportingImage(false)
     }
@@ -3171,21 +3171,21 @@ function App() {
       link.href = svg
       link.click()
     } catch {
-      window.alert('ØªØ¹Ø°Ø± ØªØµØ¯ÙŠØ± SVG. Ø¬Ø±Ù‘Ø¨ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ø¨Ø¹Ø¯ Ø¸Ù‡ÙˆØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„.')
+      window.alert('تعذر تصدير SVG. جرّب مرة أخرى بعد ظهور الخريطة بالكامل.')
     }
   }
 
   const exportMarkdown = () => {
     const nodeText = nodes.map((node) => {
-      const note = node.data.note ? `\n  - Ù…Ù„Ø§Ø­Ø¸Ø©: ${node.data.note.replace(/\n/g, ' ')}` : ''
-      return `- **${node.data.label || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}**${note}`
+      const note = node.data.note ? `\n  - ملاحظة: ${node.data.note.replace(/\n/g, ' ')}` : ''
+      return `- **${node.data.label || 'بدون عنوان'}**${note}`
     }).join('\n')
     const links = edges.map((edge) => {
       const source = nodes.find((node) => node.id === edge.source)?.data.label || edge.source
       const target = nodes.find((node) => node.id === edge.target)?.data.label || edge.target
       return `- ${source} -> ${target}`
     }).join('\n')
-    const markdown = `# ${title || 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}\n\n## Ø§Ù„Ø¹Ù‚Ø¯\n${nodeText || '- Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¹Ù‚Ø¯'}\n\n## Ø§Ù„Ø±ÙˆØ§Ø¨Ø·\n${links || '- Ù„Ø§ ØªÙˆØ¬Ø¯ Ø±ÙˆØ§Ø¨Ø·'}\n`
+    const markdown = `# ${title || 'خريطة بدون عنوان'}\n\n## العقد\n${nodeText || '- لا توجد عقد'}\n\n## الروابط\n${links || '- لا توجد روابط'}\n`
     const fileName = (title || 'mind-map').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'mind-map'
     const link = document.createElement('a')
     link.download = `${fileName}.md`
@@ -3203,7 +3203,7 @@ function App() {
         throw new Error('Invalid map')
       }
       remember()
-      setTitle(imported.title || 'Ø®Ø±ÙŠØ·Ø© Ù…Ø³ØªÙˆØ±Ø¯Ø©')
+      setTitle(imported.title || 'خريطة مستوردة')
       setNodes(imported.nodes)
       setEdges(normalizeProjectHandles(imported).edges)
       setEdgeStyle(imported.edgeStyle || 'smoothstep')
@@ -3211,7 +3211,7 @@ function App() {
       setEdgeWidth(imported.edgeWidth || 2)
       setArrowHead(imported.arrowHead || 'closed')
     } catch {
-      window.alert('Ø§Ù„Ù…Ù„Ù ØºÙŠØ± ØµØ§Ù„Ø­ Ø£Ùˆ Ù„Ø§ ÙŠØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ø®Ø±ÙŠØ·Ø© Ù…Ø­ÙÙˆØ¸Ø©.')
+      window.alert('الملف غير صالح أو لا يحتوي على خريطة محفوظة.')
     }
     event.target.value = ''
   }
@@ -3336,7 +3336,7 @@ function App() {
       projectSavePoints.current.set(latestProject.id, createProjectSavePoint(latestProject))
     }
     runPageTransition(() => {
-    setTitle(project.title || 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯')
+    setTitle(project.title || 'مشروع جديد')
     setNodes(latestProject.nodes || [])
     setEdges(latestProject.edges || [])
     setEdgeStyle(latestProject.edgeStyle || 'smoothstep')
@@ -3458,12 +3458,12 @@ function App() {
     if (!(await ensureProjectsFolder())) return
     let workspaceId = activeWorkspaceId
     if (!workspaceId) {
-      const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+      const workspace = { id: newProjectId(), title: 'مشروع جديد', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
       workspaceId = workspace.id
       saveWorkspaces([workspace, ...workspaces])
       setActiveWorkspaceId(workspaceId)
     }
-    const project = { id: newProjectId(), workspaceId, title: 'Ø®Ø±ÙŠØ·Ø© Ø¬Ø¯ÙŠØ¯Ø©', nodes: [], edges: [], edgeStyle: 'smoothstep', edgeColor: '#9aaea4', edgeWidth: 2, arrowHead: 'closed', updatedAt: currentTimestamp() }
+    const project = { id: newProjectId(), workspaceId, title: 'خريطة جديدة', nodes: [], edges: [], edgeStyle: 'smoothstep', edgeColor: '#9aaea4', edgeWidth: 2, arrowHead: 'closed', updatedAt: currentTimestamp() }
     setProjects((current) => { const next = [project, ...current]; localStorage.setItem(PROJECTS_KEY, JSON.stringify(next)); return next })
     openProject(project)
     setRenameProjectDraft(project.title)
@@ -3524,7 +3524,7 @@ function App() {
         const workspaceId = newProjectId()
         const noteId = newProjectId()
         const note = { ...imported.note, id: noteId, workspaceId, updatedAt: currentTimestamp() }
-        const title = note.title.trim() || file.name.replace(/(?:-waraqa-note)?\.(?:json|zip)$/i, '') || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ù…Ø³ØªÙˆØ±Ø¯Ø©'
+        const title = note.title.trim() || file.name.replace(/(?:-waraqa-note)?\.(?:json|zip)$/i, '') || 'ملاحظة مستوردة'
         const workspace = { id: workspaceId, title, createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
         const nextNotes = [note, ...standaloneNotes]
         saveWorkspaces([workspace, ...workspaces])
@@ -3711,7 +3711,7 @@ function App() {
         setActiveTool('mind-map')
         setPendingDeleteWorkspace(null)
         setOpenProjectIds([])
-        window.alert('ØªÙ… Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ Ø¨ÙƒÙ„ Ø®Ø±Ø§Ø¦Ø·Ù‡ ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙ‡.')
+        window.alert('تم استيراد المشروع بكل خرائطه وملاحظاته.')
         event.target.value = ''
         return
       }
@@ -3734,7 +3734,7 @@ function App() {
       openProject(project)
     } catch (error) {
       console.error('Could not import a project or standalone note.', error)
-      window.alert(appLanguage === 'en' ? 'This file is not a supported Waraqa project or note.' : 'Ù‡Ø°Ø§ Ø§Ù„Ù…Ù„Ù Ù„ÙŠØ³ Ù…Ø´Ø±ÙˆØ¹Ù‹Ø§ Ø£Ùˆ Ù…Ù„Ø§Ø­Ø¸Ø© Ù…Ø¯Ø¹ÙˆÙ…Ø© Ù…Ù† ÙˆØ±Ù‚Ø©.')
+      window.alert(appLanguage === 'en' ? 'This file is not a supported Waraqa project or note.' : 'هذا الملف ليس مشروعًا أو ملاحظة مدعومة من ورقة.')
     }
     event.target.value = ''
   }
@@ -3857,12 +3857,12 @@ function App() {
     <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) resolveCloseProject('cancel') }}>
       <section className="confirm-dialog close-project-dialog" role="alertdialog" aria-modal="true" aria-labelledby="close-project-title" aria-describedby="close-project-description" dir="rtl">
         <span className="confirm-icon save-confirm-icon"><Save size={21} /></span>
-        <h2 id="close-project-title">Ø­ÙØ¸ ØªØºÙŠÙŠØ±Ø§Øª Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ØŸ</h2>
-        <p id="close-project-description">Ù‡Ù„ ØªØ±ÙŠØ¯ Ø­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª Ø¹Ù„Ù‰ <strong>{closingProject?.title || title || 'Ø§Ù„Ù…Ø´Ø±ÙˆØ¹'}</strong> Ù‚Ø¨Ù„ Ø¥ØºÙ„Ø§Ù‚Ù‡ØŸ</p>
+        <h2 id="close-project-title">حفظ تغييرات المشروع؟</h2>
+        <p id="close-project-description">هل تريد حفظ التغييرات على <strong>{closingProject?.title || title || 'المشروع'}</strong> قبل إغلاقه؟</p>
         <div className="confirm-actions">
-          <button type="button" className="confirm-save" onClick={() => resolveCloseProject('save')}>Ø­ÙØ¸ ÙˆØ¥ØºÙ„Ø§Ù‚</button>
-          <button type="button" className="confirm-discard" onClick={() => resolveCloseProject('discard')}>Ø¥ØºÙ„Ø§Ù‚ Ø¨Ø¯ÙˆÙ† Ø­ÙØ¸</button>
-          <button type="button" className="confirm-cancel" onClick={() => resolveCloseProject('cancel')}>Ø¥Ù„ØºØ§Ø¡</button>
+          <button type="button" className="confirm-save" onClick={() => resolveCloseProject('save')}>حفظ وإغلاق</button>
+          <button type="button" className="confirm-discard" onClick={() => resolveCloseProject('discard')}>إغلاق بدون حفظ</button>
+          <button type="button" className="confirm-cancel" onClick={() => resolveCloseProject('cancel')}>إلغاء</button>
         </div>
       </section>
     </div>
@@ -3872,87 +3872,87 @@ function App() {
     <LocalizedContent language={appLanguage}>
     <main className={`library-shell workspace-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
       <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
-      <header className="topbar library-topbar" aria-label="Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©">
-        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©">
+      <header className="topbar library-topbar" aria-label="شريط النافذة">
+        <div className="brand-lockup topbar-brand" aria-label="ورقة">
           <span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span>
         </div>
         <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
         <ToolSwitcher activeTool={activeTool} onSelect={selectTool} language={appLanguage} />
-        {desktopWindow && <div className="window-controls" aria-label="Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©">
-          <button type="button" className="window-control" title="ØªØµØºÙŠØ±" aria-label="ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
-          <button type="button" className="window-control" title={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©' : 'ØªÙƒØ¨ÙŠØ±'} aria-label={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.toggleMaximize()}>
+        {desktopWindow && <div className="window-controls" aria-label="أزرار النافذة">
+          <button type="button" className="window-control" title="تصغير" aria-label="تصغير النافذة" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? 'استعادة' : 'تكبير'} aria-label={desktopMaximized ? 'استعادة النافذة' : 'تكبير النافذة'} onClick={() => desktopWindow.toggleMaximize()}>
             {desktopMaximized ? <Copy size={12} /> : <Square size={13} />}
           </button>
-          <button type="button" className="window-control window-control-close" title="Ø¥ØºÙ„Ø§Ù‚" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.close()}><X size={16} /></button>
+          <button type="button" className="window-control window-control-close" title="إغلاق" aria-label="إغلاق النافذة" onClick={() => desktopWindow.close()}><X size={16} /></button>
         </div>}
       </header>
       {mindMapHomeOpen ? (<>
         {sharedProjectTabs}
         <section className="mind-map-home">
-          <aside className={`mind-map-home-sidebar${mapListCollapsed ? ' is-collapsed' : ''}`} aria-label={appLanguage === 'en' ? 'Mind maps in this workspace' : 'Ø®Ø±Ø§Ø¦Ø· Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„'}>
+          <aside className={`mind-map-home-sidebar${mapListCollapsed ? ' is-collapsed' : ''}`} aria-label={appLanguage === 'en' ? 'Mind maps in this workspace' : 'خرائط مساحة العمل'}>
             <div className="mind-map-home-heading">
-              <button type="button" className="mind-map-list-toggle" aria-label={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'Ø¥Ø¸Ù‡Ø§Ø± Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·') : (appLanguage === 'en' ? 'Collapse mind maps' : 'Ø·ÙŠ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·')} title={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'Ø¥Ø¸Ù‡Ø§Ø± Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·') : (appLanguage === 'en' ? 'Collapse mind maps' : 'Ø·ÙŠ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·')} aria-expanded={!mapListCollapsed} onClick={() => setMapListCollapsed((collapsed) => {
+              <button type="button" className="mind-map-list-toggle" aria-label={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'إظهار قائمة الخرائط') : (appLanguage === 'en' ? 'Collapse mind maps' : 'طي قائمة الخرائط')} title={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'إظهار قائمة الخرائط') : (appLanguage === 'en' ? 'Collapse mind maps' : 'طي قائمة الخرائط')} aria-expanded={!mapListCollapsed} onClick={() => setMapListCollapsed((collapsed) => {
                 const next = !collapsed
                 localStorage.setItem('waraqa-map-list-collapsed', String(next))
                 return next
               })}>{mapListCollapsed ? <PanelRightOpen size={16} /> : <PanelRightClose size={16} />}</button>
               {!mapListCollapsed && <>
-                <button type="button" className="workspace-back" onClick={() => setMindMapHomeOpen(false)} title={appLanguage === 'en' ? 'Back to workspace' : 'Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„'}><ArrowRight size={16} /></button>
-                <strong><Workflow size={16} />{appLanguage === 'en' ? 'Mind maps' : 'Ø§Ù„Ø®Ø±Ø§Ø¦Ø· Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'}</strong>
-                <button type="button" className="mind-map-list-add" aria-label={appLanguage === 'en' ? 'Create mind map' : 'Ø¥Ù†Ø´Ø§Ø¡ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©'} title={appLanguage === 'en' ? 'Create mind map' : 'Ø¥Ù†Ø´Ø§Ø¡ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©'} onClick={createProject}><Plus size={16} /></button>
+                <button type="button" className="workspace-back" onClick={() => setMindMapHomeOpen(false)} title={appLanguage === 'en' ? 'Back to workspace' : 'العودة لمساحة العمل'}><ArrowRight size={16} /></button>
+                <strong><Workflow size={16} />{appLanguage === 'en' ? 'Mind maps' : 'الخرائط الذهنية'}</strong>
+                <button type="button" className="mind-map-list-add" aria-label={appLanguage === 'en' ? 'Create mind map' : 'إنشاء خريطة ذهنية'} title={appLanguage === 'en' ? 'Create mind map' : 'إنشاء خريطة ذهنية'} onClick={createProject}><Plus size={16} /></button>
               </>}
             </div>
             {!mapListCollapsed && <div className="mind-map-home-items">
               {workspaceProjects.map((project) => <div className="mind-map-list-row" key={project.id}>
-                <button type="button" className="mind-map-list-item" title={project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')} onClick={() => openProject(project)}>
-                  <Workflow size={15} /><span>{project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</span>
+                <button type="button" className="mind-map-list-item" title={project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'خريطة بدون عنوان')} onClick={() => openProject(project)}>
+                  <Workflow size={15} /><span>{project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'خريطة بدون عنوان')}</span>
                 </button>
-                <button type="button" className="mind-map-item-delete" aria-label={`${appLanguage === 'en' ? 'Delete mind map' : 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'} ${project.title || ''}`} title={appLanguage === 'en' ? 'Delete mind map' : 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'} onClick={() => requestDeleteProject(project.id)}><Trash2 size={14} /></button>
+                <button type="button" className="mind-map-item-delete" aria-label={`${appLanguage === 'en' ? 'Delete mind map' : 'حذف الخريطة الذهنية'} ${project.title || ''}`} title={appLanguage === 'en' ? 'Delete mind map' : 'حذف الخريطة الذهنية'} onClick={() => requestDeleteProject(project.id)}><Trash2 size={14} /></button>
               </div>)}
-              {!workspaceProjects.length && <span className="mind-map-list-empty">{appLanguage === 'en' ? 'No mind maps yet.' : 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø®Ø±Ø§Ø¦Ø· Ø°Ù‡Ù†ÙŠØ© Ø¨Ø¹Ø¯.'}</span>}
+              {!workspaceProjects.length && <span className="mind-map-list-empty">{appLanguage === 'en' ? 'No mind maps yet.' : 'لا توجد خرائط ذهنية بعد.'}</span>}
             </div>}
           </aside>
           <section className="mind-map-home-main">
             <span className="mind-map-home-icon"><Workflow size={30} /></span>
-            <h1>{appLanguage === 'en' ? 'Start a mind map' : 'Ø§Ø¨Ø¯Ø£ Ø®Ø±ÙŠØ·ØªÙƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'}</h1>
+            <h1>{appLanguage === 'en' ? 'Start a mind map' : 'ابدأ خريطتك الذهنية'}</h1>
             <p>{workspaceProjects.length
-              ? (appLanguage === 'en' ? 'Choose a mind map from the sidebar, or create a new one.' : 'Ø§Ø®ØªØ± Ø®Ø±ÙŠØ·Ø© Ù…Ù† Ø§Ù„Ø´Ø±ÙŠØ· Ø§Ù„Ø¬Ø§Ù†Ø¨ÙŠ Ø£Ùˆ Ø£Ù†Ø´Ø¦ Ø®Ø±ÙŠØ·Ø© Ø¬Ø¯ÙŠØ¯Ø©.')
-              : (appLanguage === 'en' ? 'Create your first mind map in this workspace.' : 'Ø£Ù†Ø´Ø¦ Ø£ÙˆÙ„ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© ÙÙŠ Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„ Ù‡Ø°Ù‡.')}</p>
-            <button type="button" className="library-button primary" onClick={createProject}><Plus size={17} />{appLanguage === 'en' ? 'Create mind map' : 'Ø¥Ù†Ø´Ø§Ø¡ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©'}</button>
+              ? (appLanguage === 'en' ? 'Choose a mind map from the sidebar, or create a new one.' : 'اختر خريطة من الشريط الجانبي أو أنشئ خريطة جديدة.')
+              : (appLanguage === 'en' ? 'Create your first mind map in this workspace.' : 'أنشئ أول خريطة ذهنية في مساحة العمل هذه.')}</p>
+            <button type="button" className="library-button primary" onClick={createProject}><Plus size={17} />{appLanguage === 'en' ? 'Create mind map' : 'إنشاء خريطة ذهنية'}</button>
           </section>
         </section>
       </>) : <>
       <header className="library-header workspace-header">
-        <div className="library-brand"><button type="button" className="workspace-back" onClick={() => runPageTransition(() => { setWorkspaceOpen(false); setActiveWorkspaceId(null); setActiveProjectId(null); setActiveNoteId(null); setLibraryOpen(true) }, 'backward')}><ArrowRight size={17} /> ÙƒÙ„ Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹</button><span className="brand-mark"><Workflow size={20} /></span><strong>ÙˆØ±Ù‚Ø©</strong></div>
+        <div className="library-brand"><button type="button" className="workspace-back" onClick={() => runPageTransition(() => { setWorkspaceOpen(false); setActiveWorkspaceId(null); setActiveProjectId(null); setActiveNoteId(null); setLibraryOpen(true) }, 'backward')}><ArrowRight size={17} /> كل المشاريع</button><span className="brand-mark"><Workflow size={20} /></span><strong>ورقة</strong></div>
         <div className="library-actions">
           <DocumentImportButton onClick={() => documentImportRef.current?.click()} language={appLanguage} />
           <input ref={documentImportRef} type="file" accept="application/json,.json" onChange={importOpenDocument} hidden />
-          <button className="library-button secondary" type="button" onClick={createWorkspaceNote}><StickyNote size={16} /> Ù…Ù„Ø§Ø­Ø¸Ø© Ø¬Ø¯ÙŠØ¯Ø©</button>
-          <button className="library-button secondary" type="button" onClick={() => selectTool('ui-design')}><LayoutTemplate size={16} /> ØªØµÙ…ÙŠÙ… ÙˆØ§Ø¬Ù‡Ø§Øª</button>
-          <button className="library-button primary" type="button" onClick={createProject}><Plus size={18} /> Ø®Ø±ÙŠØ·Ø© Ø¬Ø¯ÙŠØ¯Ø©</button>
+          <button className="library-button secondary" type="button" onClick={createWorkspaceNote}><StickyNote size={16} /> ملاحظة جديدة</button>
+          <button className="library-button secondary" type="button" onClick={() => selectTool('ui-design')}><LayoutTemplate size={16} /> تصميم واجهات</button>
+          <button className="library-button primary" type="button" onClick={createProject}><Plus size={18} /> خريطة جديدة</button>
         </div>
       </header>
       <section className="library-content workspace-content">
-        <span className="library-kicker">Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹</span>
-        <input className="workspace-title-input" aria-label="Ø§Ø³Ù… Ø§Ù„Ù…Ø´Ø±ÙˆØ¹" value={activeWorkspace?.title || ''} onChange={(event) => renameWorkspace(activeWorkspaceId, event.target.value)} />
-        <p className="library-subtitle">Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯.</p>
+        <span className="library-kicker">مساحة المشروع</span>
+        <input className="workspace-title-input" aria-label="اسم المشروع" value={activeWorkspace?.title || ''} onChange={(event) => renameWorkspace(activeWorkspaceId, event.target.value)} />
+        <p className="library-subtitle">خرائطك الذهنية وملاحظاتك في مكان واحد.</p>
         <div className="workspace-document-grid">
           {workspaceProjects.map((project) => (
             <article className="workspace-document-card" key={project.id}>
               <button type="button" className="workspace-document-open" onClick={() => openProject(project)}>
                 <span className="project-art"><Workflow size={25} /></span>
-                <strong>{project.title || 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong>
-                <small>{project.nodes?.length || 0} Ø¹Ù‚Ø¯Ø© Â· {project.edges?.length || 0} Ø±Ø§Ø¨Ø·</small>
+                <strong>{project.title || 'خريطة بدون عنوان'}</strong>
+                <small>{project.nodes?.length || 0} عقدة Â· {project.edges?.length || 0} رابط</small>
               </button>
-              <button type="button" className="project-delete" aria-label={`Ø­Ø°Ù ${project.title || 'Ø§Ù„Ø®Ø±ÙŠØ·Ø©'}`} onClick={() => requestDeleteProject(project.id)}><Trash2 size={15} /></button>
+              <button type="button" className="project-delete" aria-label={`حذف ${project.title || 'الخريطة'}`} onClick={() => requestDeleteProject(project.id)}><Trash2 size={15} /></button>
             </article>
           ))}
           {workspaceNotes.map((note) => (
             <article className="workspace-document-card" key={note.id}>
               <button type="button" className="workspace-document-open" onClick={() => selectNoteTab(note.id)}>
                 <span className="project-art"><StickyNote size={25} /></span>
-                <strong>{note.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong>
-                <small>{note.pages?.length || 1} ØµÙØ­Ø©</small>
+                <strong>{note.title || 'ملاحظة بدون عنوان'}</strong>
+                <small>{note.pages?.length || 1} صفحة</small>
               </button>
             </article>
           ))}
@@ -3960,8 +3960,8 @@ function App() {
             <article className="workspace-document-card" key={flowchart.id}>
               <button type="button" className="workspace-document-open" onClick={() => openFlowchart(flowchart)}>
                 <span className="project-art"><GitBranch size={25} /></span>
-                <strong>{flowchart.title || (appLanguage === 'en' ? 'Untitled flowchart' : 'Ù…Ø®Ø·Ø· Ø§Ù†Ø³ÙŠØ§Ø¨ÙŠ Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</strong>
-                <small>{flowchart.nodes.length} {appLanguage === 'en' ? 'shapes' : 'Ø´ÙƒÙ„'}</small>
+                <strong>{flowchart.title || (appLanguage === 'en' ? 'Untitled flowchart' : 'مخطط انسيابي بدون عنوان')}</strong>
+                <small>{flowchart.nodes.length} {appLanguage === 'en' ? 'shapes' : 'شكل'}</small>
               </button>
             </article>
           ))}
@@ -3969,23 +3969,23 @@ function App() {
             <article className="workspace-document-card" key={design.id}>
               <button type="button" className="workspace-document-open" onClick={() => openUiDesign(design)}>
                 <span className="project-art"><LayoutTemplate size={25} /></span>
-                <strong>{design.title || (appLanguage === 'en' ? 'Untitled UI design' : 'ØªØµÙ…ÙŠÙ… ÙˆØ§Ø¬Ù‡Ø§Øª Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</strong>
-                <small>{design.screens.length} {appLanguage === 'en' ? 'screens' : 'Ø´Ø§Ø´Ø©'}</small>
+                <strong>{design.title || (appLanguage === 'en' ? 'Untitled UI design' : 'تصميم واجهات بدون عنوان')}</strong>
+                <small>{design.screens.length} {appLanguage === 'en' ? 'screens' : 'شاشة'}</small>
               </button>
             </article>
           ))}
           {workspaceTasks.length > 0 && <article className="workspace-document-card">
             <button type="button" className="workspace-document-open" onClick={() => selectTool('tasks')}>
               <span className="project-art"><ListTodo size={25} /></span>
-              <strong>{appLanguage === 'en' ? 'Tasks' : 'Ø§Ù„Ù…Ù‡Ø§Ù…'}</strong>
-              <small>{workspaceTasks.filter((task) => !task.completed).length} {appLanguage === 'en' ? 'remaining' : 'Ù…ØªØ¨Ù‚ÙŠØ©'}</small>
+              <strong>{appLanguage === 'en' ? 'Tasks' : 'المهام'}</strong>
+              <small>{workspaceTasks.filter((task) => !task.completed).length} {appLanguage === 'en' ? 'remaining' : 'متبقية'}</small>
             </button>
           </article>}
           {!workspaceProjects.length && !workspaceNotes.length && !workspaceTasks.length && !workspaceFlowcharts.length && !workspaceUiDesigns.length && (
             <div className="workspace-empty">
               <span className="empty-bulb"><Lightbulb size={26} /></span>
-              <h2>Ø§Ø¨Ø¯Ø£ Ù…Ø³Ø§Ø­Ø© Ù…Ø´Ø±ÙˆØ¹Ùƒ</h2>
-              <p>Ø£Ø¶Ù Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© Ø£Ùˆ Ù…Ù„Ø§Ø­Ø¸Ø© Ø¬Ø¯ÙŠØ¯Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹.</p>
+              <h2>ابدأ مساحة مشروعك</h2>
+              <p>أضف خريطة ذهنية أو ملاحظة جديدة لهذا المشروع.</p>
             </div>
           )}
         </div>
@@ -3994,9 +3994,9 @@ function App() {
       {pendingDeleteProject && <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setPendingDeleteProject(null) }}>
         <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-map-title" dir="rtl">
           <span className="confirm-icon"><Trash2 size={21} /></span>
-          <h2 id="delete-map-title">Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø©ØŸ</h2>
-          <p>Ù‡Ù„ ØªØ±ÙŠØ¯ Ø­Ø°Ù <strong>{pendingDeleteProject.title || 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong> Ù†Ù‡Ø§Ø¦ÙŠÙ‹Ø§ØŸ</p>
-          <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setPendingDeleteProject(null)}>Ø¥Ù„ØºØ§Ø¡</button><button type="button" className="confirm-delete" onClick={confirmDeleteProject}>Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø©</button></div>
+          <h2 id="delete-map-title">حذف الخريطة؟</h2>
+          <p>هل تريد حذف <strong>{pendingDeleteProject.title || 'خريطة بدون عنوان'}</strong> نهائيًا؟</p>
+          <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setPendingDeleteProject(null)}>إلغاء</button><button type="button" className="confirm-delete" onClick={confirmDeleteProject}>حذف الخريطة</button></div>
         </section>
       </div>}
       {settingsDialog}
@@ -4009,16 +4009,16 @@ function App() {
     <LocalizedContent language={appLanguage}>
     <main className={`app-shell ui-design-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
       <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
-      <header className="topbar flowchart-topbar" aria-label={appLanguage === 'en' ? 'Window bar' : 'Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
-        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©"><span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span></div>
+      <header className="topbar flowchart-topbar" aria-label={appLanguage === 'en' ? 'Window bar' : 'شريط النافذة'}>
+        <div className="brand-lockup topbar-brand" aria-label="ورقة"><span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span></div>
         <DocumentImportButton onClick={() => documentImportRef.current?.click()} language={appLanguage} />
         <input ref={documentImportRef} type="file" accept="application/json,.json" onChange={importOpenDocument} hidden />
         <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
         <ToolSwitcher activeTool={activeTool} onSelect={selectTool} language={appLanguage} />
-        {desktopWindow && <div className="window-controls" aria-label={appLanguage === 'en' ? 'Window controls' : 'Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
-          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Minimize' : 'ØªØµØºÙŠØ±'} aria-label={appLanguage === 'en' ? 'Minimize window' : 'ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
-          <button type="button" className="window-control" title={desktopMaximized ? (appLanguage === 'en' ? 'Restore' : 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©') : (appLanguage === 'en' ? 'Maximize' : 'ØªÙƒØ¨ÙŠØ±')} aria-label={desktopMaximized ? (appLanguage === 'en' ? 'Restore window' : 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©') : (appLanguage === 'en' ? 'Maximize window' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©')} onClick={() => desktopWindow.toggleMaximize()}>{desktopMaximized ? <Copy size={12} /> : <Square size={13} />}</button>
-          <button type="button" className="window-control window-control-close" title={appLanguage === 'en' ? 'Close' : 'Ø¥ØºÙ„Ø§Ù‚'} aria-label={appLanguage === 'en' ? 'Close window' : 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.close()}><X size={16} /></button>
+        {desktopWindow && <div className="window-controls" aria-label={appLanguage === 'en' ? 'Window controls' : 'أزرار النافذة'}>
+          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Minimize' : 'تصغير'} aria-label={appLanguage === 'en' ? 'Minimize window' : 'تصغير النافذة'} onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? (appLanguage === 'en' ? 'Restore' : 'استعادة') : (appLanguage === 'en' ? 'Maximize' : 'تكبير')} aria-label={desktopMaximized ? (appLanguage === 'en' ? 'Restore window' : 'استعادة النافذة') : (appLanguage === 'en' ? 'Maximize window' : 'تكبير النافذة')} onClick={() => desktopWindow.toggleMaximize()}>{desktopMaximized ? <Copy size={12} /> : <Square size={13} />}</button>
+          <button type="button" className="window-control window-control-close" title={appLanguage === 'en' ? 'Close' : 'إغلاق'} aria-label={appLanguage === 'en' ? 'Close window' : 'إغلاق النافذة'} onClick={() => desktopWindow.close()}><X size={16} /></button>
         </div>}
       </header>
       {sharedProjectTabs}
@@ -4033,14 +4033,14 @@ function App() {
     <LocalizedContent language={appLanguage}>
     <main className={`app-shell flowchart-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
       <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
-      <header className="topbar flowchart-topbar" aria-label={appLanguage === 'en' ? 'Window bar' : 'Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
-        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©"><span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span></div>
+      <header className="topbar flowchart-topbar" aria-label={appLanguage === 'en' ? 'Window bar' : 'شريط النافذة'}>
+        <div className="brand-lockup topbar-brand" aria-label="ورقة"><span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span></div>
         <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
         <ToolSwitcher activeTool={activeTool} onSelect={selectTool} language={appLanguage} />
-        {desktopWindow && <div className="window-controls" aria-label={appLanguage === 'en' ? 'Window controls' : 'Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
-          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Minimize' : 'ØªØµØºÙŠØ±'} aria-label={appLanguage === 'en' ? 'Minimize window' : 'ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
-          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Maximize' : 'ØªÙƒØ¨ÙŠØ±'} aria-label={appLanguage === 'en' ? 'Maximize window' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.toggleMaximize()}><Square size={13} /></button>
-          <button type="button" className="window-control window-control-close" title={appLanguage === 'en' ? 'Close' : 'Ø¥ØºÙ„Ø§Ù‚'} aria-label={appLanguage === 'en' ? 'Close window' : 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.close()}><X size={16} /></button>
+        {desktopWindow && <div className="window-controls" aria-label={appLanguage === 'en' ? 'Window controls' : 'أزرار النافذة'}>
+          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Minimize' : 'تصغير'} aria-label={appLanguage === 'en' ? 'Minimize window' : 'تصغير النافذة'} onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Maximize' : 'تكبير'} aria-label={appLanguage === 'en' ? 'Maximize window' : 'تكبير النافذة'} onClick={() => desktopWindow.toggleMaximize()}><Square size={13} /></button>
+          <button type="button" className="window-control window-control-close" title={appLanguage === 'en' ? 'Close' : 'إغلاق'} aria-label={appLanguage === 'en' ? 'Close window' : 'إغلاق النافذة'} onClick={() => desktopWindow.close()}><X size={16} /></button>
         </div>}
       </header>
       {sharedProjectTabs}
@@ -4068,18 +4068,18 @@ function App() {
     <LocalizedContent language={appLanguage}>
     <main className={`app-shell notes-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
       <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
-      <header className="topbar notes-topbar" aria-label="Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©">
-        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©">
+      <header className="topbar notes-topbar" aria-label="شريط النافذة">
+        <div className="brand-lockup topbar-brand" aria-label="ورقة">
           <span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span>
         </div>
         <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
         <ToolSwitcher activeTool={activeTool} onSelect={selectTool} language={appLanguage} />
-        {desktopWindow && <div className="window-controls" aria-label="Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©">
-          <button type="button" className="window-control" title="ØªØµØºÙŠØ±" aria-label="ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
-          <button type="button" className="window-control" title={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©' : 'ØªÙƒØ¨ÙŠØ±'} aria-label={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.toggleMaximize()}>
+        {desktopWindow && <div className="window-controls" aria-label="أزرار النافذة">
+          <button type="button" className="window-control" title="تصغير" aria-label="تصغير النافذة" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? 'استعادة' : 'تكبير'} aria-label={desktopMaximized ? 'استعادة النافذة' : 'تكبير النافذة'} onClick={() => desktopWindow.toggleMaximize()}>
             {desktopMaximized ? <Copy size={12} /> : <Square size={13} />}
           </button>
-          <button type="button" className="window-control window-control-close" title="Ø¥ØºÙ„Ø§Ù‚" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.close()}><X size={16} /></button>
+          <button type="button" className="window-control window-control-close" title="إغلاق" aria-label="إغلاق النافذة" onClick={() => desktopWindow.close()}><X size={16} /></button>
         </div>}
       </header>
       {sharedProjectTabs}
@@ -4107,16 +4107,16 @@ function App() {
     <LocalizedContent language={appLanguage}>
     <main className={`app-shell tasks-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
       <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
-      <header className="topbar tasks-topbar" aria-label={appLanguage === 'en' ? 'Window bar' : 'Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
-        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©">
+      <header className="topbar tasks-topbar" aria-label={appLanguage === 'en' ? 'Window bar' : 'شريط النافذة'}>
+        <div className="brand-lockup topbar-brand" aria-label="ورقة">
           <span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span>
         </div>
         <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
         <ToolSwitcher activeTool={activeTool} onSelect={selectTool} language={appLanguage} />
-        {desktopWindow && <div className="window-controls" aria-label={appLanguage === 'en' ? 'Window controls' : 'Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
-          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Minimize' : 'ØªØµØºÙŠØ±'} aria-label={appLanguage === 'en' ? 'Minimize window' : 'ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
-          <button type="button" className="window-control" title={desktopMaximized ? (appLanguage === 'en' ? 'Restore' : 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©') : (appLanguage === 'en' ? 'Maximize' : 'ØªÙƒØ¨ÙŠØ±')} aria-label={desktopMaximized ? (appLanguage === 'en' ? 'Restore window' : 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©') : (appLanguage === 'en' ? 'Maximize window' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©')} onClick={() => desktopWindow.toggleMaximize()}>{desktopMaximized ? <Copy size={12} /> : <Square size={13} />}</button>
-          <button type="button" className="window-control window-control-close" title={appLanguage === 'en' ? 'Close' : 'Ø¥ØºÙ„Ø§Ù‚'} aria-label={appLanguage === 'en' ? 'Close window' : 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.close()}><X size={16} /></button>
+        {desktopWindow && <div className="window-controls" aria-label={appLanguage === 'en' ? 'Window controls' : 'أزرار النافذة'}>
+          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Minimize' : 'تصغير'} aria-label={appLanguage === 'en' ? 'Minimize window' : 'تصغير النافذة'} onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? (appLanguage === 'en' ? 'Restore' : 'استعادة') : (appLanguage === 'en' ? 'Maximize' : 'تكبير')} aria-label={desktopMaximized ? (appLanguage === 'en' ? 'Restore window' : 'استعادة النافذة') : (appLanguage === 'en' ? 'Maximize window' : 'تكبير النافذة')} onClick={() => desktopWindow.toggleMaximize()}>{desktopMaximized ? <Copy size={12} /> : <Square size={13} />}</button>
+          <button type="button" className="window-control window-control-close" title={appLanguage === 'en' ? 'Close' : 'إغلاق'} aria-label={appLanguage === 'en' ? 'Close window' : 'إغلاق النافذة'} onClick={() => desktopWindow.close()}><X size={16} /></button>
         </div>}
       </header>
       {sharedProjectTabs}
@@ -4130,30 +4130,30 @@ function App() {
   if (libraryOpen) return (
     <LocalizedContent language={appLanguage}>
     <main className={`library-shell library-home-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
-      {desktopWindow && <header className="topbar library-window-bar" aria-label="Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©">
-        <div className="window-controls" aria-label="Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©">
-          <button type="button" className="window-control" title="ØªØµØºÙŠØ±" aria-label="ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
-          <button type="button" className="window-control" title={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©' : 'ØªÙƒØ¨ÙŠØ±'} aria-label={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.toggleMaximize()}>
+      {desktopWindow && <header className="topbar library-window-bar" aria-label="أزرار النافذة">
+        <div className="window-controls" aria-label="أزرار النافذة">
+          <button type="button" className="window-control" title="تصغير" aria-label="تصغير النافذة" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? 'استعادة' : 'تكبير'} aria-label={desktopMaximized ? 'استعادة النافذة' : 'تكبير النافذة'} onClick={() => desktopWindow.toggleMaximize()}>
             {desktopMaximized ? <Copy size={12} /> : <Square size={13} />}
           </button>
-          <button type="button" className="window-control window-control-close" title="Ø¥ØºÙ„Ø§Ù‚" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.close()}><X size={16} /></button>
+          <button type="button" className="window-control window-control-close" title="إغلاق" aria-label="إغلاق النافذة" onClick={() => desktopWindow.close()}><X size={16} /></button>
         </div>
       </header>}
-      <header className="library-header"><div className="library-brand"><span className="brand-mark"><Workflow size={20} /></span><strong>ÙˆØ±Ù‚Ø©</strong><span>Ù…Ø³Ø§Ø­Ø© Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ</span></div><div className="library-actions"><button type="button" className="library-button secondary" onClick={() => projectFolderImportRef.current?.click()}><ArrowUpFromLine size={17} /> Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ù…Ø¬Ù„Ø¯</button><input ref={projectFolderImportRef} type="file" webkitdirectory="" directory="" multiple hidden onChange={importProjectFile} /><button className="library-button primary" onClick={createWorkspace}><Plus size={18} /> Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯</button></div></header>
-      <section className="library-content"><span className="library-kicker">Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„</span><h1>Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ</h1><p className="library-subtitle">ÙƒÙ„ Ù…Ø´Ø±ÙˆØ¹ ÙŠØ¶Ù… Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ.</p>
+      <header className="library-header"><div className="library-brand"><span className="brand-mark"><Workflow size={20} /></span><strong>ورقة</strong><span>مساحة مشاريعك</span></div><div className="library-actions"><button type="button" className="library-button secondary" onClick={() => projectFolderImportRef.current?.click()}><ArrowUpFromLine size={17} /> استيراد مجلد</button><input ref={projectFolderImportRef} type="file" webkitdirectory="" directory="" multiple hidden onChange={importProjectFile} /><button className="library-button primary" onClick={createWorkspace}><Plus size={18} /> مشروع جديد</button></div></header>
+      <section className="library-content"><span className="library-kicker">مساحة العمل</span><h1>مشاريعك</h1><p className="library-subtitle">كل مشروع يضم خرائطك الذهنية وملاحظاتك.</p>
          {workspaces.length ? <div className="project-grid">{workspaces.map((workspace) => {
            const mapCount = projects.filter((project) => project.workspaceId === workspace.id).length
            const noteCount = standaloneNotes.filter((note) => note.workspaceId === workspace.id).length
            const taskCount = tasks.filter((task) => task.workspaceId === workspace.id).length
-           return <article className="project-card" key={workspace.id}><button className="project-open" onClick={() => openWorkspace(workspace)}><span className="project-art"><Workflow size={28} /></span><strong>{workspace.title || 'Ù…Ø´Ø±ÙˆØ¹ Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong><small>{mapCount} Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© Â· {noteCount} Ù…Ù„Ø§Ø­Ø¸Ø© Â· {taskCount} Ù…Ù‡Ù…Ø©</small><small>Ø¢Ø®Ø± ØªØ¹Ø¯ÙŠÙ„: {workspace.updatedAt ? new Date(workspace.updatedAt).toLocaleDateString(appLanguage === 'en' ? 'en-GB' : 'ar-EG') : 'â€”'}</small></button><button className="project-export" title={appLanguage === 'en' ? 'Export AI-ready project' : 'ØªØµØ¯ÙŠØ± Ø­Ø²Ù…Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹'} disabled={exportingWorkspace} onClick={(event) => { event.stopPropagation(); exportWorkspaceArchive(workspace) }}><ArrowDownToLine size={15} /></button><button className="project-delete" aria-label="Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹" onClick={() => setPendingDeleteWorkspace(workspace)}><Trash2 size={16} /></button></article>
-         })}</div> : <div className="library-empty"><span className="empty-bulb"><Lightbulb size={28} /></span><h2>Ø§Ø¨Ø¯Ø£ Ø£ÙˆÙ„ Ù…Ø´Ø±ÙˆØ¹ Ù„Ùƒ</h2><p>Ø£Ù†Ø´Ø¦ Ù…Ø´Ø±ÙˆØ¹Ù‹Ø§ ÙŠØ¬Ù…Ø¹ Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ.</p><button className="library-button primary" onClick={createWorkspace}><Plus size={18} /> Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø´Ø±ÙˆØ¹</button></div>}
+           return <article className="project-card" key={workspace.id}><button className="project-open" onClick={() => openWorkspace(workspace)}><span className="project-art"><Workflow size={28} /></span><strong>{workspace.title || 'مشروع بدون عنوان'}</strong><small>{mapCount} خريطة ذهنية Â· {noteCount} ملاحظة Â· {taskCount} مهمة</small><small>آخر تعديل: {workspace.updatedAt ? new Date(workspace.updatedAt).toLocaleDateString(appLanguage === 'en' ? 'en-GB' : 'ar-EG') : 'â€”'}</small></button><button className="project-export" title={appLanguage === 'en' ? 'Export AI-ready project' : 'تصدير حزمة المشروع'} disabled={exportingWorkspace} onClick={(event) => { event.stopPropagation(); exportWorkspaceArchive(workspace) }}><ArrowDownToLine size={15} /></button><button className="project-delete" aria-label="حذف المشروع" onClick={() => setPendingDeleteWorkspace(workspace)}><Trash2 size={16} /></button></article>
+         })}</div> : <div className="library-empty"><span className="empty-bulb"><Lightbulb size={28} /></span><h2>ابدأ أول مشروع لك</h2><p>أنشئ مشروعًا يجمع خرائطك الذهنية وملاحظاتك.</p><button className="library-button primary" onClick={createWorkspace}><Plus size={18} /> إنشاء مشروع</button></div>}
       </section>
       {pendingDeleteWorkspace && <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setPendingDeleteWorkspace(null) }}>
         <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-workspace-title" aria-describedby="delete-workspace-description" dir="rtl">
           <span className="confirm-icon"><Trash2 size={21} /></span>
-          <h2 id="delete-workspace-title">Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ØŸ</h2>
-          <p id="delete-workspace-description">Ø³ÙŠØªÙ… Ø­Ø°Ù <strong>{pendingDeleteWorkspace.title || 'Ù…Ø´Ø±ÙˆØ¹ Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong> ÙˆÙƒÙ„ Ø§Ù„Ø®Ø±Ø§Ø¦Ø· ÙˆØ§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ù„Ù…ÙˆØ¬ÙˆØ¯Ø© Ø¨Ø¯Ø§Ø®Ù„Ù‡ Ù†Ù‡Ø§Ø¦ÙŠÙ‹Ø§.</p>
-          <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setPendingDeleteWorkspace(null)}>Ø¥Ù„ØºØ§Ø¡</button><button type="button" className="confirm-delete" onClick={confirmDeleteWorkspace}>Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹</button></div>
+          <h2 id="delete-workspace-title">حذف المشروع؟</h2>
+          <p id="delete-workspace-description">سيتم حذف <strong>{pendingDeleteWorkspace.title || 'مشروع بدون عنوان'}</strong> وكل الخرائط والملاحظات الموجودة بداخله نهائيًا.</p>
+          <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setPendingDeleteWorkspace(null)}>إلغاء</button><button type="button" className="confirm-delete" onClick={confirmDeleteWorkspace}>حذف المشروع</button></div>
         </section>
       </div>}
     </main>
@@ -4165,7 +4165,7 @@ function App() {
     <main className={`app-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
       <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
       <header className="topbar">
-        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©">
+        <div className="brand-lockup topbar-brand" aria-label="ورقة">
           <span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span>
         </div>
         <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
@@ -4173,97 +4173,97 @@ function App() {
         <button
           type="button"
           className="tools-toggle-button"
-          aria-label={toolsOpen ? (appLanguage === 'en' ? 'Hide map tools' : 'Ø¥Ø®ÙØ§Ø¡ Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø©') : (appLanguage === 'en' ? 'Show map tools' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø©')}
-          title={toolsOpen ? (appLanguage === 'en' ? 'Hide map tools' : 'Ø¥Ø®ÙØ§Ø¡ Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø©') : (appLanguage === 'en' ? 'Show map tools' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø©')}
+          aria-label={toolsOpen ? (appLanguage === 'en' ? 'Hide map tools' : 'إخفاء أدوات الخريطة') : (appLanguage === 'en' ? 'Show map tools' : 'إظهار أدوات الخريطة')}
+          title={toolsOpen ? (appLanguage === 'en' ? 'Hide map tools' : 'إخفاء أدوات الخريطة') : (appLanguage === 'en' ? 'Show map tools' : 'إظهار أدوات الخريطة')}
           aria-expanded={toolsOpen}
           onClick={() => setToolsOpen((open) => !open)}
         >{toolsOpen ? <PanelRightClose size={17} /> : <PanelRightOpen size={17} />}</button>
-        <nav className="app-menubar" aria-label="Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„ØªØ·Ø¨ÙŠÙ‚" role="menubar">
+        <nav className="app-menubar" aria-label="قائمة التطبيق" role="menubar">
           <div className="app-menu-item">
-            <button className={`app-menu-trigger${activeMenu === 'file' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'file'} onClick={() => setActiveMenu((menu) => menu === 'file' ? null : 'file')}>Ù…Ù„Ù</button>
+            <button className={`app-menu-trigger${activeMenu === 'file' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'file'} onClick={() => setActiveMenu((menu) => menu === 'file' ? null : 'file')}>ملف</button>
             {activeMenu === 'file' && <div className="app-menu-popover" role="menu">
-              <button type="button" role="menuitem" onClick={() => { saveNow(); setActiveMenu(null) }}><Save size={15} /><span>Ø­ÙØ¸ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹</span><kbd>Ctrl+S</kbd></button>
-              <button type="button" role="menuitem" onClick={() => { setActiveMenu(null); createProject() }}><Plus size={15} /><span>Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯</span></button>
-              <button type="button" role="menuitem" onClick={() => { saveNow(); setActiveMenu(null); runPageTransition(() => { setActiveProjectId(null); setActiveWorkspaceId(null); setActiveNoteId(null); setWorkspaceOpen(false); setLibraryOpen(true) }, 'backward') }}><Workflow size={15} /><span>ÙƒÙ„ Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹</span></button>
-              <button type="button" role="menuitem" onClick={openRenameProject}><Pencil size={15} /><span>Ø¥Ø¹Ø§Ø¯Ø© ØªØ³Ù…ÙŠØ© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹...</span></button>
+              <button type="button" role="menuitem" onClick={() => { saveNow(); setActiveMenu(null) }}><Save size={15} /><span>حفظ المشروع</span><kbd>Ctrl+S</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { setActiveMenu(null); createProject() }}><Plus size={15} /><span>مشروع جديد</span></button>
+              <button type="button" role="menuitem" onClick={() => { saveNow(); setActiveMenu(null); runPageTransition(() => { setActiveProjectId(null); setActiveWorkspaceId(null); setActiveNoteId(null); setWorkspaceOpen(false); setLibraryOpen(true) }, 'backward') }}><Workflow size={15} /><span>كل المشاريع</span></button>
+              <button type="button" role="menuitem" onClick={openRenameProject}><Pencil size={15} /><span>إعادة تسمية المشروع...</span></button>
               <span className="app-menu-separator" />
-              <button type="button" role="menuitem" onClick={() => { setActiveMenu(null); importRef.current?.click() }}><ArrowUpFromLine size={15} /><span>Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø®Ø±ÙŠØ·Ø©...</span></button>
+              <button type="button" role="menuitem" onClick={() => { setActiveMenu(null); importRef.current?.click() }}><ArrowUpFromLine size={15} /><span>استيراد خريطة...</span></button>
               <input ref={importRef} type="file" accept="application/json,.json" onChange={importMap} hidden />
               <span className="app-menu-separator" />
-              <button type="button" role="menuitem" onClick={() => { exportImage(); setActiveMenu(null) }} disabled={!nodes.length || exportingImage}><Image size={15} /><span>ØªØµØ¯ÙŠØ± ØµÙˆØ±Ø© PNG</span></button>
-              <button type="button" role="menuitem" onClick={() => { exportSvg(); setActiveMenu(null) }} disabled={!nodes.length}><Image size={15} /><span>ØªØµØ¯ÙŠØ± ØµÙˆØ±Ø© SVG</span></button>
-              <button type="button" role="menuitem" onClick={() => { exportMarkdown(); setActiveMenu(null) }}><FileText size={15} /><span>ØªØµØ¯ÙŠØ± Markdown</span></button>
-              <button type="button" role="menuitem" onClick={() => { exportMap(); setActiveMenu(null) }}><ArrowDownToLine size={15} /><span>ØªØµØ¯ÙŠØ± JSON</span></button>
+              <button type="button" role="menuitem" onClick={() => { exportImage(); setActiveMenu(null) }} disabled={!nodes.length || exportingImage}><Image size={15} /><span>تصدير صورة PNG</span></button>
+              <button type="button" role="menuitem" onClick={() => { exportSvg(); setActiveMenu(null) }} disabled={!nodes.length}><Image size={15} /><span>تصدير صورة SVG</span></button>
+              <button type="button" role="menuitem" onClick={() => { exportMarkdown(); setActiveMenu(null) }}><FileText size={15} /><span>تصدير Markdown</span></button>
+              <button type="button" role="menuitem" onClick={() => { exportMap(); setActiveMenu(null) }}><ArrowDownToLine size={15} /><span>تصدير JSON</span></button>
             </div>}
           </div>
 
           <div className="app-menu-item">
-            <button className={`app-menu-trigger${activeMenu === 'edit' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'edit'} onClick={() => setActiveMenu((menu) => menu === 'edit' ? null : 'edit')}>ØªØ­Ø±ÙŠØ±</button>
+            <button className={`app-menu-trigger${activeMenu === 'edit' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'edit'} onClick={() => setActiveMenu((menu) => menu === 'edit' ? null : 'edit')}>تحرير</button>
             {activeMenu === 'edit' && <div className="app-menu-popover" role="menu">
-              <button type="button" role="menuitem" onClick={() => { undo(); setActiveMenu(null) }} disabled={!undoStack.length}><Undo2 size={15} /><span>ØªØ±Ø§Ø¬Ø¹</span><kbd>Ctrl+Z</kbd></button>
-              <button type="button" role="menuitem" onClick={() => { redo(); setActiveMenu(null) }} disabled={!redoStack.length}><Redo2 size={15} /><span>Ø¥Ø¹Ø§Ø¯Ø©</span><kbd>Ctrl+Y</kbd></button>
-              <button type="button" role="menuitem" onClick={() => { arrangeAllNodes(); setActiveMenu(null) }} disabled={nodes.length < 2}><Network size={15} /><span>ØªØ±ØªÙŠØ¨ Ø§Ù„Ø®Ø±ÙŠØ·Ø©</span><kbd>Ctrl+Shift+L</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { undo(); setActiveMenu(null) }} disabled={!undoStack.length}><Undo2 size={15} /><span>تراجع</span><kbd>Ctrl+Z</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { redo(); setActiveMenu(null) }} disabled={!redoStack.length}><Redo2 size={15} /><span>إعادة</span><kbd>Ctrl+Y</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { arrangeAllNodes(); setActiveMenu(null) }} disabled={nodes.length < 2}><Network size={15} /><span>ترتيب الخريطة</span><kbd>Ctrl+Shift+L</kbd></button>
               <span className="app-menu-separator" />
-              <button type="button" role="menuitem" onClick={() => { copySelected(); setActiveMenu(null) }} disabled={!selectedNode}><Copy size={15} /><span>{selectedNode?.data.kind === 'branch' ? 'Ù†Ø³Ø® Ø§Ù„ÙØ±Ø¹ ÙˆÙØ±ÙˆØ¹Ù‡' : 'Ù†Ø³Ø® Ø§Ù„Ø¹Ù‚Ø¯Ø© ÙˆÙØ±ÙˆØ¹Ù‡Ø§'}</span><kbd>Ctrl+C</kbd></button>
-              <button type="button" role="menuitem" onClick={() => { pasteCopiedNode(); setActiveMenu(null) }} disabled={!copiedNode}><ClipboardPaste size={15} /><span>{copiedNode?.nodes?.length > 1 ? 'Ù„ØµÙ‚ Ø§Ù„ÙØ±Ø¹ ÙˆÙØ±ÙˆØ¹Ù‡' : 'Ù„ØµÙ‚ Ø§Ù„Ø¹Ù‚Ø¯Ø©'}</span><kbd>Ctrl+V</kbd></button>
-              <button type="button" role="menuitem" onClick={() => { duplicateSelected(); setActiveMenu(null) }} disabled={!selectedNode}><Copy size={15} /><span>ØªÙƒØ±Ø§Ø± Ø§Ù„Ø¹Ù‚Ø¯Ø©</span><kbd>Ctrl+D</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { copySelected(); setActiveMenu(null) }} disabled={!selectedNode}><Copy size={15} /><span>{selectedNode?.data.kind === 'branch' ? 'نسخ الفرع وفروعه' : 'نسخ العقدة وفروعها'}</span><kbd>Ctrl+C</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { pasteCopiedNode(); setActiveMenu(null) }} disabled={!copiedNode}><ClipboardPaste size={15} /><span>{copiedNode?.nodes?.length > 1 ? 'لصق الفرع وفروعه' : 'لصق العقدة'}</span><kbd>Ctrl+V</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { duplicateSelected(); setActiveMenu(null) }} disabled={!selectedNode}><Copy size={15} /><span>تكرار العقدة</span><kbd>Ctrl+D</kbd></button>
               <button type="button" role="menuitem" onClick={() => {
                 if (selectedNodes.length > 1) removeSelectedNodes()
                 else removeSelected()
                 setActiveMenu(null)
-              }} disabled={!selectedNodes.length}><Trash2 size={15} /><span>Ø­Ø°Ù Ø§Ù„Ù…Ø­Ø¯Ø¯</span><kbd>Del</kbd></button>
+              }} disabled={!selectedNodes.length}><Trash2 size={15} /><span>حذف المحدد</span><kbd>Del</kbd></button>
             </div>}
           </div>
 
           <div className="app-menu-item">
-            <button className={`app-menu-trigger${activeMenu === 'view' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'view'} onClick={() => setActiveMenu((menu) => menu === 'view' ? null : 'view')}>Ø¹Ø±Ø¶</button>
+            <button className={`app-menu-trigger${activeMenu === 'view' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'view'} onClick={() => setActiveMenu((menu) => menu === 'view' ? null : 'view')}>عرض</button>
             {activeMenu === 'view' && <div className="app-menu-popover" role="menu">
-              <button type="button" role="menuitem" onClick={openSearch}><Search size={15} /><span>Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ø®Ø±ÙŠØ·Ø©...</span><kbd>Ctrl+F</kbd></button>
+              <button type="button" role="menuitem" onClick={openSearch}><Search size={15} /><span>بحث في الخريطة...</span><kbd>Ctrl+F</kbd></button>
               <span className="app-menu-separator" />
-              <button type="button" role="menuitem" onClick={() => { toggleTheme(); setActiveMenu(null) }}>{theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}<span>{theme === 'dark' ? 'Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù†Ù‡Ø§Ø±ÙŠ' : 'Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù„ÙŠÙ„ÙŠ'}</span></button>
-              <button type="button" role="menuitem" onClick={() => { setToolsOpen((open) => !open); setActiveMenu(null) }}>{toolsOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}<span>{toolsOpen ? 'Ø¥Ø®ÙØ§Ø¡ Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª'}</span></button>
-              <button type="button" role="menuitem" onClick={() => { setMiniMapVisible((visible) => { localStorage.setItem('waraqa-minimap-visible', String(!visible)); return !visible }); setActiveMenu(null) }}><MapIcon size={15} /><span>{miniMapVisible ? 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ù…ØµØºØ±Ø©' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ù…ØµØºØ±Ø©'}</span></button>
+              <button type="button" role="menuitem" onClick={() => { toggleTheme(); setActiveMenu(null) }}>{theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}<span>{theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}</span></button>
+              <button type="button" role="menuitem" onClick={() => { setToolsOpen((open) => !open); setActiveMenu(null) }}>{toolsOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}<span>{toolsOpen ? 'إخفاء شريط الأدوات' : 'إظهار شريط الأدوات'}</span></button>
+              <button type="button" role="menuitem" onClick={() => { setMiniMapVisible((visible) => { localStorage.setItem('waraqa-minimap-visible', String(!visible)); return !visible }); setActiveMenu(null) }}><MapIcon size={15} /><span>{miniMapVisible ? 'إخفاء الخريطة المصغرة' : 'إظهار الخريطة المصغرة'}</span></button>
 
             </div>}
           </div>
         </nav>
 
-        <div className="mobile-history-controls" role="group" aria-label="Ø§Ù„ØªØ±Ø§Ø¬Ø¹ ÙˆØ§Ù„Ø¥Ø¹Ø§Ø¯Ø©">
-          <button type="button" className="mobile-history-button" title="ØªØ±Ø§Ø¬Ø¹" aria-label="ØªØ±Ø§Ø¬Ø¹" onClick={undo} disabled={!undoStack.length}><Undo2 size={17} /></button>
-          <button type="button" className="mobile-history-button" title="Ø¥Ø¹Ø§Ø¯Ø©" aria-label="Ø¥Ø¹Ø§Ø¯Ø©" onClick={redo} disabled={!redoStack.length}><Redo2 size={17} /></button>
+        <div className="mobile-history-controls" role="group" aria-label="التراجع والإعادة">
+          <button type="button" className="mobile-history-button" title="تراجع" aria-label="تراجع" onClick={undo} disabled={!undoStack.length}><Undo2 size={17} /></button>
+          <button type="button" className="mobile-history-button" title="إعادة" aria-label="إعادة" onClick={redo} disabled={!redoStack.length}><Redo2 size={17} /></button>
         </div>
 
-        {desktopWindow && <div className="window-controls" aria-label="Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©">
-          <button type="button" className="window-control" title="ØªØµØºÙŠØ±" aria-label="ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
-          <button type="button" className="window-control" title={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©' : 'ØªÙƒØ¨ÙŠØ±'} aria-label={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.toggleMaximize()}>
+        {desktopWindow && <div className="window-controls" aria-label="أزرار النافذة">
+          <button type="button" className="window-control" title="تصغير" aria-label="تصغير النافذة" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? 'استعادة' : 'تكبير'} aria-label={desktopMaximized ? 'استعادة النافذة' : 'تكبير النافذة'} onClick={() => desktopWindow.toggleMaximize()}>
             {desktopMaximized ? <Copy size={12} /> : <Square size={13} />}
           </button>
-          <button type="button" className="window-control window-control-close" title="Ø¥ØºÙ„Ø§Ù‚" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.close()}><X size={16} /></button>
+          <button type="button" className="window-control window-control-close" title="إغلاق" aria-label="إغلاق النافذة" onClick={() => desktopWindow.close()}><X size={16} /></button>
         </div>}
 
         {searchOpen && <div className="search-panel">
           <div className="search-box">
             <Search size={16} />
-            <input ref={searchInputRef} aria-label="Ø§Ù„Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ø®Ø±ÙŠØ·Ø©" placeholder="Ø§Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ø¹Ù‚Ø¯ ÙˆØ§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setSearchOpen(false) }} />
+            <input ref={searchInputRef} aria-label="البحث في الخريطة" placeholder="ابحث في العقد والملاحظات..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setSearchOpen(false) }} />
             <kbd>Esc</kbd>
             {searchResults.length > 0 && <div className="search-results" role="listbox">
-              {searchResults.map((node) => <button key={node.id} type="button" onClick={() => chooseSearchResult(node)}><strong>{node.data.label || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong>{node.data.note && <small>{node.data.note}</small>}</button>)}
+              {searchResults.map((node) => <button key={node.id} type="button" onClick={() => chooseSearchResult(node)}><strong>{node.data.label || 'بدون عنوان'}</strong>{node.data.note && <small>{node.data.note}</small>}</button>)}
             </div>}
           </div>
-          <button className="search-close" type="button" title="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø¨Ø­Ø«" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø¨Ø­Ø«" onClick={() => { setSearchOpen(false); setSearchQuery('') }}><X size={16} /></button>
+          <button className="search-close" type="button" title="إغلاق البحث" aria-label="إغلاق البحث" onClick={() => { setSearchOpen(false); setSearchQuery('') }}><X size={16} /></button>
         </div>}
       </header>
 
       {sharedProjectTabs}
 
       <section className="workspace">
-        <aside className={`mind-map-list-panel${mapListCollapsed ? ' is-collapsed' : ''}`} aria-label={appLanguage === 'en' ? 'Mind maps' : 'Ø§Ù„Ø®Ø±Ø§Ø¦Ø· Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'}>
+        <aside className={`mind-map-list-panel${mapListCollapsed ? ' is-collapsed' : ''}`} aria-label={appLanguage === 'en' ? 'Mind maps' : 'الخرائط الذهنية'}>
           <div className="mind-map-list-heading">
             <button
               type="button"
               className="mind-map-list-toggle"
-              aria-label={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±Ø§Ø¦Ø·') : (appLanguage === 'en' ? 'Hide mind maps' : 'Ø·ÙŠ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·')}
-              title={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±Ø§Ø¦Ø·') : (appLanguage === 'en' ? 'Hide mind maps' : 'Ø·ÙŠ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·')}
+              aria-label={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'إظهار الخرائط') : (appLanguage === 'en' ? 'Hide mind maps' : 'طي قائمة الخرائط')}
+              title={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'إظهار الخرائط') : (appLanguage === 'en' ? 'Hide mind maps' : 'طي قائمة الخرائط')}
               aria-expanded={!mapListCollapsed}
               onClick={() => setMapListCollapsed((collapsed) => {
                 const next = !collapsed
@@ -4272,8 +4272,8 @@ function App() {
               })}
             >{mapListCollapsed ? <PanelRightOpen size={16} /> : <PanelRightClose size={16} />}</button>
             {!mapListCollapsed && <>
-              <strong><Workflow size={16} />{appLanguage === 'en' ? 'Mind maps' : 'Ø§Ù„Ø®Ø±Ø§Ø¦Ø· Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'}</strong>
-              <button type="button" className="mind-map-list-add" aria-label={appLanguage === 'en' ? 'Create mind map' : 'Ø¥Ù†Ø´Ø§Ø¡ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©'} title={appLanguage === 'en' ? 'Create mind map' : 'Ø¥Ù†Ø´Ø§Ø¡ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©'} onClick={createProject}><Plus size={16} /></button>
+              <strong><Workflow size={16} />{appLanguage === 'en' ? 'Mind maps' : 'الخرائط الذهنية'}</strong>
+              <button type="button" className="mind-map-list-add" aria-label={appLanguage === 'en' ? 'Create mind map' : 'إنشاء خريطة ذهنية'} title={appLanguage === 'en' ? 'Create mind map' : 'إنشاء خريطة ذهنية'} onClick={createProject}><Plus size={16} /></button>
             </>}
           </div>
           {!mapListCollapsed && <div className="mind-map-list-items">
@@ -4282,50 +4282,50 @@ function App() {
                 type="button"
                 className={`mind-map-list-item${project.id === activeProjectId ? ' is-active' : ''}`}
                 aria-current={project.id === activeProjectId ? 'page' : undefined}
-                title={project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}
+                title={project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'خريطة بدون عنوان')}
                 onClick={() => openProject(project)}
               >
                 <Workflow size={15} />
-                <span>{project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</span>
+                <span>{project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'خريطة بدون عنوان')}</span>
               </button>
-              <button type="button" className="mind-map-item-delete" aria-label={`${appLanguage === 'en' ? 'Delete mind map' : 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'} ${project.title || ''}`} title={appLanguage === 'en' ? 'Delete mind map' : 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'} onClick={() => requestDeleteProject(project.id)}><Trash2 size={14} /></button>
+              <button type="button" className="mind-map-item-delete" aria-label={`${appLanguage === 'en' ? 'Delete mind map' : 'حذف الخريطة الذهنية'} ${project.title || ''}`} title={appLanguage === 'en' ? 'Delete mind map' : 'حذف الخريطة الذهنية'} onClick={() => requestDeleteProject(project.id)}><Trash2 size={14} /></button>
             </div>)}
-            {!(activeWorkspaceId ? workspaceProjects : projects).length && <span className="mind-map-list-empty">{appLanguage === 'en' ? 'Create a mind map to get started.' : 'Ø£Ù†Ø´Ø¦ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© Ù„Ù„Ø¨Ø¯Ø¡.'}</span>}
+            {!(activeWorkspaceId ? workspaceProjects : projects).length && <span className="mind-map-list-empty">{appLanguage === 'en' ? 'Create a mind map to get started.' : 'أنشئ خريطة ذهنية للبدء.'}</span>}
           </div>}
         </aside>
-        <aside className={`tool-panel${toolsOpen ? ' is-open' : ' is-collapsed'}`} aria-label="Ù„ÙˆØ­Ø© Ø§Ù„Ø£Ø¯ÙˆØ§Øª">
+        <aside className={`tool-panel${toolsOpen ? ' is-open' : ' is-collapsed'}`} aria-label="لوحة الأدوات">
           <div className="panel-heading">
             <div>
-              <span className="eyebrow">Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„</span>
-              <h1>Ø§Ù„Ø£Ø¯ÙˆØ§Øª</h1>
+              <span className="eyebrow">مساحة العمل</span>
+              <h1>الأدوات</h1>
             </div>
-            <button className="help-button" type="button" title="Ù…Ø³Ø§Ø¹Ø¯Ø©" aria-label="Ù…Ø³Ø§Ø¹Ø¯Ø©" onClick={() => setHelpOpen(true)}><CircleHelp size={18} /></button>
+            <button className="help-button" type="button" title="مساعدة" aria-label="مساعدة" onClick={() => setHelpOpen(true)}><CircleHelp size={18} /></button>
           </div>
 
           <div className="tool-section">
-            <h2>Ø£Ø¶Ù Ø¥Ù„Ù‰ Ø§Ù„Ø®Ø±ÙŠØ·Ø©</h2>
+            <h2>أضف إلى الخريطة</h2>
             <div className="tool-grid">
               <button type="button" className="tool-tile" onClick={() => setMiniMapVisible((visible) => {
                 localStorage.setItem('waraqa-minimap-visible', String(!visible))
                 return !visible
-              })} aria-pressed={miniMapVisible}><MapIcon size={18} /><span>{miniMapVisible ? 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ø®Ø±ÙŠØ·Ø©' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±ÙŠØ·Ø©'}</span></button>
-              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'idea')} onClick={() => addNode('idea')}><Lightbulb size={18} /><span>ÙÙƒØ±Ø© Ø¬Ø¯ÙŠØ¯Ø©</span></button>
-              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'branch', 'right')} onClick={() => selectedNode && addNode('branch', selectedNode, null, true, 'right')} disabled={!canBranchRight}><MoveRight size={18} /><span>ÙØ±Ø¹ ÙŠÙ…ÙŠÙ†</span></button>
-              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'branch', 'left')} onClick={() => selectedNode && addNode('branch', selectedNode, null, true, 'left')} disabled={!canBranchLeft}><MoveLeft size={18} /><span>ÙØ±Ø¹ ÙŠØ³Ø§Ø±</span></button>
-              <button type="button" className="tool-tile" title="ÙŠÙ†Ù‚Ù„ Ø§Ù„ÙØ±ÙˆØ¹ Ø§Ù„Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© Ù„ØªØµØ¨Ø­ Ù…ØªÙØ±Ø¹Ø© Ù…Ù† Ø§Ù„ÙØ±Ø¹ Ø§Ù„Ø¬Ø¯ÙŠØ¯" onClick={() => insertBranchBeforeChildren('right')} disabled={!canInsertBranchRight}><MoveRight size={18} /><span>Ø¥Ø¯Ø±Ø§Ø¬ ÙØ±Ø¹ ÙŠÙ…ÙŠÙ†</span></button>
-              <button type="button" className="tool-tile" title="ÙŠØ¶ÙŠÙ ÙØ±Ø¹Ù‹Ø§ Ù‚Ø¨Ù„ Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©ØŒ ÙˆÙŠØ¶Ø¹ Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ© ØªØ­ØªÙ‡" onClick={() => insertBranchBeforeChildren('left')} disabled={!selectedNode}><MoveLeft size={18} /><span>Ø¥Ø¯Ø±Ø§Ø¬ ÙØ±Ø¹ ÙŠØ³Ø§Ø±</span></button>
-              <button type="button" className={`tool-tile select-mode-tile${selectMode ? ' is-active' : ''}`} aria-pressed={selectMode} title="ØªØ­Ø¯ÙŠØ¯ Ø¹Ø¯Ø© Ø¹Ù‚Ø¯ Ø¨Ø§Ù„Ø¶ØºØ· Ø£Ùˆ Ø¨Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø³Ø§Ø­Ø©" onClick={() => {
+              })} aria-pressed={miniMapVisible}><MapIcon size={18} /><span>{miniMapVisible ? 'إخفاء الخريطة' : 'إظهار الخريطة'}</span></button>
+              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'idea')} onClick={() => addNode('idea')}><Lightbulb size={18} /><span>فكرة جديدة</span></button>
+              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'branch', 'right')} onClick={() => selectedNode && addNode('branch', selectedNode, null, true, 'right')} disabled={!canBranchRight}><MoveRight size={18} /><span>فرع يمين</span></button>
+              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'branch', 'left')} onClick={() => selectedNode && addNode('branch', selectedNode, null, true, 'left')} disabled={!canBranchLeft}><MoveLeft size={18} /><span>فرع يسار</span></button>
+              <button type="button" className="tool-tile" title="ينقل الفروع المرتبطة بالعقدة المحددة لتصبح متفرعة من الفرع الجديد" onClick={() => insertBranchBeforeChildren('right')} disabled={!canInsertBranchRight}><MoveRight size={18} /><span>إدراج فرع يمين</span></button>
+              <button type="button" className="tool-tile" title="يضيف فرعًا قبل العقدة المحددة، ويضع العقدة الحالية تحته" onClick={() => insertBranchBeforeChildren('left')} disabled={!selectedNode}><MoveLeft size={18} /><span>إدراج فرع يسار</span></button>
+              <button type="button" className={`tool-tile select-mode-tile${selectMode ? ' is-active' : ''}`} aria-pressed={selectMode} title="تحديد عدة عقد بالضغط أو بسحب مربع على المساحة" onClick={() => {
                 setSelectMode((active) => !active)
                 setLinkSourceNodeId(null)
-              }}><MousePointer2 size={18} /><span>{selectMode ? 'Ø¥Ù†Ù‡Ø§Ø¡ Ø§Ù„ØªØ­Ø¯ÙŠØ¯' : 'ØªØ­Ø¯ÙŠØ¯ Ø¬Ù…Ø§Ø¹ÙŠ'}</span></button>
+              }}><MousePointer2 size={18} /><span>{selectMode ? 'إنهاء التحديد' : 'تحديد جماعي'}</span></button>
             </div>
           </div>
 
           <div className="tool-section layout-section">
-            <h2>ØªÙ†Ø¸ÙŠÙ… Ø§Ù„Ø®Ø±ÙŠØ·Ø©</h2>
-            <div className="layout-modes" role="group" aria-label="Ù†Ù…Ø· Ø§Ù„ØªØ±ØªÙŠØ¨">
-              <button type="button" className={layoutMode === 'tree' ? 'is-active' : ''} onClick={() => changeLayoutMode('tree')}><Spline size={14} /> Ø´Ø¬Ø±Ø©</button>
-              <button type="button" className={layoutMode === 'auto' ? 'is-active' : ''} onClick={() => changeLayoutMode('auto')}><Network size={14} /> ØªÙ„Ù‚Ø§Ø¦ÙŠ</button>
+            <h2>تنظيم الخريطة</h2>
+            <div className="layout-modes" role="group" aria-label="نمط الترتيب">
+              <button type="button" className={layoutMode === 'tree' ? 'is-active' : ''} onClick={() => changeLayoutMode('tree')}><Spline size={14} /> شجرة</button>
+              <button type="button" className={layoutMode === 'auto' ? 'is-active' : ''} onClick={() => changeLayoutMode('auto')}><Network size={14} /> تلقائي</button>
             </div>
             <button className="layout-button" type="button" onClick={arrangeAllNodes} disabled={nodes.length < 2}>
               <Network size={17} />
@@ -4334,88 +4334,88 @@ function App() {
           </div>
 
           <div className="tool-section connection-hint">
-            <h2>Ø±Ø¨Ø· Ø§Ù„Ø£ÙÙƒØ§Ø±</h2>
-            <div className="hint-row"><span className="hint-icon"><MousePointer2 size={16} /></span><p>Ø§Ø³Ø­Ø¨ Ù…Ù† Ø§Ù„Ù†Ù‚Ø·Ø© Ø¹Ù„Ù‰ Ø·Ø±Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø¥Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ø±Ø¨Ø·Ù‡Ù…Ø§. Ø§Ø¶ØºØ· ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø³Ù‡Ù… Ù„Ø­Ø°ÙÙ‡.</p></div>
+            <h2>ربط الأفكار</h2>
+            <div className="hint-row"><span className="hint-icon"><MousePointer2 size={16} /></span><p>اسحب من النقطة على طرف العقدة إلى عقدة أخرى لربطهما. اضغط كليك يمين على السهم لحذفه.</p></div>
             <div className="edge-style-picker">
-              <label htmlFor="edge-style">Ø´ÙƒÙ„ Ø§Ù„Ø³Ù‡Ù…</label>
+              <label htmlFor="edge-style">شكل السهم</label>
               <div className="edge-style-control">
                 <Spline size={15} />
                 <select id="edge-style" value={edgeStyle} onChange={(event) => changeEdgeStyle(event.target.value)}>
-                  <option value="smoothstep">Ù…ØªØ¯Ø±Ø¬</option>
-                  <option value="default">Ù…Ù†Ø­Ù†ÙŠ</option>
-                  <option value="straight">Ù…Ø³ØªÙ‚ÙŠÙ…</option>
+                  <option value="smoothstep">متدرج</option>
+                  <option value="default">منحني</option>
+                  <option value="straight">مستقيم</option>
                 </select>
               </div>
               <div className="edge-options">
-                <label>Ù„ÙˆÙ† ÙˆØ³ÙÙ…Ùƒ Ø§Ù„Ø³Ù‡Ù…</label>
+                <label>لون وسُمك السهم</label>
                 <div className="edge-option-row">
-                  <input type="color" aria-label="Ù„ÙˆÙ† Ø§Ù„Ø³Ù‡Ù…" value={edgeColor} onChange={(event) => changeEdgeSettings({ edgeColor: event.target.value })} />
-                  <select aria-label="Ø³ÙÙ…Ùƒ Ø§Ù„Ø³Ù‡Ù…" value={edgeWidth} onChange={(event) => changeEdgeSettings({ edgeWidth: Number(event.target.value) })}>
-                    <option value="1">Ø±ÙÙŠØ¹</option>
-                    <option value="2">Ù…ØªÙˆØ³Ø·</option>
-                    <option value="3">Ø¹Ø±ÙŠØ¶</option>
-                    <option value="4">Ø¹Ø±ÙŠØ¶ Ø¬Ø¯Ù‹Ø§</option>
+                  <input type="color" aria-label="لون السهم" value={edgeColor} onChange={(event) => changeEdgeSettings({ edgeColor: event.target.value })} />
+                  <select aria-label="سُمك السهم" value={edgeWidth} onChange={(event) => changeEdgeSettings({ edgeWidth: Number(event.target.value) })}>
+                    <option value="1">رفيع</option>
+                    <option value="2">متوسط</option>
+                    <option value="3">عريض</option>
+                    <option value="4">عريض جدًا</option>
                   </select>
                 </div>
-                <label>Ø±Ø£Ø³ Ø§Ù„Ø³Ù‡Ù…</label>
-                <select className="edge-arrow-select" aria-label="Ø±Ø£Ø³ Ø§Ù„Ø³Ù‡Ù…" value={arrowHead} onChange={(event) => changeEdgeSettings({ arrowHead: event.target.value })}>
-                  <option value="closed">Ù…Ù…ØªÙ„Ø¦</option>
-                  <option value="open">Ù…ÙØªÙˆØ­</option>
-                  <option value="none">Ø¨Ø¯ÙˆÙ† Ø±Ø£Ø³</option>
+                <label>رأس السهم</label>
+                <select className="edge-arrow-select" aria-label="رأس السهم" value={arrowHead} onChange={(event) => changeEdgeSettings({ arrowHead: event.target.value })}>
+                  <option value="closed">ممتلئ</option>
+                  <option value="open">مفتوح</option>
+                  <option value="none">بدون رأس</option>
                 </select>
               </div>
             </div>
           </div>
 
           <div className="tool-section appearance-section">
-            <h2>{selectedNode ? 'ØªÙ†Ø³ÙŠÙ‚ Ø§Ù„Ø¹Ù‚Ø¯Ø©' : 'Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©'}</h2>
-            {selectedNode && <input className="node-text-input" aria-label="Ù†Øµ Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©" value={selectedNode.data.label} onChange={(event) => updateSelected({ label: event.target.value })} />}
-            {!selectedNode && <div className="swatches" role="group" aria-label="Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©">
+            <h2>{selectedNode ? 'تنسيق العقدة' : 'لون العقدة الجديدة'}</h2>
+            {selectedNode && <input className="node-text-input" aria-label="نص العقدة المحددة" value={selectedNode.data.label} onChange={(event) => updateSelected({ label: event.target.value })} />}
+            {!selectedNode && <div className="swatches" role="group" aria-label="اختيار لون العقدة الجديدة">
               {tones.map((tone) => (
-                <button key={tone} type="button" className={`swatch swatch-${tone}${activeTone === tone ? ' is-active' : ''}`} aria-label={`Ù„ÙˆÙ† ${tone}`} onClick={() => setActiveTone(tone)} />
+                <button key={tone} type="button" className={`swatch swatch-${tone}${activeTone === tone ? ' is-active' : ''}`} aria-label={`لون ${tone}`} onClick={() => setActiveTone(tone)} />
               ))}
-              <label className={`swatch custom-swatch${activeTone === 'custom' ? ' is-active' : ''}`} style={{ '--picker-color': pickerColor }} title="Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ù…Ø®ØµØµ">
-                <input type="color" aria-label="Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ù…Ø®ØµØµ" value={pickerColor} onChange={(event) => { setActiveTone('custom'); setActiveCustomColor(event.target.value) }} />
+              <label className={`swatch custom-swatch${activeTone === 'custom' ? ' is-active' : ''}`} style={{ '--picker-color': pickerColor }} title="اختيار لون مخصص">
+                <input type="color" aria-label="اختيار لون مخصص" value={pickerColor} onChange={(event) => { setActiveTone('custom'); setActiveCustomColor(event.target.value) }} />
               </label>
             </div>}
-            {selectedNode && <button className="delete-button" type="button" onClick={removeSelected}><Trash2 size={16} /> Ø­Ø°Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©</button>}
+            {selectedNode && <button className="delete-button" type="button" onClick={removeSelected}><Trash2 size={16} /> حذف العقدة المحددة</button>}
           </div>
 
           {selectedNode && (
-            <div className="quick-actions" aria-label="ØªØ­ÙƒÙ… Ø³Ø±ÙŠØ¹ ÙÙŠ Ø§Ù„Ø¹Ù‚Ø¯Ø©">
-              <h2>ØªØ­ÙƒÙ… Ø³Ø±ÙŠØ¹</h2>
+            <div className="quick-actions" aria-label="تحكم سريع في العقدة">
+              <h2>تحكم سريع</h2>
               <div className="quick-actions-grid">
-                <button type="button" onClick={openNotes}><StickyNote size={15} /><span>Ù…Ù„Ø§Ø­Ø¸Ø©</span></button>
-                <button type="button" onClick={() => addNode('branch', selectedNode, null, true, 'right')} disabled={!canBranchRight}><MoveRight size={15} /><span>ÙŠÙ…ÙŠÙ†</span></button>
-                <button type="button" onClick={() => addNode('branch', selectedNode, null, true, 'left')} disabled={!canBranchLeft}><MoveLeft size={15} /><span>ÙŠØ³Ø§Ø±</span></button>
-                <button type="button" onClick={() => toggleBranch(selectedNode)} disabled={!descendants.length}><ChevronsDownUp size={15} /><span>{branchCollapsed ? 'ÙØªØ­' : 'Ø·ÙŠ'}</span></button>
-                <button type="button" onClick={duplicateSelected}><Copy size={15} /><span>ØªÙƒØ±Ø§Ø±</span></button>
-                <button type="button" className="quick-delete" onClick={removeSelected}><Trash2 size={15} /><span>Ø­Ø°Ù</span></button>
+                <button type="button" onClick={openNotes}><StickyNote size={15} /><span>ملاحظة</span></button>
+                <button type="button" onClick={() => addNode('branch', selectedNode, null, true, 'right')} disabled={!canBranchRight}><MoveRight size={15} /><span>يمين</span></button>
+                <button type="button" onClick={() => addNode('branch', selectedNode, null, true, 'left')} disabled={!canBranchLeft}><MoveLeft size={15} /><span>يسار</span></button>
+                <button type="button" onClick={() => toggleBranch(selectedNode)} disabled={!descendants.length}><ChevronsDownUp size={15} /><span>{branchCollapsed ? 'فتح' : 'طي'}</span></button>
+                <button type="button" onClick={duplicateSelected}><Copy size={15} /><span>تكرار</span></button>
+                <button type="button" className="quick-delete" onClick={removeSelected}><Trash2 size={15} /><span>حذف</span></button>
               </div>
             </div>
           )}
           {selectedNodes.length > 1 && (
-            <div className="bulk-selection-bar" aria-label="ØªØ­ÙƒÙ… Ø¬Ù…Ø§Ø¹ÙŠ ÙÙŠ Ø§Ù„Ø¹Ù‚Ø¯">
-              <span>{selectedNodes.length} Ø¹Ù‚Ø¯ Ù…Ø­Ø¯Ø¯Ø©</span>
-              <button type="button" className="bulk-link-button" onClick={linkSelectedNodes} disabled={!linkableSelectedNodes.length} title="ÙŠØ±Ø¨Ø· Ø§Ù„Ø¹Ù‚Ø¯ Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© Ø¨Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„ØªÙŠ Ø¨Ø¯Ø£Øª Ø¨Ù‡Ø§ Ø§Ù„ØªØ­Ø¯ÙŠØ¯"><Link2 size={15} /> Ø±Ø¨Ø· Ø§Ù„Ù…Ø­Ø¯Ø¯</button>
-              <button type="button" onClick={removeSelectedNodes}><Trash2 size={15} /> Ø­Ø°Ù Ø§Ù„Ù…Ø­Ø¯Ø¯</button>
+            <div className="bulk-selection-bar" aria-label="تحكم جماعي في العقد">
+              <span>{selectedNodes.length} عقد محددة</span>
+              <button type="button" className="bulk-link-button" onClick={linkSelectedNodes} disabled={!linkableSelectedNodes.length} title="يربط العقد المحددة بالعقدة التي بدأت بها التحديد"><Link2 size={15} /> ربط المحدد</button>
+              <button type="button" onClick={removeSelectedNodes}><Trash2 size={15} /> حذف المحدد</button>
             </div>
           )}
 
           <div className="panel-footer">
             <span className="footer-mark"><Workflow size={15} /></span>
-            <span>{nodes.length} Ø¹Ù‚Ø¯Ø©</span>
+            <span>{nodes.length} عقدة</span>
             <span className="footer-separator">Â·</span>
-            <span>{edges.length} Ø±Ø§Ø¨Ø·</span>
-            <button type="button" className="footer-clear" title="Ù…Ø³Ø­ Ø§Ù„ØªØ­Ø¯ÙŠØ¯" aria-label="Ù…Ø³Ø­ Ø§Ù„ØªØ­Ø¯ÙŠØ¯" onClick={() => setNodes((current) => current.map((node) => ({ ...node, selected: false })))}><Minus size={15} /></button>
+            <span>{edges.length} رابط</span>
+            <button type="button" className="footer-clear" title="مسح التحديد" aria-label="مسح التحديد" onClick={() => setNodes((current) => current.map((node) => ({ ...node, selected: false })))}><Minus size={15} /></button>
           </div>
         </aside>
         <button
           type="button"
           className="tool-panel-edge-toggle"
           style={{ right: `calc(${mapListCollapsed ? 42 : 220}px + ${toolsOpen ? 260 : 0}px - 16px)` }}
-          aria-label={toolsOpen ? 'Ø·ÙŠ Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª'}
-          title={toolsOpen ? 'Ø·ÙŠ Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª'}
+          aria-label={toolsOpen ? 'طي شريط الأدوات' : 'إظهار شريط الأدوات'}
+          title={toolsOpen ? 'طي شريط الأدوات' : 'إظهار شريط الأدوات'}
           aria-expanded={toolsOpen}
           onClick={() => setToolsOpen((open) => !open)}
         >{toolsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}</button>
@@ -4445,14 +4445,14 @@ function App() {
           )}
           {linkSourceNodeId && (
             <div className="link-mode-bar" dir="rtl">
-              <span className="link-mode-text"><Link2 size={14} /> Ø§Ø®ØªØ± Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ù„Ø±Ø¨Ø·</span>
-              <button type="button" className="link-mode-cancel" title="Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø±Ø¨Ø·" aria-label="Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø±Ø¨Ø·" onClick={() => setLinkSourceNodeId(null)}><X size={14} /></button>
+              <span className="link-mode-text"><Link2 size={14} /> اختر عقدة أخرى للربط</span>
+              <button type="button" className="link-mode-cancel" title="إلغاء الربط" aria-label="إلغاء الربط" onClick={() => setLinkSourceNodeId(null)}><X size={14} /></button>
             </div>
           )}
           {exportingImage && (
             <div className="export-brand" dir="rtl">
               <span className="brand-mark"><Workflow size={18} strokeWidth={2.2} /></span>
-              <span><strong>ÙˆØ±Ù‚Ø©</strong><small>{title}</small></span>
+              <span><strong>ورقة</strong><small>{title}</small></span>
             </div>
           )}
           <ReactFlow
@@ -4519,47 +4519,47 @@ function App() {
           {!nodes.length && (
             <div className="empty-state" dir="rtl">
               <div className="empty-illustration"><span className="orbit orbit-one" /><span className="orbit orbit-two" /><span className="empty-bulb"><Lightbulb size={25} /></span><span className="spark spark-a">âœ³</span><span className="spark spark-b">âœ¦</span></div>
-              <span className="empty-kicker">ÙƒÙ„ ÙÙƒØ±Ø© ØªØ¨Ø¯Ø£ Ù…Ù† Ù‡Ù†Ø§</span>
-              <h2>Ù…Ø³Ø§Ø­Ø© Ø£ÙÙƒØ§Ø±Ùƒ Ù…ÙØªÙˆØ­Ø©</h2>
-              <p>Ø£Ø¶Ù ÙÙƒØ±ØªÙƒ Ø§Ù„Ø£ÙˆÙ„Ù‰ØŒ Ø«Ù… Ø¯Ø¹ Ø§Ù„Ø£ÙÙƒØ§Ø± ØªØªÙØ±Ø¹ ÙˆØªØªØµÙ„ Ø¨Ø¨Ø¹Ø¶Ù‡Ø§.</p>
-              <button type="button" className="empty-add-button" onClick={() => addNode('idea')}><Plus size={17} /> Ø£Ø¶Ù Ø£ÙˆÙ„ ÙÙƒØ±Ø©</button>
+              <span className="empty-kicker">كل فكرة تبدأ من هنا</span>
+              <h2>مساحة أفكارك مفتوحة</h2>
+              <p>أضف فكرتك الأولى، ثم دع الأفكار تتفرع وتتصل ببعضها.</p>
+              <button type="button" className="empty-add-button" onClick={() => addNode('idea')}><Plus size={17} /> أضف أول فكرة</button>
             </div>
           )}
-          <div className="canvas-caption"><span className="canvas-live-dot" /> Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø±Ø³Ù… <span>Â·</span> {selectMode ? 'Ø§Ø¶ØºØ· Ø§Ù„Ø¹Ù‚Ø¯ Ù„ØªØ­Ø¯ÙŠØ¯Ù‡Ø§ Ø£Ùˆ Ø§Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹Ù‹Ø§' : 'Ø§Ø³Ø­Ø¨ Ø§Ù„Ø¹Ù‚Ø¯ Ù„ØªØ±ØªÙŠØ¨Ù‡Ø§'}</div>
+          <div className="canvas-caption"><span className="canvas-live-dot" /> مساحة الرسم <span>Â·</span> {selectMode ? 'اضغط العقد لتحديدها أو اسحب مربعًا' : 'اسحب العقد لترتيبها'}</div>
         </div>
 
         {notesMounted && selectedNode && (
-          <aside className={`notes-panel${notesOpen ? ' is-open' : ' is-closing'}`} aria-label="Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ù„Ø¹Ù‚Ø¯Ø©">
+          <aside className={`notes-panel${notesOpen ? ' is-open' : ' is-closing'}`} aria-label="ملاحظات العقدة">
             <div className="notes-heading">
               <div>
-                <span className="eyebrow">Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø©</span>
-                <h2>{selectedNode.data.label || 'Ø¹Ù‚Ø¯Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</h2>
+                <span className="eyebrow">ملاحظة العقدة</span>
+                <h2>{selectedNode.data.label || 'عقدة بدون عنوان'}</h2>
               </div>
-              <button className="notes-close" type="button" title="Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©" aria-label="Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©" onClick={closeNotes}>
+              <button className="notes-close" type="button" title="إخفاء الملاحظة" aria-label="إخفاء الملاحظة" onClick={closeNotes}>
                 <X size={17} />
               </button>
             </div>
             <textarea
               ref={nodeNoteInputRef}
               className="node-note-input"
-              aria-label="Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©"
-              placeholder="Ø§ÙƒØªØ¨ Ù…Ù„Ø§Ø­Ø¸ØªÙƒ Ù‡Ù†Ø§..."
+              aria-label="ملاحظة العقدة المحددة"
+              placeholder="اكتب ملاحظتك هنا..."
               value={selectedNode.data.note || ''}
               onChange={handleNodeNoteInput}
               onKeyDown={(event) => { if (event.key === 'Escape') setNodeNoteMentionPicker(null) }}
             />
             {nodeNoteMentionPicker?.nodeId === selectedNode.id && <div className="node-note-mention-picker" role="listbox">
               <div className="notes-mention-heading">
-                <strong>{nodeNoteMentionPicker.step === 'type' ? 'Ø§Ø®ØªØ± Ù†ÙˆØ¹ Ø§Ù„Ø¹Ù†ØµØ±' : nodeNoteMentionPicker.step === 'container' ? (nodeNoteMentionPicker.kind === 'mind-map' ? 'Ø§Ø®ØªØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø©' : 'Ø§Ø®ØªØ± Ø§Ù„Ù…Ø®Ø·Ø·') : (nodeNoteMentionPicker.kind === 'mind-map' ? 'Ø§Ø®ØªØ± Ø§Ù„Ø¹Ù‚Ø¯Ø©' : nodeNoteMentionPicker.kind === 'task' ? 'Ø§Ø®ØªØ± Ø§Ù„Ù…Ù‡Ù…Ø©' : nodeNoteMentionPicker.kind === 'note' ? 'Ø§Ø®ØªØ± Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©' : 'Ø§Ø®ØªØ± Ø§Ù„Ø´ÙƒÙ„')}</strong>
-                {nodeNoteMentionPicker.step !== 'type' && <button type="button" onClick={backNodeMentionPicker}>Ø±Ø¬ÙˆØ¹</button>}
+                <strong>{nodeNoteMentionPicker.step === 'type' ? 'اختر نوع العنصر' : nodeNoteMentionPicker.step === 'container' ? (nodeNoteMentionPicker.kind === 'mind-map' ? 'اختر الخريطة' : 'اختر المخطط') : (nodeNoteMentionPicker.kind === 'mind-map' ? 'اختر العقدة' : nodeNoteMentionPicker.kind === 'task' ? 'اختر المهمة' : nodeNoteMentionPicker.kind === 'note' ? 'اختر الملاحظة' : 'اختر الشكل')}</strong>
+                {nodeNoteMentionPicker.step !== 'type' && <button type="button" onClick={backNodeMentionPicker}>رجوع</button>}
               </div>
               <div className="notes-mention-options">
                 {(nodeNoteMentionPicker.step === 'type'
                   ? [
-                    { id: 'mind-map', title: 'Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©', count: workspaceProjects.length },
-                    { id: 'task', title: 'Ù…Ù‡Ù…Ø©', count: workspaceTasks.length },
-                    { id: 'note', title: 'Ù…Ù„Ø§Ø­Ø¸Ø©', count: workspaceNotes.length },
-                    { id: 'flowchart', title: 'Ù…Ø®Ø·Ø· Ø§Ù†Ø³ÙŠØ§Ø¨ÙŠ', count: workspaceFlowcharts.length },
+                    { id: 'mind-map', title: 'خريطة ذهنية', count: workspaceProjects.length },
+                    { id: 'task', title: 'مهمة', count: workspaceTasks.length },
+                    { id: 'note', title: 'ملاحظة', count: workspaceNotes.length },
+                    { id: 'flowchart', title: 'مخطط انسيابي', count: workspaceFlowcharts.length },
                   ].filter((item) => `${item.title}`.includes(nodeNoteMentionPicker.query))
                   : nodeNoteMentionPicker.step === 'container'
                     ? (nodeNoteMentionPicker.kind === 'mind-map' ? workspaceProjects : workspaceFlowcharts).filter((item) => (item.title || '').toLowerCase().includes(nodeNoteMentionPicker.query.toLowerCase()))
@@ -4571,54 +4571,54 @@ function App() {
                           ? workspaceNotes.filter((item) => (item.title || '').toLowerCase().includes(nodeNoteMentionPicker.query.toLowerCase()))
                         : (workspaceFlowcharts.find((item) => item.id === nodeNoteMentionPicker.containerId)?.nodes || []).filter((item) => (item.data?.label || '').toLowerCase().includes(nodeNoteMentionPicker.query.toLowerCase()))
                 ).map((item) => nodeNoteMentionPicker.step === 'type'
-                  ? <button type="button" role="option" key={item.id} onClick={() => setNodeMentionKind(item.id)}><strong>{item.title}</strong><small>{item.count} {item.id === 'task' ? 'Ù…Ù‡Ù…Ø©' : item.id === 'note' ? 'Ù…Ù„Ø§Ø­Ø¸Ø©' : item.id === 'mind-map' ? 'Ø®Ø±ÙŠØ·Ø©' : 'Ù…Ø®Ø·Ø·'}</small></button>
+                  ? <button type="button" role="option" key={item.id} onClick={() => setNodeMentionKind(item.id)}><strong>{item.title}</strong><small>{item.count} {item.id === 'task' ? 'مهمة' : item.id === 'note' ? 'ملاحظة' : item.id === 'mind-map' ? 'خريطة' : 'مخطط'}</small></button>
                   : nodeNoteMentionPicker.step === 'container'
-                    ? <button type="button" role="option" key={item.id} onClick={() => setNodeMentionContainer(item)}><strong>{item.title}</strong><small>{item.nodes?.length || 0} {nodeNoteMentionPicker.kind === 'mind-map' ? 'Ø¹Ù‚Ø¯Ø©' : 'Ø´ÙƒÙ„'}</small></button>
-                    : <button type="button" role="option" key={item.id} onClick={() => insertNodeNoteMention(item)}><strong>{nodeNoteMentionPicker.kind === 'task' || nodeNoteMentionPicker.kind === 'note' ? item.title : item.data?.label || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong></button>
+                    ? <button type="button" role="option" key={item.id} onClick={() => setNodeMentionContainer(item)}><strong>{item.title}</strong><small>{item.nodes?.length || 0} {nodeNoteMentionPicker.kind === 'mind-map' ? 'عقدة' : 'شكل'}</small></button>
+                    : <button type="button" role="option" key={item.id} onClick={() => insertNodeNoteMention(item)}><strong>{nodeNoteMentionPicker.kind === 'task' || nodeNoteMentionPicker.kind === 'note' ? item.title : item.data?.label || 'بدون عنوان'}</strong></button>
                 )}
               </div>
             </div>}
-            {!!selectedNode.data.mentions?.length && <div className="node-note-mention-links" aria-label="Ø§Ù„Ø¹Ù†Ø§ØµØ± Ø§Ù„Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ù‡Ø°Ù‡ Ø§Ù„Ø¹Ù‚Ø¯Ø©">
+            {!!selectedNode.data.mentions?.length && <div className="node-note-mention-links" aria-label="العناصر المرتبطة بهذه العقدة">
               {selectedNode.data.mentions.map((mention, index) => <button type="button" key={`${mention.type}-${mention.text}-${index}`} onClick={() => openMention(mention)}>{mention.type === 'task' ? 'âœ“' : mention.type === 'note' ? 'ðŸ“' : mention.type === 'flowchart-node' ? 'â†—' : 'ðŸ§ '} {mention.taskTitle || mention.noteTitle || mention.nodeTitle}</button>)}
             </div>}
             <div className="notes-settings">
               <div className="emoji-picker-heading">
-                <h3>Ø¥ÙŠÙ…ÙˆØ¬ÙŠ Ø§Ù„Ø¹Ù‚Ø¯Ø©</h3>
+                <h3>إيموجي العقدة</h3>
                 <button className="emoji-picker-toggle" type="button" aria-expanded={emojiPickerOpen} aria-controls="notes-emoji-picker" onClick={() => setEmojiPickerOpen((open) => !open)}>
-                  {emojiPickerOpen ? 'Ø¥Ø®ÙØ§Ø¡' : 'Ø¥Ø¸Ù‡Ø§Ø±'}
+                  {emojiPickerOpen ? 'إخفاء' : 'إظهار'}
                 </button>
               </div>
               <div id="notes-emoji-picker" hidden={!emojiPickerOpen}>
                 {emojiPickerOpen && <>
-                  <div className="notes-emoji-picker" role="group" aria-label="Ø§Ø®ØªÙŠØ§Ø± Ø¥ÙŠÙ…ÙˆØ¬ÙŠ Ù„Ù„Ø¹Ù‚Ø¯Ø©">
-                    <button type="button" className={`notes-emoji-choice emoji-none${!selectedNode.data.emoji ? ' is-active' : ''}`} aria-label="Ø¨Ø¯ÙˆÙ† Ø¥ÙŠÙ…ÙˆØ¬ÙŠ" aria-pressed={!selectedNode.data.emoji} onClick={() => updateSelected({ emoji: '' })}>Ã—</button>
+                  <div className="notes-emoji-picker" role="group" aria-label="اختيار إيموجي للعقدة">
+                    <button type="button" className={`notes-emoji-choice emoji-none${!selectedNode.data.emoji ? ' is-active' : ''}`} aria-label="بدون إيموجي" aria-pressed={!selectedNode.data.emoji} onClick={() => updateSelected({ emoji: '' })}>Ã—</button>
                     {nodeEmojis.map(({ emoji, label }) => <button key={emoji} type="button" className={`notes-emoji-choice${selectedNode.data.emoji === emoji ? ' is-active' : ''}`} aria-label={label} title={label} aria-pressed={selectedNode.data.emoji === emoji} onClick={() => updateSelected({ emoji })}><EmojiGlyph emoji={emoji} /></button>)}
                   </div>
-                  <a className="emoji-credit" href="https://github.com/jdecked/twemoji" target="_blank" rel="noreferrer">Ø§Ù„Ø±Ø³ÙˆÙ…Ø§Øª Ù…Ù† Twemoji</a>
+                  <a className="emoji-credit" href="https://github.com/jdecked/twemoji" target="_blank" rel="noreferrer">الرسومات من Twemoji</a>
                 </>}
               </div>
-              <h3>Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø©</h3>
-              <div className="notes-swatches" role="group" aria-label="Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©">
+              <h3>لون العقدة</h3>
+              <div className="notes-swatches" role="group" aria-label="لون العقدة المحددة">
                 {tones.map((tone) => (
                   <button
                     key={tone}
                     type="button"
                     className={`swatch swatch-${tone}${selectedNode.data.tone === tone && !selectedNode.data.customColor ? ' is-active' : ''}`}
-                    aria-label={`Ù„ÙˆÙ† ${tone}`}
+                    aria-label={`لون ${tone}`}
                     onClick={() => updateSelected({ tone, customColor: '' })}
                   />
                 ))}
-                <label className={`swatch custom-swatch${selectedNode.data.customColor ? ' is-active' : ''}`} style={{ '--picker-color': getToneColor(selectedNode.data.tone, selectedNode.data.customColor) }} title="Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ù…Ø®ØµØµ">
+                <label className={`swatch custom-swatch${selectedNode.data.customColor ? ' is-active' : ''}`} style={{ '--picker-color': getToneColor(selectedNode.data.tone, selectedNode.data.customColor) }} title="اختيار لون مخصص">
                   <input
                     type="color"
-                    aria-label="Ù„ÙˆÙ† Ù…Ø®ØµØµ Ù„Ù„Ø¹Ù‚Ø¯Ø©"
+                    aria-label="لون مخصص للعقدة"
                     value={getToneColor(selectedNode.data.tone, selectedNode.data.customColor)}
                     onChange={(event) => updateSelected({ tone: 'custom', customColor: event.target.value })}
                   />
                 </label>
               </div>
             </div>
-            <div className="notes-footer">ØªÙØ­ÙØ¸ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø© Ù…Ø¹ Ù‡Ø°Ù‡ Ø§Ù„Ø¹Ù‚Ø¯Ø© ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§</div>
+            <div className="notes-footer">تُحفظ الملاحظة مع هذه العقدة تلقائيًا</div>
           </aside>
         )}
       </section>
@@ -4626,21 +4626,21 @@ function App() {
         <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setRenameProjectOpen(false) }}>
           <section className="confirm-dialog rename-dialog" role="dialog" aria-modal="true" aria-labelledby="rename-dialog-title" dir="rtl">
             <span className="confirm-icon rename-icon"><Pencil size={20} /></span>
-            <span className="rename-eyebrow">ØªÙ†Ø¸ÙŠÙ… Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ</span>
-            <h2 id="rename-dialog-title">Ù…Ø§ Ø§Ø³Ù… Ù…Ø´Ø±ÙˆØ¹ÙƒØŸ</h2>
-            <p>Ø§Ø®ØªØ± Ø§Ø³Ù…Ù‹Ø§ ÙˆØ§Ø¶Ø­Ù‹Ø§ ÙŠØ³Ù‡Ù„ Ø¹Ù„ÙŠÙƒ Ø§Ù„ÙˆØµÙˆÙ„ Ø¥Ù„ÙŠÙ‡ Ù„Ø§Ø­Ù‚Ù‹Ø§.</p>
-            <label className="rename-field-label" htmlFor="rename-project-input">Ø§Ø³Ù… Ø§Ù„Ù…Ø´Ø±ÙˆØ¹</label>
-            <input ref={renameInputRef} id="rename-project-input" className="rename-project-input" aria-label="Ø§Ø³Ù… Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ Ø§Ù„Ø¬Ø¯ÙŠØ¯" autoFocus value={renameProjectDraft} onChange={(event) => setRenameProjectDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') renameProject(); if (event.key === 'Escape') setRenameProjectOpen(false) }} />
-            <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setRenameProjectOpen(false)}>Ø¥Ù„ØºØ§Ø¡</button><button type="button" className="confirm-save" onClick={renameProject} disabled={!renameProjectDraft.trim()}>Ø­ÙØ¸ Ø§Ù„Ø§Ø³Ù…</button></div>
+            <span className="rename-eyebrow">تنظيم مشاريعك</span>
+            <h2 id="rename-dialog-title">ما اسم مشروعك؟</h2>
+            <p>اختر اسمًا واضحًا يسهل عليك الوصول إليه لاحقًا.</p>
+            <label className="rename-field-label" htmlFor="rename-project-input">اسم المشروع</label>
+            <input ref={renameInputRef} id="rename-project-input" className="rename-project-input" aria-label="اسم المشروع الجديد" autoFocus value={renameProjectDraft} onChange={(event) => setRenameProjectDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') renameProject(); if (event.key === 'Escape') setRenameProjectOpen(false) }} />
+            <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setRenameProjectOpen(false)}>إلغاء</button><button type="button" className="confirm-save" onClick={renameProject} disabled={!renameProjectDraft.trim()}>حفظ الاسم</button></div>
           </section>
         </div>
       )}
       {pendingDeleteProject && <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setPendingDeleteProject(null) }}>
         <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-map-editor-title" dir="rtl">
           <span className="confirm-icon"><Trash2 size={21} /></span>
-          <h2 id="delete-map-editor-title">{appLanguage === 'en' ? 'Delete mind map?' : 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©ØŸ'}</h2>
-          <p>{appLanguage === 'en' ? 'Delete' : 'Ù‡Ù„ ØªØ±ÙŠØ¯ Ø­Ø°Ù'} <strong>{pendingDeleteProject.title || (appLanguage === 'en' ? 'Untitled mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</strong>?</p>
-          <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setPendingDeleteProject(null)}>{appLanguage === 'en' ? 'Cancel' : 'Ø¥Ù„ØºØ§Ø¡'}</button><button type="button" className="confirm-delete" onClick={confirmDeleteProject}>{appLanguage === 'en' ? 'Delete' : 'Ø­Ø°Ù'}</button></div>
+          <h2 id="delete-map-editor-title">{appLanguage === 'en' ? 'Delete mind map?' : 'حذف الخريطة الذهنية؟'}</h2>
+          <p>{appLanguage === 'en' ? 'Delete' : 'هل تريد حذف'} <strong>{pendingDeleteProject.title || (appLanguage === 'en' ? 'Untitled mind map' : 'خريطة بدون عنوان')}</strong>?</p>
+          <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setPendingDeleteProject(null)}>{appLanguage === 'en' ? 'Cancel' : 'إلغاء'}</button><button type="button" className="confirm-delete" onClick={confirmDeleteProject}>{appLanguage === 'en' ? 'Delete' : 'حذف'}</button></div>
         </section>
       </div>}
       {closeProjectDialog}
