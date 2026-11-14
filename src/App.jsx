@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom'
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import {
   ArrowDownToLine,
+  ArrowRight,
   ArrowUpFromLine,
   CircleHelp,
   ClipboardPaste,
@@ -10,9 +11,12 @@ import {
   Copy,
   FileText,
   GitBranch,
+  Home,
   Image,
+  LayoutTemplate,
   Lightbulb,
   Link2,
+  ListTodo,
   Map as MapIcon,
   Minus,
   Moon,
@@ -40,6 +44,18 @@ import {
 } from 'lucide-react'
 import { toPng, toSvg } from 'html-to-image'
 import dagre from '@dagrejs/dagre'
+import NotesWorkspace from './NotesWorkspace.jsx'
+import TasksWorkspace from './TasksWorkspace.jsx'
+import FlowchartWorkspace from './FlowchartWorkspace.jsx'
+import UiDesignerWorkspace, { createDesignPreviews } from './UiDesignerWorkspace.jsx'
+import { NOTES_STORAGE_KEY, OPEN_NOTES_STORAGE_KEY, readOpenStandaloneNoteIds, readStandaloneNotes } from './noteStorage.js'
+import { TASKS_STORAGE_KEY, TASK_LISTS_STORAGE_KEY, readTasks, readTaskLists } from './taskStorage.js'
+import { FLOWCHARTS_STORAGE_KEY, readFlowcharts } from './flowchartStorage.js'
+import { UI_DESIGNS_STORAGE_KEY, readUiDesigns } from './uiDesignStorage.js'
+import { readNoteAttachment, saveNoteAttachmentWithId } from './noteAttachments.js'
+import { createZipArchive, createWorkspaceArchive, decodeZipText, readZipArchive } from './workspaceArchive.js'
+import { readProjectsFolderHandle, saveProjectsFolderHandle } from './projectFolderStorage.js'
+import ToolSidebar, { SettingsButton, ToolSwitcher } from './ToolSidebar.jsx'
 import {
   addEdge,
   applyEdgeChanges,
@@ -62,11 +78,55 @@ import pkg from '../package.json'
 const AndroidDownloads = registerPlugin('Downloads')
 const STORAGE_KEY = 'waraqa-mind-map'
 const PROJECTS_KEY = 'waraqa-projects'
+const WORKSPACES_KEY = 'waraqa-workspaces'
 const WARAQA_LOGO_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#176b50"/><path d="M32 18v12M20 42V32h24v10" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/><circle cx="32" cy="16" r="5" fill="#fff"/><circle cx="18" cy="46" r="5" fill="#fff"/><circle cx="46" cy="46" r="5" fill="#fff"/></svg>'
-const createId = () => globalThis.crypto?.randomUUID?.()
-  || `waraqa-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+const createId = () => {
+  try {
+    const value = globalThis.crypto?.randomUUID?.()
+    if (value) return value
+  } catch (error) {
+    console.warn('Secure random IDs are unavailable; using a local fallback.', error)
+  }
+  return `waraqa-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
 const newProjectId = () => createId()
 const currentTimestamp = () => Date.now()
+const isoTimestamp = () => new Date().toISOString()
+async function writeWorkspaceArchiveToHandle(rootHandle, archive) {
+  const entries = await readZipArchive(new File([archive], 'workspace.zip', { type: 'application/zip' }))
+  const projectBytes = entries.get('project.json')
+  if (!projectBytes) throw new Error('Project data is missing from the archive.')
+  const bundle = JSON.parse(decodeZipText(projectBytes))
+  const safeName = String(bundle.workspace?.title || 'project').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').replace(/[. ]+$/g, '').trim().slice(0, 80) || 'project'
+  const safeId = String(bundle.workspace?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 8) || 'workspace'
+  const projectDirectory = await rootHandle.getDirectoryHandle(`${safeName}-${safeId}`, { create: true })
+  const expectedPaths = new Set(['workspace.json'])
+  for (const [entryPath, bytes] of entries) {
+    const parts = entryPath.replace(/\\/g, '/').split('/').filter(Boolean)
+    if (!parts.length || parts.some((part) => part === '.' || part === '..')) throw new Error('Invalid path in project archive.')
+    expectedPaths.add(parts.join('/'))
+    let directory = projectDirectory
+    for (const part of parts.slice(0, -1)) directory = await directory.getDirectoryHandle(part, { create: true })
+    const fileHandle = await directory.getFileHandle(parts.at(-1), { create: true })
+    const writable = await fileHandle.createWritable()
+    await writable.write(bytes)
+    await writable.close()
+  }
+  const workspaceFile = await projectDirectory.getFileHandle('workspace.json', { create: true })
+  const workspaceWritable = await workspaceFile.createWritable()
+  await workspaceWritable.write(`${JSON.stringify(bundle, null, 2)}\n`)
+  await workspaceWritable.close()
+  const pruneDirectory = async (directory, prefix = '') => {
+    for await (const [name, handle] of directory.entries()) {
+      const relative = prefix ? `${prefix}/${name}` : name
+      if (handle.kind === 'directory') {
+        await pruneDirectory(handle, relative)
+        if (![...expectedPaths].some((filePath) => filePath.startsWith(`${relative}/`))) await directory.removeEntry(name, { recursive: true })
+      } else if (!expectedPaths.has(relative)) await directory.removeEntry(name)
+    }
+  }
+  await pruneDirectory(projectDirectory)
+}
 const normalizeProjectHandles = (project) => {
   const nodesById = new Map((Array.isArray(project?.nodes) ? project.nodes : []).map((node) => [node.id, node]))
   const usedIds = new Set()
@@ -102,43 +162,53 @@ const startNodeIdOf = (nodes, edges) => (
   || null
 )
 const englishTranslations = {
-  'مشروع جديد': 'New project', 'فكرة': 'Idea', 'إبداع': 'Creativity', 'هدف': 'Goal', 'تفكير': 'Thinking', 'حل': 'Solution', 'اتجاه': 'Direction', 'خريطة': 'Map', 'تعلم': 'Learning', 'قراءة': 'Reading', 'ملاحظة': 'Note', 'بحث': 'Search', 'استكشاف': 'Explore', 'تجربة علمية': 'Experiment', 'علوم': 'Science', 'مهم': 'Important', 'قيمة': 'Value', 'نمو': 'Growth', 'مكتمل': 'Completed', 'سريع': 'Quick', 'نقاش': 'Discussion', 'تعاون': 'Collaboration', 'فريق': 'Team', 'إعداد': 'Settings', 'عمل': 'Work', 'تثبيت': 'Pin', 'انطلاق': 'Launch', 'خواطر': 'Thoughts', 'رابط': 'Link', 'بيانات': 'Data', 'موعد': 'Appointment', 'خطة زمنية': 'Timeline', 'مدة': 'Duration', 'تنبيه': 'Reminder', 'إنجاز': 'Achievement', 'مرحلة': 'Stage', 'تحذير': 'Warning', 'متوقف': 'Paused', 'تقدم': 'Progress', 'تصنيف': 'Category', 'تقنية': 'Technology', 'سحابة': 'Cloud',
-  'خريطة بدون عنوان': 'Untitled map', 'بدون عنوان': 'Untitled', 'يمينًا': 'on the right', 'يسارًا': 'on the left', 'افتح ملاحظة العقدة': 'Open node note', 'اسم العقدة': 'Node name', 'تحرير اسم العقدة': 'Edit node name', 'ملاحظة جديدة': 'New note', 'فكرة فرعية': 'Sub-idea', 'فكرتي الجديدة': 'My new idea',
-  'تعذر تصدير الصورة. جرّب مرة أخرى بعد ظهور الخريطة بالكامل.': 'Could not export the image. Try again after the map has fully loaded.', 'تعذر تصدير SVG. جرّب مرة أخرى بعد ظهور الخريطة بالكامل.': 'Could not export SVG. Try again after the map has fully loaded.', '- لا توجد عقد': '- No nodes', '- لا توجد روابط': '- No links', 'خريطة مستوردة': 'Imported map', 'الملف غير صالح أو لا يحتوي على خريطة محفوظة.': 'The file is invalid or does not contain a saved map.',
-  'إعدادات البرنامج': 'App settings', 'غيّر لغة الواجهة ومظهر البرنامج.': 'Change the app language and appearance.', 'اللغة': 'Language', 'العربية': 'Arabic', 'المظهر': 'Appearance', 'نهاري': 'Light', 'ليلي': 'Dark', 'إغلاق الإعدادات': 'Close settings',
-  'حفظ تغييرات المشروع؟': 'Save project changes?', 'المشروع': 'the project', 'قبل إغلاقه؟': 'before closing it?', 'حفظ وإغلاق': 'Save and close', 'إغلاق بدون حفظ': 'Close without saving', 'إلغاء': 'Cancel', 'كل المشاريع': 'All projects', 'ورقة': 'Waraqa', 'مساحة مشاريعك': 'Your projects', 'الوضع النهاري': 'Light mode', 'الوضع الليلي': 'Dark mode', 'استيراد مشروع': 'Import project', 'مساحة العمل': 'Workspace', 'مشاريعك': 'Your projects', 'كل خرائطك الذهنية في مكان واحد.': 'All your mind maps in one place.', 'ابدأ أول مشروع لك': 'Start your first project', 'أنشئ خريطة ذهنية جديدة أو استورد مشروعًا محفوظًا.': 'Create a new mind map or import a saved project.', 'إنشاء مشروع': 'Create project', 'حذف المشروع؟': 'Delete project?', '؟ سيتم حذف المشروع نهائيًا.': '? This project will be deleted permanently.', 'حذف المشروع': 'Delete project',
-  'قائمة التطبيق': 'Application menu', 'ملف': 'File', 'حفظ المشروع': 'Save project', 'إعادة تسمية المشروع...': 'Rename project...', 'استيراد خريطة...': 'Import map...', 'تصدير صورة PNG': 'Export PNG image', 'تصدير صورة SVG': 'Export SVG image', 'تصدير Markdown': 'Export Markdown', 'تصدير JSON': 'Export JSON', 'تحرير': 'Edit', 'تراجع': 'Undo', 'إعادة': 'Redo', 'نسخ الفرع وفروعه': 'Copy branch and descendants', 'نسخ العقدة وفروعها': 'Copy node and descendants', 'لصق الفرع وفروعه': 'Paste branch and descendants', 'لصق العقدة': 'Paste node', 'تكرار العقدة': 'Duplicate node', 'حذف المحدد': 'Delete selected', 'عرض': 'View', 'بحث في الخريطة...': 'Search the map...', 'إخفاء شريط الأدوات': 'Hide tools panel', 'إظهار شريط الأدوات': 'Show tools panel', 'إخفاء الخريطة المصغرة': 'Hide minimap', 'إظهار الخريطة المصغرة': 'Show minimap', 'ترتيب الخريطة': 'Arrange map',
-  'الأدوات': 'Tools', 'أضف إلى الخريطة': 'Add to map', 'إخفاء الخريطة': 'Hide map', 'إظهار الخريطة': 'Show map', 'فكرة جديدة': 'New idea', 'فرع يمين': 'Branch right', 'فرع يسار': 'Branch left', 'إدراج فرع يمين': 'Insert branch right', 'إدراج فرع يسار': 'Insert branch left', 'تنظيم الخريطة': 'Organize map', 'ترتيب الخريطة للأمام': 'Arrange map forward', 'ربط الأفكار': 'Connect ideas', 'اسحب من النقطة على طرف العقدة إلى عقدة أخرى لربطهما. اضغط كليك يمين على السهم لحذفه.': 'Drag from a node handle to another node to connect them. Right-click a connector to delete it.', 'شكل السهم': 'Connector style', 'متدرج': 'Smooth step', 'منحني': 'Curved', 'مستقيم': 'Straight', 'لون وسُمك السهم': 'Connector color and width', 'رفيع': 'Thin', 'متوسط': 'Medium', 'عريض': 'Thick', 'عريض جدًا': 'Extra thick', 'رأس السهم': 'Arrowhead', 'ممتلئ': 'Filled', 'مفتوح': 'Open', 'بدون رأس': 'None', 'تنسيق العقدة': 'Node appearance', 'لون العقدة الجديدة': 'New node color', 'نص العقدة المحددة': 'Selected node text', 'اختيار لون العقدة الجديدة': 'Choose new node color', 'اختيار لون مخصص': 'Choose a custom color', 'تحكم سريع': 'Quick controls', 'فتح': 'Expand', 'طي': 'Collapse', 'تكرار': 'Duplicate', 'حذف': 'Delete', 'ربط المحدد': 'Connect selected', 'كل فكرة تبدأ من هنا': 'Every idea starts here', 'مساحة أفكارك مفتوحة': 'Your idea space is ready', 'أضف فكرتك الأولى، ثم دع الأفكار تتفرع وتتصل ببعضها.': 'Add your first idea, then let it branch out and connect to others.', 'أضف أول فكرة': 'Add your first idea', 'مساحة الرسم': 'Canvas', 'اسحب العقد لترتيبها': 'Drag nodes to arrange them', 'ملاحظة العقدة': 'Node note', 'إيموجي العقدة': 'Node emoji', 'الرسومات من Twemoji': 'Emoji artwork by Twemoji', 'لون العقدة': 'Node color', 'تُحفظ الملاحظة مع هذه العقدة تلقائيًا': 'This note is saved with the node automatically', 'تنظيم مشاريعك': 'Organize your projects', 'ما اسم مشروعك؟': 'What is your project called?', 'اختر اسمًا واضحًا يسهل عليك الوصول إليه لاحقًا.': 'Choose a clear name so you can find it easily later.', 'اسم المشروع': 'Project name', 'حفظ الاسم': 'Save name', 'مساعدة': 'Help', 'مسح التحديد': 'Clear selection', 'إغلاق البحث': 'Close search', 'العودة إلى قائمة المشاريع': 'Back to all projects', 'شريط النافذة': 'Window bar', 'أزرار النافذة': 'Window controls', 'تصغير': 'Minimize', 'تصغير النافذة': 'Minimize window', 'استعادة': 'Restore', 'تكبير': 'Maximize', 'استعادة النافذة': 'Restore window', 'تكبير النافذة': 'Maximize window', 'إغلاق': 'Close', 'إغلاق النافذة': 'Close window',
-  'مشروع بدون عنوان': 'Untitled project', 'عقدة بدون عنوان': 'Untitled node', 'اكتب ملاحظتك هنا...': 'Write your note here...',
-  'لوحة الأدوات': 'Tools panel', 'إخفاء الملاحظة': 'Hide note', 'ملاحظة العقدة المحددة': 'Selected node note', 'اختيار إيموجي للعقدة': 'Choose node emoji', 'بدون إيموجي': 'No emoji', 'لون العقدة المحددة': 'Selected node color', 'لون مخصص للعقدة': 'Custom node color',
-  'اضغط لطي أو فتح الفروع يمينًا': 'Click to collapse or expand branches on the right', 'اضغط لطي أو فتح الفروع يسارًا': 'Click to collapse or expand branches on the left',
-  'تحديد جماعي': 'Multi-select', 'إنهاء التحديد': 'Done selecting', 'تحديد عدة عقد بالضغط أو بسحب مربع على المساحة': 'Select several nodes by tapping or dragging a box on the canvas',
-  'اضغط العقد لتحديدها أو اسحب مربعًا': 'Tap nodes to select them, or drag a box', 'اختر عقدة أخرى للربط': 'Choose another node to link', 'إلغاء الربط': 'Cancel linking',
-  'نمط الترتيب': 'Layout style', 'شجرة': 'Tree', 'تلقائي': 'Auto',
-  'أساسيات اللمس': 'Touch basics',
-  'إصبع واحد يحرّك الخريطة، وإصبعان للتكبير والتصغير.': 'One finger moves the map, two fingers zoom in and out.',
-  'اضغط مطولًا على أي عقدة لبدء الربط، ثم اضغط على عقدة أخرى لإتمامه.': 'Long-press any node to start linking, then tap another node to finish.',
-  'زر الرجوع في الهاتف يغلق الملاحظات والقوائم واحدًا واحدًا.': 'On phones, the back button closes the notes panel and menus one by one.',
-  'اربط عقدتين بالسحب من نقطة طرف العقدة إلى عقدة أخرى، أو بالضغط المطول على عقدة ثم الضغط على عقدة أخرى. كليك يمين على السهم يحذفه.': 'Link two nodes by dragging from a node handle to another node, or long-press a node then tap another. Right-click a connector deletes it.',
-  'زر «تحديد جماعي» في اللوحة يفعّل تحديد عدة عقد بالضغط أو بسحب مربع على المساحة (في الحاسوب أيضًا Ctrl + كليك يمين).': 'The “Multi-select” tool selects several nodes by tapping or dragging a box on the canvas (also Ctrl + right-click drag on desktop).',
+  'Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©': 'Mind map', 'Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª': 'Notes', 'Ø£Ø¯ÙˆØ§Øª ÙˆØ±Ù‚Ø©': 'Waraqa tools',
+  'Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª': 'Notes workspace', 'Ø¥Ù†Ø´Ø§Ø¡ Ù…Ù„Ø§Ø­Ø¸Ø©': 'Create note', 'Ø§Ù„Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª': 'Search notes',
+  'Ø§Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª...': 'Search notes...', 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬ Ù…Ø·Ø§Ø¨Ù‚Ø©.': 'No matching results.',
+  'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø¨Ø¹Ø¯.': 'No notes yet.', 'Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ø­ØªÙˆÙ‰ Ø¨Ø¹Ø¯': 'No content yet',
+  'ØªÙØ­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§': 'Changes are saved automatically', 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª': 'Could not save changes',
+  'Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©': 'Note title', 'Ù…Ø­ØªÙˆÙ‰ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©': 'Note content', 'Ø­Ø°Ù Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©': 'Delete note',
+  'Ø­Ø°Ù Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©ØŸ': 'Delete note?', 'Ù„Ù† ØªØªÙ…ÙƒÙ† Ù…Ù† Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ù‡Ø°Ù‡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¹Ø¯ Ø­Ø°ÙÙ‡Ø§.': 'You will not be able to recover this note after deleting it.',
+  'Ø§Ø¨Ø¯Ø£ Ù…Ù„Ø§Ø­Ø¸Ø© Ø¬Ø¯ÙŠØ¯Ø©': 'Start a new note', 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬': 'No results', 'Ø¬Ø±Ù‘Ø¨ Ø§Ù„Ø¨Ø­Ø« Ø¨ÙƒÙ„Ù…Ø§Øª Ù…Ø®ØªÙ„ÙØ©.': 'Try different search terms.',
+  'Ø£Ù†Ø´Ø¦ Ù…Ù„Ø§Ø­Ø¸Ø© Ù…Ø³ØªÙ‚Ù„Ø© ÙˆØ§Ø­ÙØ¸ Ø£ÙÙƒØ§Ø±Ùƒ Ù‡Ù†Ø§.': 'Create a standalone note and save your ideas here.',
+  'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯': 'New project', 'ÙÙƒØ±Ø©': 'Idea', 'Ø¥Ø¨Ø¯Ø§Ø¹': 'Creativity', 'Ù‡Ø¯Ù': 'Goal', 'ØªÙÙƒÙŠØ±': 'Thinking', 'Ø­Ù„': 'Solution', 'Ø§ØªØ¬Ø§Ù‡': 'Direction', 'Ø®Ø±ÙŠØ·Ø©': 'Map', 'ØªØ¹Ù„Ù…': 'Learning', 'Ù‚Ø±Ø§Ø¡Ø©': 'Reading', 'Ù…Ù„Ø§Ø­Ø¸Ø©': 'Note', 'Ø¨Ø­Ø«': 'Search', 'Ø§Ø³ØªÙƒØ´Ø§Ù': 'Explore', 'ØªØ¬Ø±Ø¨Ø© Ø¹Ù„Ù…ÙŠØ©': 'Experiment', 'Ø¹Ù„ÙˆÙ…': 'Science', 'Ù…Ù‡Ù…': 'Important', 'Ù‚ÙŠÙ…Ø©': 'Value', 'Ù†Ù…Ùˆ': 'Growth', 'Ù…ÙƒØªÙ…Ù„': 'Completed', 'Ø³Ø±ÙŠØ¹': 'Quick', 'Ù†Ù‚Ø§Ø´': 'Discussion', 'ØªØ¹Ø§ÙˆÙ†': 'Collaboration', 'ÙØ±ÙŠÙ‚': 'Team', 'Ø¥Ø¹Ø¯Ø§Ø¯': 'Settings', 'Ø¹Ù…Ù„': 'Work', 'ØªØ«Ø¨ÙŠØª': 'Pin', 'Ø§Ù†Ø·Ù„Ø§Ù‚': 'Launch', 'Ø®ÙˆØ§Ø·Ø±': 'Thoughts', 'Ø±Ø§Ø¨Ø·': 'Link', 'Ø¨ÙŠØ§Ù†Ø§Øª': 'Data', 'Ù…ÙˆØ¹Ø¯': 'Appointment', 'Ø®Ø·Ø© Ø²Ù…Ù†ÙŠØ©': 'Timeline', 'Ù…Ø¯Ø©': 'Duration', 'ØªÙ†Ø¨ÙŠÙ‡': 'Reminder', 'Ø¥Ù†Ø¬Ø§Ø²': 'Achievement', 'Ù…Ø±Ø­Ù„Ø©': 'Stage', 'ØªØ­Ø°ÙŠØ±': 'Warning', 'Ù…ØªÙˆÙ‚Ù': 'Paused', 'ØªÙ‚Ø¯Ù…': 'Progress', 'ØªØµÙ†ÙŠÙ': 'Category', 'ØªÙ‚Ù†ÙŠØ©': 'Technology', 'Ø³Ø­Ø§Ø¨Ø©': 'Cloud',
+  'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†': 'Untitled map', 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†': 'Untitled', 'ÙŠÙ…ÙŠÙ†Ù‹Ø§': 'on the right', 'ÙŠØ³Ø§Ø±Ù‹Ø§': 'on the left', 'Ø§ÙØªØ­ Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Open node note', 'Ø§Ø³Ù… Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Node name', 'ØªØ­Ø±ÙŠØ± Ø§Ø³Ù… Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Edit node name', 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¬Ø¯ÙŠØ¯Ø©': 'New note', 'ÙÙƒØ±Ø© ÙØ±Ø¹ÙŠØ©': 'Sub-idea', 'ÙÙƒØ±ØªÙŠ Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©': 'My new idea',
+  'ØªØ¹Ø°Ø± ØªØµØ¯ÙŠØ± Ø§Ù„ØµÙˆØ±Ø©. Ø¬Ø±Ù‘Ø¨ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ø¨Ø¹Ø¯ Ø¸Ù‡ÙˆØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„.': 'Could not export the image. Try again after the map has fully loaded.', 'ØªØ¹Ø°Ø± ØªØµØ¯ÙŠØ± SVG. Ø¬Ø±Ù‘Ø¨ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ø¨Ø¹Ø¯ Ø¸Ù‡ÙˆØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„.': 'Could not export SVG. Try again after the map has fully loaded.', '- Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¹Ù‚Ø¯': '- No nodes', '- Ù„Ø§ ØªÙˆØ¬Ø¯ Ø±ÙˆØ§Ø¨Ø·': '- No links', 'Ø®Ø±ÙŠØ·Ø© Ù…Ø³ØªÙˆØ±Ø¯Ø©': 'Imported map', 'Ø§Ù„Ù…Ù„Ù ØºÙŠØ± ØµØ§Ù„Ø­ Ø£Ùˆ Ù„Ø§ ÙŠØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ø®Ø±ÙŠØ·Ø© Ù…Ø­ÙÙˆØ¸Ø©.': 'The file is invalid or does not contain a saved map.',
+  'Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬': 'App settings', 'ØºÙŠÙ‘Ø± Ù„ØºØ© Ø§Ù„ÙˆØ§Ø¬Ù‡Ø© ÙˆÙ…Ø¸Ù‡Ø± Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬.': 'Change the app language and appearance.', 'Ø§Ù„Ù„ØºØ©': 'Language', 'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©': 'Arabic', 'Ø§Ù„Ù…Ø¸Ù‡Ø±': 'Appearance', 'Ù†Ù‡Ø§Ø±ÙŠ': 'Light', 'Ù„ÙŠÙ„ÙŠ': 'Dark', 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª': 'Close settings', 'Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'Save project backup',
+  'Ø­ÙØ¸ ØªØºÙŠÙŠØ±Ø§Øª Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ØŸ': 'Save project changes?', 'Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'the project', 'Ù‚Ø¨Ù„ Ø¥ØºÙ„Ø§Ù‚Ù‡ØŸ': 'before closing it?', 'Ø­ÙØ¸ ÙˆØ¥ØºÙ„Ø§Ù‚': 'Save and close', 'Ø¥ØºÙ„Ø§Ù‚ Ø¨Ø¯ÙˆÙ† Ø­ÙØ¸': 'Close without saving', 'Ø¥Ù„ØºØ§Ø¡': 'Cancel', 'ÙƒÙ„ Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹': 'All projects', 'ÙˆØ±Ù‚Ø©': 'Waraqa', 'Ù…Ø³Ø§Ø­Ø© Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ': 'Your projects', 'Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù†Ù‡Ø§Ø±ÙŠ': 'Light mode', 'Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù„ÙŠÙ„ÙŠ': 'Dark mode', 'Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ù…Ø´Ø±ÙˆØ¹': 'Import project', 'Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„': 'Workspace', 'Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ': 'Your projects', 'ÙƒÙ„ Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯.': 'All your mind maps in one place.', 'Ø§Ø¨Ø¯Ø£ Ø£ÙˆÙ„ Ù…Ø´Ø±ÙˆØ¹ Ù„Ùƒ': 'Start your first project', 'Ø£Ù†Ø´Ø¦ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© Ø¬Ø¯ÙŠØ¯Ø© Ø£Ùˆ Ø§Ø³ØªÙˆØ±Ø¯ Ù…Ø´Ø±ÙˆØ¹Ù‹Ø§ Ù…Ø­ÙÙˆØ¸Ù‹Ø§.': 'Create a new mind map or import a saved project.', 'Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø´Ø±ÙˆØ¹': 'Create project', 'Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ØŸ': 'Delete project?', 'ØŸ Ø³ÙŠØªÙ… Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ Ù†Ù‡Ø§Ø¦ÙŠÙ‹Ø§.': '? This project will be deleted permanently.', 'Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'Delete project',
+  'Ù…Ø´Ø±ÙˆØ¹ÙŠ Ø§Ù„Ø³Ø§Ø¨Ù‚': 'Previous project', 'ÙƒÙ„ Ù…Ø´Ø±ÙˆØ¹ ÙŠØ¶Ù… Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ.': 'Each project contains its mind maps and notes.', 'Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø®Ø±ÙŠØ·Ø©': 'Import map', 'Ø£Ù†Ø´Ø¦ Ù…Ø´Ø±ÙˆØ¹Ù‹Ø§ ÙŠØ¬Ù…Ø¹ Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ.': 'Create a project to organize mind maps and notes.', 'Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'Project workspace', 'Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯.': 'Your mind maps and notes in one place.', 'Ø®Ø±ÙŠØ·Ø© Ø¬Ø¯ÙŠØ¯Ø©': 'New mind map', 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø©ØŸ': 'Delete mind map?', 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Delete mind map', 'ÙƒÙ„ Ø§Ù„Ø®Ø±Ø§Ø¦Ø· ÙˆØ§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ù„Ù…ÙˆØ¬ÙˆØ¯Ø© Ø¨Ø¯Ø§Ø®Ù„Ù‡ Ù†Ù‡Ø§Ø¦ÙŠÙ‹Ø§.': 'and all its mind maps and notes permanently.', 'ØªØ¹Ø°Ø± Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.': 'Could not create the note. Browser storage may be full.',
+  'Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„ØªØ·Ø¨ÙŠÙ‚': 'Application menu', 'Ù…Ù„Ù': 'File', 'Ø­ÙØ¸ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'Save project', 'Ø¥Ø¹Ø§Ø¯Ø© ØªØ³Ù…ÙŠØ© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹...': 'Rename project...', 'Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø®Ø±ÙŠØ·Ø©...': 'Import map...', 'ØªØµØ¯ÙŠØ± ØµÙˆØ±Ø© PNG': 'Export PNG image', 'ØªØµØ¯ÙŠØ± ØµÙˆØ±Ø© SVG': 'Export SVG image', 'ØªØµØ¯ÙŠØ± Markdown': 'Export Markdown', 'ØªØµØ¯ÙŠØ± JSON': 'Export JSON', 'ØªØ­Ø±ÙŠØ±': 'Edit', 'ØªØ±Ø§Ø¬Ø¹': 'Undo', 'Ø¥Ø¹Ø§Ø¯Ø©': 'Redo', 'Ù†Ø³Ø® Ø§Ù„ÙØ±Ø¹ ÙˆÙØ±ÙˆØ¹Ù‡': 'Copy branch and descendants', 'Ù†Ø³Ø® Ø§Ù„Ø¹Ù‚Ø¯Ø© ÙˆÙØ±ÙˆØ¹Ù‡Ø§': 'Copy node and descendants', 'Ù„ØµÙ‚ Ø§Ù„ÙØ±Ø¹ ÙˆÙØ±ÙˆØ¹Ù‡': 'Paste branch and descendants', 'Ù„ØµÙ‚ Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Paste node', 'ØªÙƒØ±Ø§Ø± Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Duplicate node', 'Ø­Ø°Ù Ø§Ù„Ù…Ø­Ø¯Ø¯': 'Delete selected', 'Ø¹Ø±Ø¶': 'View', 'Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ø®Ø±ÙŠØ·Ø©...': 'Search the map...', 'Ø¥Ø®ÙØ§Ø¡ Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª': 'Hide tools panel', 'Ø¥Ø¸Ù‡Ø§Ø± Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª': 'Show tools panel', 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ù…ØµØºØ±Ø©': 'Hide minimap', 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ù…ØµØºØ±Ø©': 'Show minimap', 'ØªØ±ØªÙŠØ¨ Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Arrange map',
+  'Ø§Ù„Ø£Ø¯ÙˆØ§Øª': 'Tools', 'Ø£Ø¶Ù Ø¥Ù„Ù‰ Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Add to map', 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Hide map', 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Show map', 'ÙÙƒØ±Ø© Ø¬Ø¯ÙŠØ¯Ø©': 'New idea', 'ÙØ±Ø¹ ÙŠÙ…ÙŠÙ†': 'Branch right', 'ÙØ±Ø¹ ÙŠØ³Ø§Ø±': 'Branch left', 'Ø¥Ø¯Ø±Ø§Ø¬ ÙØ±Ø¹ ÙŠÙ…ÙŠÙ†': 'Insert branch right', 'Ø¥Ø¯Ø±Ø§Ø¬ ÙØ±Ø¹ ÙŠØ³Ø§Ø±': 'Insert branch left', 'ØªÙ†Ø¸ÙŠÙ… Ø§Ù„Ø®Ø±ÙŠØ·Ø©': 'Organize map', 'ØªØ±ØªÙŠØ¨ Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ù„Ù„Ø£Ù…Ø§Ù…': 'Arrange map forward', 'Ø±Ø¨Ø· Ø§Ù„Ø£ÙÙƒØ§Ø±': 'Connect ideas', 'Ø§Ø³Ø­Ø¨ Ù…Ù† Ø§Ù„Ù†Ù‚Ø·Ø© Ø¹Ù„Ù‰ Ø·Ø±Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø¥Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ø±Ø¨Ø·Ù‡Ù…Ø§. Ø§Ø¶ØºØ· ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø³Ù‡Ù… Ù„Ø­Ø°ÙÙ‡.': 'Drag from a node handle to another node to connect them. Right-click a connector to delete it.', 'Ø´ÙƒÙ„ Ø§Ù„Ø³Ù‡Ù…': 'Connector style', 'Ù…ØªØ¯Ø±Ø¬': 'Smooth step', 'Ù…Ù†Ø­Ù†ÙŠ': 'Curved', 'Ù…Ø³ØªÙ‚ÙŠÙ…': 'Straight', 'Ù„ÙˆÙ† ÙˆØ³ÙÙ…Ùƒ Ø§Ù„Ø³Ù‡Ù…': 'Connector color and width', 'Ø±ÙÙŠØ¹': 'Thin', 'Ù…ØªÙˆØ³Ø·': 'Medium', 'Ø¹Ø±ÙŠØ¶': 'Thick', 'Ø¹Ø±ÙŠØ¶ Ø¬Ø¯Ù‹Ø§': 'Extra thick', 'Ø±Ø£Ø³ Ø§Ù„Ø³Ù‡Ù…': 'Arrowhead', 'Ù…Ù…ØªÙ„Ø¦': 'Filled', 'Ù…ÙØªÙˆØ­': 'Open', 'Ø¨Ø¯ÙˆÙ† Ø±Ø£Ø³': 'None', 'ØªÙ†Ø³ÙŠÙ‚ Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Node appearance', 'Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©': 'New node color', 'Ù†Øµ Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©': 'Selected node text', 'Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©': 'Choose new node color', 'Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ù…Ø®ØµØµ': 'Choose a custom color', 'ØªØ­ÙƒÙ… Ø³Ø±ÙŠØ¹': 'Quick controls', 'ÙØªØ­': 'Expand', 'Ø·ÙŠ': 'Collapse', 'ØªÙƒØ±Ø§Ø±': 'Duplicate', 'Ø­Ø°Ù': 'Delete', 'Ø±Ø¨Ø· Ø§Ù„Ù…Ø­Ø¯Ø¯': 'Connect selected', 'ÙƒÙ„ ÙÙƒØ±Ø© ØªØ¨Ø¯Ø£ Ù…Ù† Ù‡Ù†Ø§': 'Every idea starts here', 'Ù…Ø³Ø§Ø­Ø© Ø£ÙÙƒØ§Ø±Ùƒ Ù…ÙØªÙˆØ­Ø©': 'Your idea space is ready', 'Ø£Ø¶Ù ÙÙƒØ±ØªÙƒ Ø§Ù„Ø£ÙˆÙ„Ù‰ØŒ Ø«Ù… Ø¯Ø¹ Ø§Ù„Ø£ÙÙƒØ§Ø± ØªØªÙØ±Ø¹ ÙˆØªØªØµÙ„ Ø¨Ø¨Ø¹Ø¶Ù‡Ø§.': 'Add your first idea, then let it branch out and connect to others.', 'Ø£Ø¶Ù Ø£ÙˆÙ„ ÙÙƒØ±Ø©': 'Add your first idea', 'Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø±Ø³Ù…': 'Canvas', 'Ø§Ø³Ø­Ø¨ Ø§Ù„Ø¹Ù‚Ø¯ Ù„ØªØ±ØªÙŠØ¨Ù‡Ø§': 'Drag nodes to arrange them', 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Node note', 'Ø¥ÙŠÙ…ÙˆØ¬ÙŠ Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Node emoji', 'Ø§Ù„Ø±Ø³ÙˆÙ…Ø§Øª Ù…Ù† Twemoji': 'Emoji artwork by Twemoji', 'Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø©': 'Node color', 'ØªÙØ­ÙØ¸ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø© Ù…Ø¹ Ù‡Ø°Ù‡ Ø§Ù„Ø¹Ù‚Ø¯Ø© ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§': 'This note is saved with the node automatically', 'ØªÙ†Ø¸ÙŠÙ… Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ': 'Organize your projects', 'Ù…Ø§ Ø§Ø³Ù… Ù…Ø´Ø±ÙˆØ¹ÙƒØŸ': 'What is your project called?', 'Ø§Ø®ØªØ± Ø§Ø³Ù…Ù‹Ø§ ÙˆØ§Ø¶Ø­Ù‹Ø§ ÙŠØ³Ù‡Ù„ Ø¹Ù„ÙŠÙƒ Ø§Ù„ÙˆØµÙˆÙ„ Ø¥Ù„ÙŠÙ‡ Ù„Ø§Ø­Ù‚Ù‹Ø§.': 'Choose a clear name so you can find it easily later.', 'Ø§Ø³Ù… Ø§Ù„Ù…Ø´Ø±ÙˆØ¹': 'Project name', 'Ø­ÙØ¸ Ø§Ù„Ø§Ø³Ù…': 'Save name', 'Ù…Ø³Ø§Ø¹Ø¯Ø©': 'Help', 'Ù…Ø³Ø­ Ø§Ù„ØªØ­Ø¯ÙŠØ¯': 'Clear selection', 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø¨Ø­Ø«': 'Close search', 'Ø§Ù„Ø¹ÙˆØ¯Ø© Ø¥Ù„Ù‰ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹': 'Back to all projects', 'Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Window bar', 'Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Window controls', 'ØªØµØºÙŠØ±': 'Minimize', 'ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Minimize window', 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©': 'Restore', 'ØªÙƒØ¨ÙŠØ±': 'Maximize', 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Restore window', 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Maximize window', 'Ø¥ØºÙ„Ø§Ù‚': 'Close', 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©': 'Close window',
+  'Ù…Ø´Ø±ÙˆØ¹ Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†': 'Untitled project', 'Ø¹Ù‚Ø¯Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†': 'Untitled node', 'Ø§ÙƒØªØ¨ Ù…Ù„Ø§Ø­Ø¸ØªÙƒ Ù‡Ù†Ø§...': 'Write your note here...',
+  'Ù„ÙˆØ­Ø© Ø§Ù„Ø£Ø¯ÙˆØ§Øª': 'Tools panel', 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©': 'Hide note', 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©': 'Selected node note', 'Ø§Ø®ØªÙŠØ§Ø± Ø¥ÙŠÙ…ÙˆØ¬ÙŠ Ù„Ù„Ø¹Ù‚Ø¯Ø©': 'Choose node emoji', 'Ø¨Ø¯ÙˆÙ† Ø¥ÙŠÙ…ÙˆØ¬ÙŠ': 'No emoji', 'Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©': 'Selected node color', 'Ù„ÙˆÙ† Ù…Ø®ØµØµ Ù„Ù„Ø¹Ù‚Ø¯Ø©': 'Custom node color',
+  'Ø§Ø¶ØºØ· Ù„Ø·ÙŠ Ø£Ùˆ ÙØªØ­ Ø§Ù„ÙØ±ÙˆØ¹ ÙŠÙ…ÙŠÙ†Ù‹Ø§': 'Click to collapse or expand branches on the right', 'Ø§Ø¶ØºØ· Ù„Ø·ÙŠ Ø£Ùˆ ÙØªØ­ Ø§Ù„ÙØ±ÙˆØ¹ ÙŠØ³Ø§Ø±Ù‹Ø§': 'Click to collapse or expand branches on the left',
+  'ØªØ­Ø¯ÙŠØ¯ Ø¬Ù…Ø§Ø¹ÙŠ': 'Multi-select', 'Ø¥Ù†Ù‡Ø§Ø¡ Ø§Ù„ØªØ­Ø¯ÙŠØ¯': 'Done selecting', 'ØªØ­Ø¯ÙŠØ¯ Ø¹Ø¯Ø© Ø¹Ù‚Ø¯ Ø¨Ø§Ù„Ø¶ØºØ· Ø£Ùˆ Ø¨Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø³Ø§Ø­Ø©': 'Select several nodes by tapping or dragging a box on the canvas',
+  'Ø§Ø¶ØºØ· Ø§Ù„Ø¹Ù‚Ø¯ Ù„ØªØ­Ø¯ÙŠØ¯Ù‡Ø§ Ø£Ùˆ Ø§Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹Ù‹Ø§': 'Tap nodes to select them, or drag a box', 'Ø§Ø®ØªØ± Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ù„Ø±Ø¨Ø·': 'Choose another node to link', 'Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø±Ø¨Ø·': 'Cancel linking',
+  'Ù†Ù…Ø· Ø§Ù„ØªØ±ØªÙŠØ¨': 'Layout style', 'Ø´Ø¬Ø±Ø©': 'Tree', 'ØªÙ„Ù‚Ø§Ø¦ÙŠ': 'Auto',
+  'Ø£Ø³Ø§Ø³ÙŠØ§Øª Ø§Ù„Ù„Ù…Ø³': 'Touch basics',
+  'Ø¥ØµØ¨Ø¹ ÙˆØ§Ø­Ø¯ ÙŠØ­Ø±Ù‘Ùƒ Ø§Ù„Ø®Ø±ÙŠØ·Ø©ØŒ ÙˆØ¥ØµØ¨Ø¹Ø§Ù† Ù„Ù„ØªÙƒØ¨ÙŠØ± ÙˆØ§Ù„ØªØµØºÙŠØ±.': 'One finger moves the map, two fingers zoom in and out.',
+  'Ø§Ø¶ØºØ· Ù…Ø·ÙˆÙ„Ù‹Ø§ Ø¹Ù„Ù‰ Ø£ÙŠ Ø¹Ù‚Ø¯Ø© Ù„Ø¨Ø¯Ø¡ Ø§Ù„Ø±Ø¨Ø·ØŒ Ø«Ù… Ø§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ø¥ØªÙ…Ø§Ù…Ù‡.': 'Long-press any node to start linking, then tap another node to finish.',
+  'Ø²Ø± Ø§Ù„Ø±Ø¬ÙˆØ¹ ÙÙŠ Ø§Ù„Ù‡Ø§ØªÙ ÙŠØºÙ„Ù‚ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª ÙˆØ§Ù„Ù‚ÙˆØ§Ø¦Ù… ÙˆØ§Ø­Ø¯Ù‹Ø§ ÙˆØ§Ø­Ø¯Ù‹Ø§.': 'On phones, the back button closes the notes panel and menus one by one.',
+  'Ø§Ø±Ø¨Ø· Ø¹Ù‚Ø¯ØªÙŠÙ† Ø¨Ø§Ù„Ø³Ø­Ø¨ Ù…Ù† Ù†Ù‚Ø·Ø© Ø·Ø±Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø¥Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ØŒ Ø£Ùˆ Ø¨Ø§Ù„Ø¶ØºØ· Ø§Ù„Ù…Ø·ÙˆÙ„ Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø«Ù… Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰. ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø³Ù‡Ù… ÙŠØ­Ø°ÙÙ‡.': 'Link two nodes by dragging from a node handle to another node, or long-press a node then tap another. Right-click a connector deletes it.',
+  'Ø²Ø± Â«ØªØ­Ø¯ÙŠØ¯ Ø¬Ù…Ø§Ø¹ÙŠÂ» ÙÙŠ Ø§Ù„Ù„ÙˆØ­Ø© ÙŠÙØ¹Ù‘Ù„ ØªØ­Ø¯ÙŠØ¯ Ø¹Ø¯Ø© Ø¹Ù‚Ø¯ Ø¨Ø§Ù„Ø¶ØºØ· Ø£Ùˆ Ø¨Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø³Ø§Ø­Ø© (ÙÙŠ Ø§Ù„Ø­Ø§Ø³ÙˆØ¨ Ø£ÙŠØ¶Ù‹Ø§ Ctrl + ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ†).': 'The â€œMulti-selectâ€ tool selects several nodes by tapping or dragging a box on the canvas (also Ctrl + right-click drag on desktop).',
 }
 function translateToEnglish(value) {
   const trimmed = value.trim()
   if (englishTranslations[trimmed]) return `${value.slice(0, value.indexOf(trimmed))}${englishTranslations[trimmed]}${value.slice(value.indexOf(trimmed) + trimmed.length)}`
-  const nodeCount = trimmed.match(/^(\d+) عقدة$/)
+  const nodeCount = trimmed.match(/^(\d+) Ø¹Ù‚Ø¯Ø©$/)
   if (nodeCount) return `${nodeCount[1]} nodes`
-  const linkCount = trimmed.match(/^(\d+) رابط$/)
+  const linkCount = trimmed.match(/^(\d+) Ø±Ø§Ø¨Ø·$/)
   if (linkCount) return `${linkCount[1]} links`
-  const selectedCount = trimmed.match(/^(\d+) عقد محددة$/)
+  const selectedCount = trimmed.match(/^(\d+) Ø¹Ù‚Ø¯ Ù…Ø­Ø¯Ø¯Ø©$/)
   if (selectedCount) return `${selectedCount[1]} nodes selected`
-  const projectCounts = trimmed.match(/^(\d+) عقدة · (\d+) رابط$/)
-  if (projectCounts) return `${projectCounts[1]} nodes · ${projectCounts[2]} links`
-  const tone = trimmed.match(/^لون (.+)$/)
+  const projectCounts = trimmed.match(/^(\d+) Ø¹Ù‚Ø¯Ø© Â· (\d+) Ø±Ø§Ø¨Ø·$/)
+  if (projectCounts) return `${projectCounts[1]} nodes Â· ${projectCounts[2]} links`
+  const tone = trimmed.match(/^Ù„ÙˆÙ† (.+)$/)
   if (tone) return `Color ${tone[1]}`
-  const emoji = trimmed.match(/^إيموجي (.+)$/)
+  const emoji = trimmed.match(/^Ø¥ÙŠÙ…ÙˆØ¬ÙŠ (.+)$/)
   if (emoji) return `Emoji ${emoji[1]}`
-  if (trimmed.startsWith('آخر تعديل: ')) return `Last edited: ${trimmed.slice('آخر تعديل: '.length)}`
-  if (trimmed.startsWith('إغلاق ')) return `Close ${trimmed.slice('إغلاق '.length)}`
+  if (trimmed.startsWith('Ø¢Ø®Ø± ØªØ¹Ø¯ÙŠÙ„: ')) return `Last edited: ${trimmed.slice('Ø¢Ø®Ø± ØªØ¹Ø¯ÙŠÙ„: '.length)}`
+  if (trimmed.startsWith('Ø¥ØºÙ„Ø§Ù‚ ')) return `Close ${trimmed.slice('Ø¥ØºÙ„Ø§Ù‚ '.length)}`
   return value
 }
 function LocalizedContent({ language, children }) {
@@ -156,13 +226,49 @@ function LocalizedContent({ language, children }) {
   }
   return translateNode(children)
 }
-function runPageTransition(update) {
-  if (document.startViewTransition) document.startViewTransition(() => flushSync(update))
-  else {
-    document.documentElement.classList.add('fallback-transition')
+let pageTransitionSequence = 0
+function runPageTransition(update, direction = 'forward') {
+  const root = document.documentElement
+  const transitionId = String(++pageTransitionSequence)
+  root.dataset.transitionDirection = direction
+  root.dataset.pageTransition = transitionId
+  if (document.startViewTransition) {
+    const transition = document.startViewTransition(() => flushSync(update))
+    const clearDirection = () => {
+      if (root.dataset.pageTransition === transitionId) {
+        delete root.dataset.transitionDirection
+        delete root.dataset.pageTransition
+      }
+    }
+    transition.finished.then(clearDirection, clearDirection)
+  } else {
+    root.classList.add('fallback-transition')
     update()
-    window.setTimeout(() => document.documentElement.classList.remove('fallback-transition'), 420)
+    window.setTimeout(() => {
+      if (root.dataset.pageTransition === transitionId) {
+        root.classList.remove('fallback-transition')
+        delete root.dataset.transitionDirection
+        delete root.dataset.pageTransition
+      }
+    }, 680)
   }
+}
+function WorkspaceBackupButton({ onClick, busy, disabled, language }) {
+  const label = busy
+    ? language === 'en' ? 'Savingâ€¦' : 'Ø¬Ø§Ø±Ù Ø§Ù„Ø­ÙØ¸â€¦'
+    : language === 'en' ? 'Export item' : 'ØªØµØ¯ÙŠØ± Ø§Ù„Ø¹Ù†ØµØ±'
+  return (
+    <button className="workspace-backup-button" type="button" onClick={onClick} disabled={busy || disabled} title={language === 'en' ? 'Export a separate copy of the open item' : 'ØªØµØ¯ÙŠØ± Ù†Ø³Ø®Ø© Ù…Ø³ØªÙ‚Ù„Ø© Ù…Ù† Ø§Ù„Ø¹Ù†ØµØ± Ø§Ù„Ù…ÙØªÙˆØ­'}>
+      <ArrowDownToLine size={16} />
+      <span>{label}</span>
+    </button>
+  )
+}
+function DocumentImportButton({ onClick, language }) {
+  return <button className="workspace-backup-button document-import-button" type="button" onClick={onClick} title={language === 'en' ? 'Import an item into this project' : 'Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø¹Ù†ØµØ± Ø¥Ù„Ù‰ Ù‡Ø°Ø§ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹'}>
+    <ArrowUpFromLine size={16} />
+    <span>{language === 'en' ? 'Import item' : 'Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø¹Ù†ØµØ±'}</span>
+  </button>
 }
 function readProjects() {
   try {
@@ -171,6 +277,58 @@ function readProjects() {
     const legacy = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
     return legacy ? [normalizeProjectHandles({ id: newProjectId(), updatedAt: Date.now(), ...legacy })] : []
   } catch { return [] }
+}
+function readWorkspaces() {
+  try {
+    const storedWorkspaces = JSON.parse(localStorage.getItem(WORKSPACES_KEY) || 'null')
+    const storedProjects = JSON.parse(localStorage.getItem(PROJECTS_KEY) || 'null')
+    const storedNotes = JSON.parse(localStorage.getItem(NOTES_STORAGE_KEY) || '[]')
+    const legacyMap = !Array.isArray(storedProjects)
+      ? JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
+      : null
+    const projects = Array.isArray(storedProjects)
+      ? storedProjects
+      : legacyMap
+        ? [{ ...legacyMap, id: newProjectId(), updatedAt: currentTimestamp() }]
+        : []
+    const notes = Array.isArray(storedNotes) ? storedNotes : []
+    if (Array.isArray(storedWorkspaces)) {
+      if (!storedWorkspaces.length && (projects.length || notes.length)) {
+        const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ÙŠ Ø§Ù„Ø³Ø§Ø¨Ù‚', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+        localStorage.setItem(WORKSPACES_KEY, JSON.stringify([workspace]))
+        localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects.map((project) => ({ ...project, workspaceId: workspace.id }))))
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes.map((note) => ({ ...note, workspaceId: workspace.id }))))
+        return [workspace]
+      }
+      if (storedWorkspaces.length) {
+        const defaultWorkspaceId = storedWorkspaces[0].id
+        const validWorkspaceIds = new Set(storedWorkspaces.map((workspace) => workspace.id))
+        const unassignedProjects = projects.some((project) => !validWorkspaceIds.has(project.workspaceId))
+        const unassignedNotes = notes.some((note) => !validWorkspaceIds.has(note.workspaceId))
+        if (unassignedProjects || unassignedNotes) {
+          localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects.map((project) => (
+            validWorkspaceIds.has(project.workspaceId) ? project : { ...project, workspaceId: defaultWorkspaceId }
+          ))))
+          localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes.map((note) => (
+            validWorkspaceIds.has(note.workspaceId) ? note : { ...note, workspaceId: defaultWorkspaceId }
+          ))))
+        }
+      }
+      return storedWorkspaces
+    }
+    if (!projects.length && !notes.length) {
+      localStorage.setItem(WORKSPACES_KEY, JSON.stringify([]))
+      return []
+    }
+    const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ÙŠ Ø§Ù„Ø³Ø§Ø¨Ù‚', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+    localStorage.setItem(WORKSPACES_KEY, JSON.stringify([workspace]))
+    localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects.map((project) => ({ ...project, workspaceId: workspace.id }))))
+    localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes.map((note) => ({ ...note, workspaceId: workspace.id }))))
+    return [workspace]
+  } catch (error) {
+    console.error('Could not read workspaces.', error)
+    return []
+  }
 }
 function readProjectFromStorage(id, fallback) {
   try {
@@ -185,7 +343,7 @@ function createProjectSavePoint(project) {
     Object.entries(value).filter(([key]) => !transientKeys.has(key)),
   )
   return {
-    title: project.title || 'مشروع جديد',
+    title: project.title || 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯',
     nodes: (project.nodes || []).map((node) => clean(node, new Set(['selected', 'dragging', 'measured', 'positionAbsolute']))),
     edges: (project.edges || []).map((edge) => clean(edge, new Set(['selected']))),
     edgeStyle: project.edgeStyle || 'smoothstep',
@@ -207,48 +365,48 @@ const toneColors = {
 }
 const tones = Object.keys(toneColors)
 const nodeEmojis = [
-  { emoji: '💡', label: 'فكرة' },
-  { emoji: '🪄', label: 'إبداع' },
-  { emoji: '🎯', label: 'هدف' },
-  { emoji: '🧠', label: 'تفكير' },
-  { emoji: '🧩', label: 'حل' },
-  { emoji: '🧭', label: 'اتجاه' },
-  { emoji: '🗺️', label: 'خريطة' },
-  { emoji: '📚', label: 'تعلم' },
-  { emoji: '📖', label: 'قراءة' },
-  { emoji: '📝', label: 'ملاحظة' },
-  { emoji: '🔍', label: 'بحث' },
-  { emoji: '🔬', label: 'استكشاف' },
-  { emoji: '🧪', label: 'تجربة علمية' },
-  { emoji: '🧬', label: 'علوم' },
-  { emoji: '⭐', label: 'مهم' },
-  { emoji: '💎', label: 'قيمة' },
-  { emoji: '🌱', label: 'نمو' },
-  { emoji: '✅', label: 'مكتمل' },
-  { emoji: '⚡', label: 'سريع' },
-  { emoji: '💬', label: 'نقاش' },
-  { emoji: '🤝', label: 'تعاون' },
-  { emoji: '👥', label: 'فريق' },
-  { emoji: '🎨', label: 'إبداع' },
-  { emoji: '⚙️', label: 'إعداد' },
-  { emoji: '🛠️', label: 'عمل' },
-  { emoji: '📌', label: 'تثبيت' },
-  { emoji: '🚀', label: 'انطلاق' },
-  { emoji: '💭', label: 'خواطر' },
-  { emoji: '🔗', label: 'رابط' },
-  { emoji: '📊', label: 'بيانات' },
-  { emoji: '📅', label: 'موعد' },
-  { emoji: '🗓️', label: 'خطة زمنية' },
-  { emoji: '⏳', label: 'مدة' },
-  { emoji: '🔔', label: 'تنبيه' },
-  { emoji: '🏆', label: 'إنجاز' },
-  { emoji: '🏁', label: 'مرحلة' },
-  { emoji: '⚠️', label: 'تحذير' },
-  { emoji: '⛔', label: 'متوقف' },
-  { emoji: '📈', label: 'تقدم' },
-  { emoji: '🗂️', label: 'تصنيف' },
-  { emoji: '💻', label: 'تقنية' },
-  { emoji: '☁️', label: 'سحابة' },
+  { emoji: 'ðŸ’¡', label: 'ÙÙƒØ±Ø©' },
+  { emoji: 'ðŸª„', label: 'Ø¥Ø¨Ø¯Ø§Ø¹' },
+  { emoji: 'ðŸŽ¯', label: 'Ù‡Ø¯Ù' },
+  { emoji: 'ðŸ§ ', label: 'ØªÙÙƒÙŠØ±' },
+  { emoji: 'ðŸ§©', label: 'Ø­Ù„' },
+  { emoji: 'ðŸ§­', label: 'Ø§ØªØ¬Ø§Ù‡' },
+  { emoji: 'ðŸ—ºï¸', label: 'Ø®Ø±ÙŠØ·Ø©' },
+  { emoji: 'ðŸ“š', label: 'ØªØ¹Ù„Ù…' },
+  { emoji: 'ðŸ“–', label: 'Ù‚Ø±Ø§Ø¡Ø©' },
+  { emoji: 'ðŸ“', label: 'Ù…Ù„Ø§Ø­Ø¸Ø©' },
+  { emoji: 'ðŸ”', label: 'Ø¨Ø­Ø«' },
+  { emoji: 'ðŸ”¬', label: 'Ø§Ø³ØªÙƒØ´Ø§Ù' },
+  { emoji: 'ðŸ§ª', label: 'ØªØ¬Ø±Ø¨Ø© Ø¹Ù„Ù…ÙŠØ©' },
+  { emoji: 'ðŸ§¬', label: 'Ø¹Ù„ÙˆÙ…' },
+  { emoji: 'â­', label: 'Ù…Ù‡Ù…' },
+  { emoji: 'ðŸ’Ž', label: 'Ù‚ÙŠÙ…Ø©' },
+  { emoji: 'ðŸŒ±', label: 'Ù†Ù…Ùˆ' },
+  { emoji: 'âœ…', label: 'Ù…ÙƒØªÙ…Ù„' },
+  { emoji: 'âš¡', label: 'Ø³Ø±ÙŠØ¹' },
+  { emoji: 'ðŸ’¬', label: 'Ù†Ù‚Ø§Ø´' },
+  { emoji: 'ðŸ¤', label: 'ØªØ¹Ø§ÙˆÙ†' },
+  { emoji: 'ðŸ‘¥', label: 'ÙØ±ÙŠÙ‚' },
+  { emoji: 'ðŸŽ¨', label: 'Ø¥Ø¨Ø¯Ø§Ø¹' },
+  { emoji: 'âš™ï¸', label: 'Ø¥Ø¹Ø¯Ø§Ø¯' },
+  { emoji: 'ðŸ› ï¸', label: 'Ø¹Ù…Ù„' },
+  { emoji: 'ðŸ“Œ', label: 'ØªØ«Ø¨ÙŠØª' },
+  { emoji: 'ðŸš€', label: 'Ø§Ù†Ø·Ù„Ø§Ù‚' },
+  { emoji: 'ðŸ’­', label: 'Ø®ÙˆØ§Ø·Ø±' },
+  { emoji: 'ðŸ”—', label: 'Ø±Ø§Ø¨Ø·' },
+  { emoji: 'ðŸ“Š', label: 'Ø¨ÙŠØ§Ù†Ø§Øª' },
+  { emoji: 'ðŸ“…', label: 'Ù…ÙˆØ¹Ø¯' },
+  { emoji: 'ðŸ—“ï¸', label: 'Ø®Ø·Ø© Ø²Ù…Ù†ÙŠØ©' },
+  { emoji: 'â³', label: 'Ù…Ø¯Ø©' },
+  { emoji: 'ðŸ””', label: 'ØªÙ†Ø¨ÙŠÙ‡' },
+  { emoji: 'ðŸ†', label: 'Ø¥Ù†Ø¬Ø§Ø²' },
+  { emoji: 'ðŸ', label: 'Ù…Ø±Ø­Ù„Ø©' },
+  { emoji: 'âš ï¸', label: 'ØªØ­Ø°ÙŠØ±' },
+  { emoji: 'â›”', label: 'Ù…ØªÙˆÙ‚Ù' },
+  { emoji: 'ðŸ“ˆ', label: 'ØªÙ‚Ø¯Ù…' },
+  { emoji: 'ðŸ—‚ï¸', label: 'ØªØµÙ†ÙŠÙ' },
+  { emoji: 'ðŸ’»', label: 'ØªÙ‚Ù†ÙŠØ©' },
+  { emoji: 'â˜ï¸', label: 'Ø³Ø­Ø§Ø¨Ø©' },
 ]
 function EmojiGlyph({ emoji }) {
   const assetUrl = emojiDataUrl(emoji)
@@ -256,7 +414,6 @@ function EmojiGlyph({ emoji }) {
 }
 const isHexColor = (color) => /^#[\da-f]{6}$/i.test(color || '')
 const TOUCH_DEVICE = window.matchMedia('(pointer: coarse)').matches
-const TRAINING_DISABLED = TOUCH_DEVICE || window.matchMedia('(max-width: 760px)').matches
 const nodeHeightOf = (node) => Math.max(node.data.kind === 'idea' ? 76 : 50, node.measured?.height ?? node.height ?? 64)
 const nodeWidthOf = (node) => Math.max(node.data.kind === 'idea' ? 190 : 150, node.measured?.width ?? node.width ?? 190)
 const arrowHeads = { closed: MarkerType.ArrowClosed, open: MarkerType.Arrow }
@@ -549,7 +706,7 @@ function readSavedMap() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
     return {
-      title: saved?.title || 'خريطة بدون عنوان',
+      title: saved?.title || 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†',
       nodes: Array.isArray(saved?.nodes) ? saved.nodes : [],
       edges: normalizeProjectHandles(saved || {}).edges,
       edgeStyle: saved?.edgeStyle || 'smoothstep',
@@ -558,7 +715,7 @@ function readSavedMap() {
       arrowHead: saved?.arrowHead || 'closed',
     }
   } catch {
-    return { title: 'خريطة بدون عنوان', nodes: [], edges: [], edgeStyle: 'smoothstep', edgeColor: '#9aaea4', edgeWidth: 2, arrowHead: 'closed' }
+    return { title: 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†', nodes: [], edges: [], edgeStyle: 'smoothstep', edgeColor: '#9aaea4', edgeWidth: 2, arrowHead: 'closed' }
   }
 }
 
@@ -566,10 +723,12 @@ function MapNode({ data, selected, width }) {
   const Icon = data.kind === 'branch' ? GitBranch : Lightbulb
   const customColor = isHexColor(data.customColor) ? data.customColor : ''
   const [editing, setEditing] = useState(false)
+  const [labelMentionPicker, setLabelMentionPicker] = useState(null)
   const labelRef = useRef(null)
+  const pendingLabelCaretRef = useRef(null)
   const label = data.label || ''
   const displayLabel = data.language === 'en' ? translateToEnglish(label) : label
-  const resizeText = displayLabel || (data.language === 'en' ? 'Untitled' : 'بدون عنوان')
+  const resizeText = displayLabel || (data.language === 'en' ? 'Untitled' : 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')
   const minNodeWidth = data.kind === 'idea' ? 190 : 150
   const minNodeHeight = Math.max(data.kind === 'idea' ? 76 : 64, Math.ceil((resizeText.length * 7.2) / Math.max(54, (width ?? 190) - 82)) * 18 + 30)
   const sourceHandle = (side, position) => (
@@ -578,12 +737,11 @@ function MapNode({ data, selected, width }) {
       type="source"
       position={position}
       id={`source-${side}`}
-      data-tour={data.trainingRole === 'connect-source' && side === 'right' ? 'connect-source' : data.trainingRole === 'connect-target' && side === 'left' ? 'connect-target' : undefined}
       className={`branch-toggle-handle branch-toggle-${side}`}
       style={{ top: '48%' }}
       title={data.language === 'en'
         ? `Click to collapse or expand branches ${side === 'right' ? 'on the right' : 'on the left'}`
-        : `اضغط لطي أو فتح الفروع ${side === 'right' ? 'يمينًا' : 'يسارًا'}`}
+        : `Ø§Ø¶ØºØ· Ù„Ø·ÙŠ Ø£Ùˆ ÙØªØ­ Ø§Ù„ÙØ±ÙˆØ¹ ${side === 'right' ? 'ÙŠÙ…ÙŠÙ†Ù‹Ø§' : 'ÙŠØ³Ø§Ø±Ù‹Ø§'}`}
       onClick={(event) => {
         event.stopPropagation()
         if (data.selectMode) { data.onToggleSelect?.(); return }
@@ -597,14 +755,102 @@ function MapNode({ data, selected, width }) {
     if (!labelRef.current) return
     labelRef.current.style.height = 'auto'
     labelRef.current.style.height = `${labelRef.current.scrollHeight}px`
+    if (pendingLabelCaretRef.current != null) {
+      labelRef.current.focus()
+      labelRef.current.setSelectionRange(pendingLabelCaretRef.current, pendingLabelCaretRef.current)
+      pendingLabelCaretRef.current = null
+    }
   }, [label, editing])
+
+  const handleLabelInput = (event) => {
+    const { value, selectionStart: caret } = event.currentTarget
+    const labelMentions = (data.labelMentions || []).filter((mention) => value.includes(mention.text))
+    data.onLabelChange?.(value, labelMentions)
+    if (labelMentionPicker) {
+      const query = value.slice(labelMentionPicker.queryStart, caret)
+      if (caret < labelMentionPicker.queryStart || query.includes('\n')) setLabelMentionPicker(null)
+      else setLabelMentionPicker({ ...labelMentionPicker, end: caret, query })
+    } else if (value[caret - 1] === '@') {
+      setLabelMentionPicker({ start: caret - 1, queryStart: caret, end: caret, step: 'type', kind: null, containerId: null, query: '' })
+    }
+  }
+
+  const labelMentionTypes = [
+    { id: 'mind-map', title: data.language === 'en' ? 'Mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©' },
+    { id: 'task', title: data.language === 'en' ? 'Task' : 'Ù…Ù‡Ù…Ø©' },
+    { id: 'note', title: data.language === 'en' ? 'Note' : 'Ù…Ù„Ø§Ø­Ø¸Ø©' },
+    { id: 'flowchart', title: data.language === 'en' ? 'Flowchart' : 'Ù…Ø®Ø·Ø· Ø§Ù†Ø³ÙŠØ§Ø¨ÙŠ' },
+  ]
+  const labelMentionContainers = labelMentionPicker?.kind === 'mind-map' ? data.workspaceProjects || [] : data.workspaceFlowcharts || []
+  const labelMentionContainer = labelMentionContainers.find((item) => item.id === labelMentionPicker?.containerId)
+  const labelMentionItems = labelMentionPicker?.kind === 'mind-map'
+    ? labelMentionContainer?.nodes || []
+    : labelMentionPicker?.kind === 'task'
+      ? data.workspaceTasks || []
+      : labelMentionPicker?.kind === 'note'
+        ? data.workspaceNotes || []
+      : labelMentionContainer?.nodes || []
+  const labelMentionQuery = labelMentionPicker?.query?.toLocaleLowerCase() || ''
+  const labelMentionOptions = labelMentionPicker?.step === 'type'
+    ? labelMentionTypes.filter((item) => item.title.toLocaleLowerCase().includes(labelMentionQuery))
+    : labelMentionPicker?.step === 'container'
+      ? labelMentionContainers.filter((item) => (item.title || '').toLocaleLowerCase().includes(labelMentionQuery))
+      : labelMentionItems.filter((item) => `${labelMentionPicker?.kind === 'task' ? item.title || '' : item.data?.label || ''}`.toLocaleLowerCase().includes(labelMentionQuery))
+
+  const updateLabelMentionSearch = (step, kind = labelMentionPicker?.kind, containerId = labelMentionPicker?.containerId) => {
+    if (!labelMentionPicker) return
+    const cleanLabel = `${label.slice(0, labelMentionPicker.start + 1)}${label.slice(labelMentionPicker.end)}`
+    data.onLabelChange?.(cleanLabel, (data.labelMentions || []).filter((mention) => cleanLabel.includes(mention.text)))
+    const queryStart = labelMentionPicker.start + 1
+    pendingLabelCaretRef.current = queryStart
+    setLabelMentionPicker({ ...labelMentionPicker, step, kind, containerId, queryStart, end: queryStart, query: '' })
+  }
+
+  const insertLabelMention = (item) => {
+    if (!labelMentionPicker) return
+    const container = labelMentionPicker.kind === 'mind-map'
+      ? (data.workspaceProjects || []).find((project) => project.id === labelMentionPicker.containerId)
+      : labelMentionPicker.kind === 'flowchart'
+        ? (data.workspaceFlowcharts || []).find((flowchart) => flowchart.id === labelMentionPicker.containerId)
+        : null
+    if (!['task', 'note'].includes(labelMentionPicker.kind) && !container) return
+    const itemTitle = labelMentionPicker.kind === 'task' ? item.title || 'Ù…Ù‡Ù…Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†' : labelMentionPicker.kind === 'note' ? item.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†' : item.data?.label || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'
+    const containerTitle = container?.title || ''
+    const prefix = labelMentionPicker.kind === 'mind-map' ? 'ðŸ§ ' : labelMentionPicker.kind === 'task' ? 'âœ“' : labelMentionPicker.kind === 'note' ? 'ðŸ“' : 'â†—'
+    const mentionText = `@${prefix} ${containerTitle ? `${containerTitle} / ` : ''}${itemTitle}`
+    const nextLabel = `${label.slice(0, labelMentionPicker.start)}${mentionText}${label.slice(labelMentionPicker.end)}`
+    const mention = labelMentionPicker.kind === 'mind-map'
+      ? { type: 'mind-map-node', projectId: container.id, nodeId: item.id, projectTitle: containerTitle, nodeTitle: itemTitle, text: mentionText }
+      : labelMentionPicker.kind === 'task'
+        ? { type: 'task', taskId: item.id, taskTitle: itemTitle, workspaceId: item.workspaceId, text: mentionText }
+        : labelMentionPicker.kind === 'note'
+          ? { type: 'note', noteId: item.id, noteTitle: itemTitle, workspaceId: item.workspaceId, text: mentionText }
+          : { type: 'flowchart-node', flowchartId: container.id, flowchartTitle: containerTitle, nodeId: item.id, nodeTitle: itemTitle, workspaceId: container.workspaceId, text: mentionText }
+    data.onLabelChange?.(nextLabel, [...(data.labelMentions || []), mention])
+    pendingLabelCaretRef.current = labelMentionPicker.start + mentionText.length
+    setLabelMentionPicker(null)
+  }
+
+  const renderLabelMentions = () => {
+    const mentions = (data.labelMentions || []).map((mention) => ({ ...mention, index: label.indexOf(mention.text) })).filter((mention) => mention.index >= 0).sort((left, right) => left.index - right.index)
+    const parts = []
+    let cursor = 0
+    mentions.forEach((mention, index) => {
+      if (mention.index < cursor) return
+      if (mention.index > cursor) parts.push(label.slice(cursor, mention.index))
+      const displayText = mention.taskTitle || mention.noteTitle || mention.nodeTitle || mention.text
+      parts.push(<button type="button" className="node-inline-mention" key={`${mention.text}-${index}`} title={mention.projectTitle || mention.flowchartTitle || ''} onClick={(event) => { event.stopPropagation(); data.onOpenMention?.(mention) }}>{displayText}</button>)
+      cursor = mention.index + mention.text.length
+    })
+    if (cursor < label.length) parts.push(label.slice(cursor))
+    return parts.length ? parts : label
+  }
 
   const startEditing = (event) => {
     event.stopPropagation()
     if (data.selectMode) { data.onToggleSelect?.(); return }
     data.onSelect?.()
     data.onCloseNotes?.()
-    if (data.trainingStep === 2) data.onTrainingStepChange?.(3)
     setEditing(true)
   }
 
@@ -615,7 +861,6 @@ function MapNode({ data, selected, width }) {
   return (
     <div
       className={`map-node tone-${data.tone || 'mint'}${customColor ? ' has-custom-color' : ''}${selected ? ' is-selected' : ''}${data.isLinkSource ? ' is-link-source' : ''}${data.dropHint ? ` drop-${data.dropHint}` : ''}`}
-      data-tour={TOUCH_DEVICE && data.trainingRole ? data.trainingRole : undefined}
       style={{ width: '100%', height: '100%', boxSizing: 'border-box', ...(customColor ? { '--custom-node-color': customColor } : {}) }}
       onPointerDown={data.onTouchStart}
       onPointerMove={data.onTouchMove}
@@ -635,30 +880,29 @@ function MapNode({ data, selected, width }) {
       {selected && (
         <button
           className="node-drag-handle"
-          data-tour={data.trainingDragTarget ? 'drag-node' : undefined}
           type="button"
-          aria-label={data.language === 'en' ? 'Drag node' : 'اسحب لتحريك العقدة'}
-          title={data.language === 'en' ? 'Drag to move node' : 'اسحب لتحريك العقدة'}
+          aria-label={data.language === 'en' ? 'Drag node' : 'Ø§Ø³Ø­Ø¨ Ù„ØªØ­Ø±ÙŠÙƒ Ø§Ù„Ø¹Ù‚Ø¯Ø©'}
+          title={data.language === 'en' ? 'Drag to move node' : 'Ø§Ø³Ø­Ø¨ Ù„ØªØ­Ø±ÙŠÙƒ Ø§Ù„Ø¹Ù‚Ø¯Ø©'}
         >
           <Move size={15} />
         </button>
       )}
-      <button className="node-icon nodrag" data-tour={data.trainingNoteTarget ? 'note-icon' : undefined} type="button" title={data.language === 'en' ? 'Open node note' : 'افتح ملاحظة العقدة'} aria-label={data.language === 'en' ? 'Open node note' : 'افتح ملاحظة العقدة'}>
+      <button className="node-icon nodrag" type="button" title={data.language === 'en' ? 'Open node note' : 'Ø§ÙØªØ­ Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø©'} aria-label={data.language === 'en' ? 'Open node note' : 'Ø§ÙØªØ­ Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø©'}>
         <Icon size={16} strokeWidth={1.8} />
       </button>
-      {data.emoji && <span className="node-emoji" aria-label={`${data.language === 'en' ? 'Emoji' : 'إيموجي'} ${data.emoji}`} title={data.emoji}><EmojiGlyph emoji={data.emoji} /></span>}
+      {data.emoji && <span className="node-emoji" aria-label={`${data.language === 'en' ? 'Emoji' : 'Ø¥ÙŠÙ…ÙˆØ¬ÙŠ'} ${data.emoji}`} title={data.emoji}><EmojiGlyph emoji={data.emoji} /></span>}
       {editing ? (
         <textarea
           ref={labelRef}
           className="node-label-input nodrag"
-          data-tour={data.trainingLabelInputTarget ? 'edit-node-input' : undefined}
-          aria-label={data.language === 'en' ? 'Node name' : 'اسم العقدة'}
+          aria-label={data.language === 'en' ? 'Node name' : 'Ø§Ø³Ù… Ø§Ù„Ø¹Ù‚Ø¯Ø©'}
           value={label}
           rows={1}
           autoFocus
-          onChange={(event) => data.onLabelChange?.(event.target.value)}
+          onChange={handleLabelInput}
           onBlur={finishEditing}
           onKeyDown={(event) => {
+            if (event.key === 'Escape' && labelMentionPicker) { event.preventDefault(); setLabelMentionPicker(null); return }
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault()
               finishEditing()
@@ -666,10 +910,26 @@ function MapNode({ data, selected, width }) {
           }}
         />
       ) : (
-        <button className="node-label node-label-button" data-tour={data.trainingLabelTarget ? 'edit-node' : undefined} type="button" onClick={startEditing} title={data.language === 'en' ? 'Edit node name' : 'تحرير اسم العقدة'}>
-          {displayLabel || (data.language === 'en' ? 'Untitled' : 'بدون عنوان')}
-        </button>
+        <div className="node-label node-label-button" role="button" tabIndex={0} onClick={startEditing} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); startEditing(event) } }} title={data.language === 'en' ? 'Edit node name' : 'ØªØ­Ø±ÙŠØ± Ø§Ø³Ù… Ø§Ù„Ø¹Ù‚Ø¯Ø©'}>
+          {data.labelMentions?.length ? renderLabelMentions() : (displayLabel || (data.language === 'en' ? 'Untitled' : 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'))}
+        </div>
       )}
+      {editing && labelMentionPicker && <div className="map-node-mention-picker nodrag nopan" role="listbox" aria-label={data.language === 'en' ? 'Choose an item to mention' : 'Ø§Ø®ØªØ± Ø¹Ù†ØµØ±Ù‹Ø§ Ù„Ù…Ù†Ø´Ù†Ù‡'} onPointerDown={(event) => event.preventDefault()} onMouseDown={(event) => event.preventDefault()}>
+        <div className="notes-mention-heading">
+          <strong>{labelMentionPicker.step === 'type' ? (data.language === 'en' ? 'Choose type' : 'Ø§Ø®ØªØ± Ø§Ù„Ù†ÙˆØ¹') : labelMentionPicker.step === 'container' ? (data.language === 'en' ? 'Choose map' : 'Ø§Ø®ØªØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø©') : (data.language === 'en' ? 'Choose item' : 'Ø§Ø®ØªØ± Ø§Ù„Ø¹Ù†ØµØ±')}</strong>
+          {labelMentionPicker.step !== 'type' && <button type="button" onClick={() => updateLabelMentionSearch(labelMentionPicker.step === 'item' && !['task', 'note'].includes(labelMentionPicker.kind) ? 'container' : 'type', labelMentionPicker.step === 'item' && !['task', 'note'].includes(labelMentionPicker.kind) ? labelMentionPicker.kind : null, labelMentionPicker.step === 'item' && !['task', 'note'].includes(labelMentionPicker.kind) ? labelMentionPicker.containerId : null)}>{data.language === 'en' ? 'Back' : 'Ø±Ø¬ÙˆØ¹'}</button>}
+        </div>
+        <div className="notes-mention-options">
+          {labelMentionOptions.map((item) => labelMentionPicker.step === 'type' ? (
+          <button type="button" role="option" key={item.id} onClick={() => updateLabelMentionSearch(item.id === 'task' || item.id === 'note' ? 'item' : 'container', item.id, null)}><strong>{item.title}</strong><small>{item.id === 'mind-map' ? data.workspaceProjects?.length || 0 : item.id === 'task' ? data.workspaceTasks?.length || 0 : item.id === 'note' ? data.workspaceNotes?.length || 0 : data.workspaceFlowcharts?.length || 0}</small></button>
+          ) : labelMentionPicker.step === 'container' ? (
+            <button type="button" role="option" key={item.id} onClick={() => updateLabelMentionSearch('item', labelMentionPicker.kind, item.id)}><strong>{item.title || (data.language === 'en' ? 'Untitled' : 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</strong><small>{item.nodes?.length || 0}</small></button>
+          ) : (
+            <button type="button" role="option" key={item.id} onClick={() => insertLabelMention(item)}><strong>{labelMentionPicker.kind === 'task' || labelMentionPicker.kind === 'note' ? item.title : item.data?.label || (data.language === 'en' ? 'Untitled' : 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</strong></button>
+          ))}
+          {!labelMentionOptions.length && <span className="notes-mention-empty">{data.language === 'en' ? 'No matching items' : 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¹Ù†Ø§ØµØ± Ù…Ø·Ø§Ø¨Ù‚Ø©'}</span>}
+        </div>
+      </div>}
       {sourceHandle('left', Position.Left)}
       {sourceHandle('right', Position.Right)}
     </div>
@@ -679,14 +939,31 @@ function MapNode({ data, selected, width }) {
 const nodeTypes = { mapNode: MapNode }
 
 function App() {
+  const [workspaces, setWorkspaces] = useState(readWorkspaces)
+  const [projectsFolder, setProjectsFolder] = useState('')
   const [projects, setProjects] = useState(readProjects)
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(null)
   const [activeProjectId, setActiveProjectId] = useState(null)
   const [openProjectIds, setOpenProjectIds] = useState([])
+  const [mapListCollapsed, setMapListCollapsed] = useState(() => localStorage.getItem('waraqa-map-list-collapsed') === 'true')
   const [libraryOpen, setLibraryOpen] = useState(true)
+  const [workspaceOpen, setWorkspaceOpen] = useState(false)
+  const [mindMapHomeOpen, setMindMapHomeOpen] = useState(false)
+  const [activeTool, setActiveTool] = useState('mind-map')
+  const [standaloneNotes, setStandaloneNotes] = useState(readStandaloneNotes)
+  const [tasks, setTasks] = useState(readTasks)
+  const [taskLists, setTaskLists] = useState(readTaskLists)
+  const [flowcharts, setFlowcharts] = useState(readFlowcharts)
+  const [uiDesigns, setUiDesigns] = useState(readUiDesigns)
+  const [activeUiDesignId, setActiveUiDesignId] = useState(null)
+  const [activeFlowchartId, setActiveFlowchartId] = useState(null)
+  const [openNoteIds, setOpenNoteIds] = useState(() => readOpenStandaloneNoteIds(standaloneNotes))
+  const [activeNoteId, setActiveNoteId] = useState(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('waraqa-theme') === 'dark' ? 'dark' : 'light')
   const [renameProjectOpen, setRenameProjectOpen] = useState(false)
   const [renameProjectDraft, setRenameProjectDraft] = useState('')
   const [pendingDeleteProject, setPendingDeleteProject] = useState(null)
+  const [pendingDeleteWorkspace, setPendingDeleteWorkspace] = useState(null)
   const [pendingCloseProjectId, setPendingCloseProjectId] = useState(null)
   const [savedMap] = useState(() => projects[0] || readSavedMap())
   const [title, setTitle] = useState(savedMap.title)
@@ -703,19 +980,15 @@ function App() {
   const [desktopMaximized, setDesktopMaximized] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
-  const [trainingOpen, setTrainingOpen] = useState(() => !TRAINING_DISABLED && localStorage.getItem('waraqa-interactive-training-v3-complete') !== 'true')
-  const [trainingStep, setTrainingStep] = useState(0)
-  const [trainingActionDone, setTrainingActionDone] = useState(false)
-  const [trainingTrialNodeIds, setTrainingTrialNodeIds] = useState([])
-  const [trainingTargets, setTrainingTargets] = useState([])
   const [appLanguage, setAppLanguage] = useState(() => localStorage.getItem('waraqa-language') || 'ar')
   const [activeTone, setActiveTone] = useState('mint')
   const [activeCustomColor, setActiveCustomColor] = useState(toneColors.mint)
   const [exportingImage, setExportingImage] = useState(false)
+  const [exportingWorkspace, setExportingWorkspace] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [notesMounted, setNotesMounted] = useState(false)
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(true)
-  const [toolsOpen, setToolsOpen] = useState(true)
+  const [toolsOpen, setToolsOpen] = useState(() => !window.matchMedia('(orientation: landscape) and (max-height: 520px)').matches)
   const [miniMapVisible, setMiniMapVisible] = useState(() => localStorage.getItem('waraqa-minimap-visible') !== 'false')
   const [selectMode, setSelectMode] = useState(false)
   const [selectionDrag, setSelectionDrag] = useState(null)
@@ -724,11 +997,21 @@ function App() {
   const [branchDropHint, setBranchDropHint] = useState(null)
   const [undoStack, setUndoStack] = useState([])
   const [redoStack, setRedoStack] = useState([])
+  const [pendingMentionFocus, setPendingMentionFocus] = useState(null)
+  const [pendingTaskMentionFocus, setPendingTaskMentionFocus] = useState(null)
+  const [pendingFlowchartMentionFocus, setPendingFlowchartMentionFocus] = useState(null)
+  const [nodeNoteMentionPicker, setNodeNoteMentionPicker] = useState(null)
+  const nodeNoteInputRef = useRef(null)
+  const openMentionRef = useRef(null)
+  const clearPendingTaskMentionFocus = useCallback(() => setPendingTaskMentionFocus(null), [])
+  const clearPendingFlowchartMentionFocus = useCallback(() => setPendingFlowchartMentionFocus(null), [])
   const flowRef = useRef(null)
   const layoutAnimationFrame = useRef(null)
   const lastEdgeTap = useRef({ id: null, time: 0 })
   const canvasRef = useRef(null)
   const importRef = useRef(null)
+  const projectFolderImportRef = useRef(null)
+  const documentImportRef = useRef(null)
   const renameInputRef = useRef(null)
   const searchInputRef = useRef(null)
   const shortcutActionsRef = useRef(null)
@@ -737,9 +1020,143 @@ function App() {
   const backOverlayRef = useRef(null)
   const [linkSourceNodeId, setLinkSourceNodeId] = useState(null)
   const projectSavePoints = useRef(new Map())
+  const workspaceSyncQueueRef = useRef(Promise.resolve())
+  const workspaceSyncRevisionRef = useRef(0)
+  const workspacePreviewCacheRef = useRef(new Map())
+  const projectsFolderHandleRef = useRef(null)
+  const workspaceDataRef = useRef(null)
   const [copiedNode, setCopiedNode] = useState(null)
   const pasteCount = useRef(0)
   const desktopWindow = window.waraqaWindow
+  const activeWorkspace = workspaces.find((workspace) => workspace.id === activeWorkspaceId) || null
+  const workspaceProjects = projects.filter((project) => project.workspaceId === activeWorkspaceId)
+  const workspaceNotes = standaloneNotes.filter((note) => note.workspaceId === activeWorkspaceId)
+  const workspaceTasks = tasks.filter((task) => task.workspaceId === activeWorkspaceId)
+  const workspaceTaskLists = taskLists.filter((list) => list.workspaceId === activeWorkspaceId)
+  const workspaceFlowcharts = flowcharts.filter((flowchart) => flowchart.workspaceId === activeWorkspaceId)
+  const workspaceUiDesigns = uiDesigns.filter((design) => design.workspaceId === activeWorkspaceId)
+  workspaceDataRef.current = { workspaces, projects, standaloneNotes, tasks, taskLists, flowcharts, uiDesigns }
+  const isWorkspaceDocumentOpen = Boolean(activeWorkspace && (
+    (activeTool === 'mind-map' && !mindMapHomeOpen && activeProjectId)
+    || (activeTool === 'notes' && (activeNoteId || workspaceNotes.some((note) => openNoteIds.includes(note.id))))
+    || activeTool === 'tasks'
+    || (activeTool === 'ui-design' && workspaceUiDesigns.some((design) => design.id === activeUiDesignId))
+    || (activeTool === 'flowchart' && workspaceFlowcharts.some((flowchart) => flowchart.id === activeFlowchartId))
+  ))
+  useEffect(() => {
+    let alive = true
+    const loadFolder = desktopWindow?.getProjectsFolder
+      ? desktopWindow.getProjectsFolder().then((folder) => { if (alive && folder) setProjectsFolder(folder) })
+      : readProjectsFolderHandle().then((handle) => {
+        if (alive && handle) {
+          projectsFolderHandleRef.current = handle
+          setProjectsFolder(handle.name || '')
+        }
+      })
+    loadFolder.catch((error) => console.warn('Could not read the projects folder setting.', error))
+    return () => { alive = false }
+  }, [desktopWindow])
+
+  useEffect(() => {
+    if (!projectsFolder || !desktopWindow?.readProjectFolders) return undefined
+    let alive = true
+    desktopWindow.readProjectFolders().then(async (storedProjects) => {
+      if (!alive || !Array.isArray(storedProjects) || !storedProjects.length) return
+      for (const entry of storedProjects) {
+        for (const attachment of entry.attachments || []) {
+          if (!attachment?.id || !attachment?.data) continue
+          await saveNoteAttachmentWithId(attachment.id, new File([attachment.data], attachment.name || 'attachment', { type: attachment.type || 'application/octet-stream' }))
+        }
+      }
+      if (!alive) return
+      const bundles = storedProjects.map((entry) => entry.bundle).filter((bundle) => bundle?.format === 'waraqa-workspace' && bundle.workspace?.id)
+      const current = workspaceDataRef.current || { workspaces, projects, standaloneNotes, tasks, taskLists, flowcharts, uiDesigns }
+      const existingWorkspaceIds = new Set(current.workspaces.map((workspace) => workspace.id))
+      const missingBundles = bundles.filter((bundle) => !existingWorkspaceIds.has(bundle.workspace.id))
+      if (!missingBundles.length) return
+      const nextWorkspaces = [...current.workspaces, ...missingBundles.map((bundle) => bundle.workspace)]
+      const nextProjects = [...current.projects, ...missingBundles.flatMap((bundle) => bundle.mindMaps || [])]
+      const nextNotes = [...current.standaloneNotes, ...missingBundles.flatMap((bundle) => bundle.notes || [])]
+      const nextTasks = [...current.tasks, ...missingBundles.flatMap((bundle) => bundle.tasks || [])]
+      const nextTaskLists = [...current.taskLists, ...missingBundles.flatMap((bundle) => bundle.taskLists || [])]
+      const nextFlowcharts = [...current.flowcharts, ...missingBundles.flatMap((bundle) => bundle.flowcharts || [])]
+      const nextUiDesigns = [...current.uiDesigns, ...missingBundles.flatMap((bundle) => bundle.uiDesigns || [])]
+      try {
+        localStorage.setItem(PROJECTS_KEY, JSON.stringify(nextProjects))
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(nextNotes))
+        localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(nextTasks))
+        localStorage.setItem(TASK_LISTS_STORAGE_KEY, JSON.stringify(nextTaskLists))
+        localStorage.setItem(FLOWCHARTS_STORAGE_KEY, JSON.stringify(nextFlowcharts))
+        localStorage.setItem(UI_DESIGNS_STORAGE_KEY, JSON.stringify(nextUiDesigns))
+        saveWorkspaces(nextWorkspaces)
+        setProjects(nextProjects)
+        setStandaloneNotes(nextNotes)
+        setTasks(nextTasks)
+        setTaskLists(nextTaskLists)
+        setFlowcharts(nextFlowcharts)
+        setUiDesigns(nextUiDesigns)
+      } catch (error) {
+        console.error('Could not restore projects from the selected folder.', error)
+      }
+    }).catch((error) => console.error('Could not read projects from the selected folder.', error))
+    return () => { alive = false }
+  }, [projectsFolder, desktopWindow])
+
+  useEffect(() => {
+    if (!projectsFolder || (!desktopWindow?.saveWorkspaceFolder && !projectsFolderHandleRef.current) || !workspaces.length) return undefined
+    const revision = ++workspaceSyncRevisionRef.current
+    const timer = window.setTimeout(() => {
+      workspaceSyncQueueRef.current = workspaceSyncQueueRef.current.catch(() => undefined).then(async () => {
+        if (revision !== workspaceSyncRevisionRef.current) return
+        let allProjects = projects
+        if (activeWorkspaceId && activeProjectId && activeTool === 'mind-map') {
+          const activeProject = normalizeProjectHandles({ title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead })
+          allProjects = projects.some((project) => project.id === activeProjectId)
+            ? projects.map((project) => project.id === activeProjectId ? { ...project, ...activeProject, id: activeProjectId, workspaceId: activeWorkspaceId } : project)
+            : [{ ...activeProject, id: activeProjectId, workspaceId: activeWorkspaceId }, ...projects]
+        }
+        for (const workspace of workspaces) {
+          if (revision !== workspaceSyncRevisionRef.current) return
+          const bundle = {
+            format: 'waraqa-workspace', formatVersion: 1, exportedAt: isoTimestamp(), workspace,
+            textDirection: appLanguage === 'en' ? 'ltr' : 'rtl',
+            mindMaps: allProjects.filter((project) => project.workspaceId === workspace.id),
+            notes: standaloneNotes.filter((note) => note.workspaceId === workspace.id),
+            tasks: tasks.filter((task) => task.workspaceId === workspace.id),
+            taskLists: taskLists.filter((list) => list.workspaceId === workspace.id),
+            flowcharts: flowcharts.filter((flowchart) => flowchart.workspaceId === workspace.id),
+            uiDesigns: uiDesigns.filter((design) => design.workspaceId === workspace.id),
+          }
+          const attachmentIds = new Set()
+          const collectAttachmentIds = (value) => {
+            if (!value || typeof value !== 'object') return
+            if (typeof value.fileId === 'string') attachmentIds.add(value.fileId)
+            Object.values(value).forEach(collectAttachmentIds)
+          }
+          bundle.notes.forEach(collectAttachmentIds)
+          const attachments = (await Promise.all([...attachmentIds].map(async (id) => {
+            try {
+              const attachment = await readNoteAttachment(id)
+              return attachment?.blob ? { id, name: attachment.name, type: attachment.type, blob: attachment.blob } : null
+            } catch { return null }
+          }))).filter(Boolean)
+          const previewSignature = bundle.uiDesigns.map((design) => `${design.id}:${design.updatedAt || ''}`).join('|')
+          let previews = workspacePreviewCacheRef.current.get(workspace.id)?.previews || []
+          if (workspacePreviewCacheRef.current.get(workspace.id)?.signature !== previewSignature) {
+            try { previews = await createDesignPreviews(bundle.uiDesigns, {}, appLanguage) } catch (error) {
+              console.warn('Could not refresh interface preview images for the project folder.', error)
+              previews = []
+            }
+            workspacePreviewCacheRef.current.set(workspace.id, { signature: previewSignature, previews })
+          }
+          const archive = await createWorkspaceArchive(bundle, attachments, previews)
+          if (desktopWindow?.saveWorkspaceFolder) await desktopWindow.saveWorkspaceFolder(workspace.id, await archive.arrayBuffer())
+          else if (projectsFolderHandleRef.current) await writeWorkspaceArchiveToHandle(projectsFolderHandleRef.current, archive)
+        }
+      }).catch((error) => console.error('Could not sync projects to the selected folder.', error))
+    }, 900)
+    return () => window.clearTimeout(timer)
+  }, [projectsFolder, workspaces, projects, standaloneNotes, tasks, taskLists, flowcharts, uiDesigns, activeWorkspaceId, activeProjectId, activeTool, title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead, appLanguage, desktopWindow])
   useEffect(() => {
     document.documentElement.lang = appLanguage
   }, [appLanguage])
@@ -757,216 +1174,436 @@ function App() {
     setLayoutMode(mode)
     localStorage.setItem('waraqa-layout-mode', mode)
   }
+  const saveWorkspaces = (nextWorkspaces) => {
+    localStorage.setItem(WORKSPACES_KEY, JSON.stringify(nextWorkspaces))
+    setWorkspaces(nextWorkspaces)
+  }
+  const ensureProjectsFolder = async () => {
+    if (!desktopWindow?.chooseProjectsFolder) {
+      let handle = projectsFolderHandleRef.current
+      try {
+        if (!handle && window.showDirectoryPicker) {
+          handle = await window.showDirectoryPicker({ id: 'waraqa-projects', mode: 'readwrite' })
+          projectsFolderHandleRef.current = handle
+          await saveProjectsFolderHandle(handle)
+        }
+        if (!handle) {
+          window.alert(appLanguage === 'en' ? 'Choose a folder from the installed Waraqa desktop app, or use a browser that supports folder access.' : 'Ø§Ø®ØªØ± Ø§Ù„Ù…Ø¬Ù„Ø¯ Ù…Ù† Ù†Ø³Ø®Ø© ÙˆØ±Ù‚Ø© Ù„Ù„ÙƒÙ…Ø¨ÙŠÙˆØªØ± Ø£Ùˆ Ø§ÙØªØ­ Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬ Ø¨Ù…ØªØµÙØ­ ÙŠØ¯Ø¹Ù… Ø§Ù„ÙˆØµÙˆÙ„ Ù„Ù„Ù…Ø¬Ù„Ø¯Ø§Øª.')
+          return false
+        }
+        let permission = await handle.queryPermission?.({ mode: 'readwrite' })
+        if (permission !== 'granted') permission = await handle.requestPermission?.({ mode: 'readwrite' })
+        if (permission && permission !== 'granted') return false
+        setProjectsFolder(handle.name || '')
+        return true
+      } catch (error) {
+        if (error?.name !== 'AbortError') console.error('Could not choose the projects folder.', error)
+        return false
+      }
+    }
+    let folder = projectsFolder
+    if (!folder) {
+      try { folder = await desktopWindow.getProjectsFolder() } catch (error) { console.warn('Could not read the projects folder setting.', error) }
+    }
+    if (!folder) {
+      try { folder = await desktopWindow.chooseProjectsFolder(appLanguage) } catch (error) { console.error('Could not choose the projects folder.', error) }
+    }
+    if (!folder) return false
+    setProjectsFolder(folder)
+    return true
+  }
+  const openWorkspace = (workspace) => runPageTransition(() => {
+    setActiveWorkspaceId(workspace.id)
+    setWorkspaceOpen(true)
+    setActiveProjectId(null)
+    setActiveTool('mind-map')
+    setMindMapHomeOpen(false)
+    setActiveNoteId(null)
+    setLibraryOpen(false)
+  })
+  const createWorkspace = async () => {
+    if (!(await ensureProjectsFolder())) return
+    const workspace = {
+      id: newProjectId(),
+      title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯',
+      createdAt: currentTimestamp(),
+      updatedAt: currentTimestamp(),
+    }
+    saveWorkspaces([workspace, ...workspaces])
+    openWorkspace(workspace)
+  }
+  const renameWorkspace = (workspaceId, nextTitle) => {
+    const nextWorkspaces = workspaces.map((workspace) => workspace.id === workspaceId
+      ? { ...workspace, title: nextTitle, updatedAt: currentTimestamp() }
+      : workspace)
+    saveWorkspaces(nextWorkspaces)
+  }
+  const createWorkspaceNote = async () => {
+    if (!activeWorkspaceId) return
+    if (!(await ensureProjectsFolder())) return
+    const note = {
+      id: newProjectId(),
+      workspaceId: activeWorkspaceId,
+      title: 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¬Ø¯ÙŠØ¯Ø©',
+      content: '',
+      pages: [''],
+      updatedAt: currentTimestamp(),
+    }
+    const nextNotes = [note, ...standaloneNotes]
+    try {
+      localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(nextNotes))
+    } catch (error) {
+      console.error('Could not create workspace note.', error)
+      window.alert('ØªØ¹Ø°Ø± Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.')
+      return
+    }
+    runPageTransition(() => {
+      setStandaloneNotes(nextNotes)
+      saveOpenNoteIds([...openNoteIds, note.id])
+      setActiveNoteId(note.id)
+      setActiveTool('notes')
+      setWorkspaceOpen(false)
+    }, 'forward')
+  }
+  const selectTool = async (tool) => {
+    if (desktopWindow?.chooseProjectsFolder && !projectsFolder && !(await ensureProjectsFolder())) return
+    if (tool === 'ui-design') {
+      if (activeTool === 'ui-design' && activeUiDesignId) return
+      shortcutActionsRef.current?.saveNow()
+      return runPageTransition(() => {
+        let targetWorkspaceId = activeWorkspaceId || workspaces[0]?.id || null
+        if (!targetWorkspaceId) {
+          const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+          targetWorkspaceId = workspace.id
+          saveWorkspaces([workspace, ...workspaces])
+        }
+        const existingDesign = uiDesigns.find((design) => design.workspaceId === targetWorkspaceId)
+        setActiveWorkspaceId(targetWorkspaceId)
+        setActiveUiDesignId(existingDesign?.id || null)
+        setActiveProjectId(null)
+        setActiveNoteId(null)
+        setActiveTool('ui-design')
+        setMindMapHomeOpen(false)
+        setWorkspaceOpen(false)
+        setLibraryOpen(false)
+      }, 'lateral')
+    }
+    if (tool === 'flowchart') {
+      shortcutActionsRef.current?.saveNow()
+      return runPageTransition(() => {
+        let targetWorkspaceId = activeWorkspaceId || workspaces[0]?.id || null
+        if (!targetWorkspaceId) {
+          const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+          targetWorkspaceId = workspace.id
+          saveWorkspaces([workspace, ...workspaces])
+        }
+        const existingFlowchart = flowcharts.find((flowchart) => flowchart.workspaceId === targetWorkspaceId)
+        setActiveWorkspaceId(targetWorkspaceId)
+        setActiveFlowchartId(existingFlowchart?.id || null)
+        setActiveProjectId(null)
+        setActiveNoteId(null)
+        setActiveTool('flowchart')
+        setMindMapHomeOpen(false)
+        setWorkspaceOpen(false)
+        setLibraryOpen(false)
+      }, 'lateral')
+    }
+    if (tool === 'tasks') {
+      shortcutActionsRef.current?.saveNow()
+      return runPageTransition(() => {
+        let targetWorkspaceId = activeWorkspaceId || workspaces[0]?.id || null
+        if (!targetWorkspaceId) {
+          const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+          targetWorkspaceId = workspace.id
+          saveWorkspaces([workspace, ...workspaces])
+        }
+        setActiveWorkspaceId(targetWorkspaceId)
+        setActiveNoteId(null)
+        setActiveTool('tasks')
+        setMindMapHomeOpen(false)
+        setWorkspaceOpen(false)
+        setLibraryOpen(false)
+      }, 'lateral')
+    }
+    if (tool === 'mind-map' && !activeProjectId) {
+      return runPageTransition(() => {
+        let targetWorkspaceId = activeWorkspaceId || workspaces[0]?.id || null
+        if (!targetWorkspaceId) {
+          const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+          targetWorkspaceId = workspace.id
+          saveWorkspaces([workspace, ...workspaces])
+        }
+        setActiveWorkspaceId(targetWorkspaceId)
+        setActiveNoteId(null)
+        setActiveTool('mind-map')
+        setMindMapHomeOpen(true)
+        setWorkspaceOpen(true)
+        setLibraryOpen(false)
+      }, 'lateral')
+    }
+    return runPageTransition(() => {
+    if (tool === 'notes') {
+      shortcutActionsRef.current?.saveNow()
+      setMindMapHomeOpen(false)
+      const targetWorkspaceId = activeWorkspaceId || workspaces[0]?.id || null
+      if (!targetWorkspaceId) {
+        const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+        saveWorkspaces([workspace])
+        setActiveWorkspaceId(workspace.id)
+        setWorkspaceOpen(false)
+        setLibraryOpen(false)
+        setActiveTool('notes')
+        return
+      }
+      if (targetWorkspaceId) setActiveWorkspaceId(targetWorkspaceId)
+      setLibraryOpen(false)
+      setWorkspaceOpen(false)
+      setMindMapHomeOpen(false)
+      const scopedOpenNotes = openNoteIds.filter((id) => standaloneNotes.some((note) => note.id === id && note.workspaceId === targetWorkspaceId))
+      setActiveNoteId((current) => current && scopedOpenNotes.includes(current) ? current : scopedOpenNotes[0] || null)
+    }
+    setActiveTool(tool)
+    }, 'lateral')
+  }
+  const selectNoteTab = (noteId) => runPageTransition(() => {
+    if (activeTool === 'mind-map') shortcutActionsRef.current?.saveNow()
+    const note = standaloneNotes.find((item) => item.id === noteId)
+    if (note?.workspaceId) setActiveWorkspaceId(note.workspaceId)
+    if (!openNoteIds.includes(noteId)) saveOpenNoteIds([...openNoteIds, noteId])
+    setActiveNoteId(noteId)
+    setMindMapHomeOpen(false)
+    setLibraryOpen(false)
+    setWorkspaceOpen(false)
+    setActiveTool('notes')
+  }, 'lateral')
+  const saveOpenNoteIds = (noteIds) => {
+    try {
+      localStorage.setItem(OPEN_NOTES_STORAGE_KEY, JSON.stringify(noteIds))
+    } catch (error) {
+      console.error('Could not save open note tabs.', error)
+    }
+    setOpenNoteIds(noteIds)
+  }
+  const handleStandaloneNotesChange = (nextNotes) => {
+    const previousIds = new Set(standaloneNotes.map((note) => note.id))
+    const validIds = new Set(nextNotes.map((note) => note.id))
+    const addedIds = nextNotes.filter((note) => !previousIds.has(note.id)).map((note) => note.id)
+    setStandaloneNotes(nextNotes)
+    setOpenNoteIds((current) => {
+      const next = [...current.filter((id) => validIds.has(id)), ...addedIds]
+      try {
+        localStorage.setItem(OPEN_NOTES_STORAGE_KEY, JSON.stringify(next))
+      } catch (error) {
+        console.error('Could not save open note tabs.', error)
+      }
+      return next
+    })
+  }
+  const handleWorkspaceTasksChange = (nextWorkspaceTasks) => {
+    const nextTasks = [
+      ...tasks.filter((task) => task.workspaceId !== activeWorkspaceId),
+      ...nextWorkspaceTasks.map((task) => ({ ...task, workspaceId: activeWorkspaceId })),
+    ]
+    try {
+      localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(nextTasks))
+      setTasks(nextTasks)
+    } catch (error) {
+      console.error('Could not save workspace tasks.', error)
+      window.alert(appLanguage === 'en' ? 'Could not save tasks. Browser storage may be full.' : 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„Ù…Ù‡Ø§Ù…. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.')
+    }
+  }
+  const handleWorkspaceTaskListsChange = (nextWorkspaceTaskLists) => {
+    const nextLists = [...taskLists.filter((list) => list.workspaceId !== activeWorkspaceId), ...nextWorkspaceTaskLists.map((list) => ({ ...list, workspaceId: activeWorkspaceId }))]
+    try {
+      localStorage.setItem(TASK_LISTS_STORAGE_KEY, JSON.stringify(nextLists))
+      setTaskLists(nextLists)
+    } catch (error) {
+      console.error('Could not save task lists.', error)
+      window.alert(appLanguage === 'en' ? 'Could not save task lists. Browser storage may be full.' : 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ù‚ÙˆØ§Ø¦Ù… Ø§Ù„Ù…Ù‡Ø§Ù…. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.')
+    }
+  }
+  const handleWorkspaceFlowchartsChange = (nextWorkspaceFlowcharts) => {
+    const nextFlowcharts = [
+      ...flowcharts.filter((flowchart) => flowchart.workspaceId !== activeWorkspaceId),
+      ...nextWorkspaceFlowcharts.map((flowchart) => ({ ...flowchart, workspaceId: activeWorkspaceId })),
+    ]
+    try {
+      localStorage.setItem(FLOWCHARTS_STORAGE_KEY, JSON.stringify(nextFlowcharts))
+      setFlowcharts(nextFlowcharts)
+    } catch (error) {
+      console.error('Could not save workspace flowcharts.', error)
+      window.alert(appLanguage === 'en' ? 'Could not save flowcharts. Browser storage may be full.' : 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„Ù…Ø®Ø·Ø·Ø§Øª Ø§Ù„Ø§Ù†Ø³ÙŠØ§Ø¨ÙŠØ©. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.')
+    }
+  }
+  const handleWorkspaceUiDesignsChange = (nextWorkspaceDesigns) => {
+    const nextDesigns = [
+      ...uiDesigns.filter((design) => design.workspaceId !== activeWorkspaceId),
+      ...nextWorkspaceDesigns.map((design) => ({ ...design, workspaceId: activeWorkspaceId })),
+    ]
+    setUiDesigns(nextDesigns)
+    try {
+      localStorage.setItem(UI_DESIGNS_STORAGE_KEY, JSON.stringify(nextDesigns))
+    } catch (error) {
+      console.error('Could not save workspace interface designs.', error)
+      window.alert(appLanguage === 'en' ? 'Could not save interface designs. Browser storage may be full.' : 'ØªØ¹Ø°Ø± Ø­ÙØ¸ ØªØµÙ…ÙŠÙ… Ø§Ù„ÙˆØ§Ø¬Ù‡Ø§Øª. Ù‚Ø¯ ØªÙƒÙˆÙ† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ù…Ù…ØªÙ„Ø¦Ø©.')
+    }
+  }
+  const closeNoteTab = (noteId) => {
+    const nextOpenIds = openNoteIds.filter((id) => id !== noteId)
+    saveOpenNoteIds(nextOpenIds)
+    const currentNoteId = activeNoteId || openNoteIds.find((id) => workspaceNotes.some((note) => note.id === id)) || null
+    if (activeTool !== 'notes' || currentNoteId !== noteId) return
+    const nextNoteId = nextOpenIds.find((id) => workspaceNotes.some((note) => note.id === id)) || null
+    if (nextNoteId) {
+      setActiveNoteId(nextNoteId)
+      return
+    }
+    runPageTransition(() => {
+      setActiveNoteId(null)
+      setActiveTool('mind-map')
+      setWorkspaceOpen(!activeProjectId && Boolean(activeWorkspaceId))
+      setLibraryOpen(!activeProjectId && !activeWorkspaceId)
+    }, 'backward')
+  }
+  const openNoteFromList = (noteId) => {
+    if (!openNoteIds.includes(noteId)) saveOpenNoteIds([...openNoteIds, noteId])
+    setActiveNoteId(noteId)
+  }
+  const selectProjectTab = (project) => {
+    setLibraryOpen(false)
+    setActiveTool('mind-map')
+    openProject(project)
+  }
+  const sharedProjectTabs = (
+    <nav className="project-tabs" aria-label="Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹ ÙˆØ§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ù„Ù…ÙØªÙˆØ­Ø©">
+      <div className="project-tabs-list">
+        {openProjectIds.filter((id) => workspaceProjects.some((item) => item.id === id)).map((id) => {
+          const project = workspaceProjects.find((item) => item.id === id)
+          if (!project) return null
+          return <div className={`project-tab${activeTool === 'mind-map' && id === activeProjectId ? ' is-active' : ''}`} key={id}>
+            <button className="project-tab-select" type="button" onClick={() => selectProjectTab(project)} title={project.title}>{project.title || 'Ù…Ø´Ø±ÙˆØ¹ Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</button>
+            <button className="project-tab-close" type="button" onClick={() => closeProjectTab(id)} aria-label={`Ø¥ØºÙ„Ø§Ù‚ ${project.title}`}><X size={13} /></button>
+          </div>
+        })}
+        {workspaceNotes.filter((note) => openNoteIds.includes(note.id)).map((note) => (
+          <div className={`project-tab note-project-tab${activeTool === 'notes' && note.id === (activeNoteId || workspaceNotes.find((item) => openNoteIds.includes(item.id))?.id) ? ' is-active' : ''}`} key={note.id}>
+            <button className="project-tab-select" type="button" onClick={() => selectNoteTab(note.id)} title={note.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}>
+              <StickyNote size={13} />
+              {note.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}
+            </button>
+            <button type="button" className="project-tab-close" aria-label={`${appLanguage === 'en' ? 'Close' : 'Ø¥ØºÙ„Ø§Ù‚'} ${note.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}`} title={appLanguage === 'en' ? 'Close note tab' : 'Ø¥ØºÙ„Ø§Ù‚ ØªØ¨ÙˆÙŠØ¨ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©'} onClick={() => closeNoteTab(note.id)}><X size={13} /></button>
+          </div>
+        ))}
+      </div>
+      <div className="project-tabs-navigation">
+        {activeWorkspace && <>
+          {isWorkspaceDocumentOpen && <>
+            <WorkspaceBackupButton onClick={saveOpenDocumentCopy} busy={exportingWorkspace} language={appLanguage} />
+          </>}
+          <button className="workspace-backup-button" type="button" onClick={() => exportWorkspaceArchive(activeWorkspace)} disabled={exportingWorkspace} title={appLanguage === 'en' ? 'Export the full project with all maps, notes, tasks, flowcharts, and interface designs' : 'ØªØµØ¯ÙŠØ± Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ ÙƒØ§Ù…Ù„Ù‹Ø§ Ø¨ÙƒÙ„ Ø§Ù„Ø®Ø±Ø§Ø¦Ø· ÙˆØ§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª ÙˆØ§Ù„Ù…Ù‡Ø§Ù… ÙˆØ§Ù„Ù…Ø®Ø·Ø·Ø§Øª ÙˆØ§Ù„ØªØµÙ…ÙŠÙ…Ø§Øª'}>
+            <ArrowDownToLine size={16} />
+            <span>{appLanguage === 'en' ? 'Export full project' : 'ØªØµØ¯ÙŠØ± Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ ÙƒØ§Ù…Ù„Ù‹Ø§'}</span>
+          </button>
+          <DocumentImportButton onClick={() => documentImportRef.current?.click()} language={appLanguage} />
+          <input ref={documentImportRef} type="file" accept="application/json,.json,.zip,application/zip" onChange={importOpenDocument} hidden />
+          <button
+            className="project-tabs-library"
+            type="button"
+            onClick={() => {
+              if (activeTool === 'mind-map') shortcutActionsRef.current?.saveNow()
+              runPageTransition(() => {
+                setActiveTool('mind-map')
+                setMindMapHomeOpen(false)
+                setWorkspaceOpen(Boolean(activeWorkspaceId))
+                setLibraryOpen(!activeWorkspaceId)
+                setActiveProjectId(null)
+              }, 'backward')
+            }}
+            title={activeWorkspace.title}
+          ><Workflow size={15} /><span>{activeWorkspace.title}</span></button>
+        </>}
+        <button
+          className="project-tabs-library project-tabs-home"
+          type="button"
+          onClick={() => {
+            if (activeTool === 'mind-map') shortcutActionsRef.current?.saveNow()
+            runPageTransition(() => {
+              setActiveTool('mind-map')
+              setActiveProjectId(null)
+              setActiveNoteId(null)
+              setActiveWorkspaceId(null)
+              setMindMapHomeOpen(false)
+              setWorkspaceOpen(false)
+              setLibraryOpen(true)
+            }, 'backward')
+          }}
+          title="Ø§Ù„Ø¹ÙˆØ¯Ø© Ø¥Ù„Ù‰ Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©"
+          aria-label="Ø§Ù„Ø¹ÙˆØ¯Ø© Ø¥Ù„Ù‰ Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©"
+        ><Home size={14} /><span>Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©</span></button>
+      </div>
+    </nav>
+  )
   const settingsDialog = settingsOpen && (
     <div className="confirm-overlay settings-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setSettingsOpen(false) }}>
       <section className="confirm-dialog settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title" dir="rtl">
-        <div className="settings-heading"><span className="confirm-icon settings-icon"><Settings2 size={20} /></span><button type="button" className="settings-close" aria-label="إغلاق الإعدادات" onClick={() => setSettingsOpen(false)}><X size={17} /></button></div>
-        <h2 id="settings-dialog-title">إعدادات البرنامج</h2>
-        <p>غيّر لغة الواجهة ومظهر البرنامج.</p>
-        <label className="settings-field-label" htmlFor="app-language-select">اللغة</label>
+        <div className="settings-heading"><span className="confirm-icon settings-icon"><Settings2 size={20} /></span><button type="button" className="settings-close" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª" onClick={() => setSettingsOpen(false)}><X size={17} /></button></div>
+        <h2 id="settings-dialog-title">Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬</h2>
+        <p>ØºÙŠÙ‘Ø± Ù„ØºØ© Ø§Ù„ÙˆØ§Ø¬Ù‡Ø© ÙˆÙ…Ø¸Ù‡Ø± Ø§Ù„Ø¨Ø±Ù†Ø§Ù…Ø¬.</p>
+        <label className="settings-field-label" htmlFor="app-language-select">Ø§Ù„Ù„ØºØ©</label>
         <select id="app-language-select" className="settings-select" value={appLanguage} onChange={changeLanguage}>
-          <option value="ar">العربية</option>
+          <option value="ar">Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©</option>
           <option value="en">English</option>
         </select>
-        <span className="settings-field-label">المظهر</span>
+        <span className="settings-field-label">Ø§Ù„Ù…Ø¸Ù‡Ø±</span>
         <div className="settings-theme-options">
-          <button type="button" className={`settings-theme-option${theme === 'light' ? ' is-active' : ''}`} onClick={() => { setTheme('light'); localStorage.setItem('waraqa-theme', 'light') }}><Sun size={16} /> نهاري</button>
-          <button type="button" className={`settings-theme-option${theme === 'dark' ? ' is-active' : ''}`} onClick={() => { setTheme('dark'); localStorage.setItem('waraqa-theme', 'dark') }}><Moon size={16} /> ليلي</button>
+          <button type="button" className={`settings-theme-option${theme === 'light' ? ' is-active' : ''}`} onClick={() => { setTheme('light'); localStorage.setItem('waraqa-theme', 'light') }}><Sun size={16} /> Ù†Ù‡Ø§Ø±ÙŠ</button>
+          <button type="button" className={`settings-theme-option${theme === 'dark' ? ' is-active' : ''}`} onClick={() => { setTheme('dark'); localStorage.setItem('waraqa-theme', 'dark') }}><Moon size={16} /> Ù„ÙŠÙ„ÙŠ</button>
         </div>
-        <p className="settings-version">ورقة · الإصدار {pkg.version}</p>
+        <p className="settings-version">ÙˆØ±Ù‚Ø© Â· Ø§Ù„Ø¥ØµØ¯Ø§Ø± {pkg.version}</p>
       </section>
     </div>
   )
   const helpDialog = helpOpen && (
     <div className="confirm-overlay settings-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setHelpOpen(false) }}>
       <section className="confirm-dialog settings-dialog help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-dialog-title" dir="rtl">
-        <div className="settings-heading"><span className="confirm-icon settings-icon"><CircleHelp size={20} /></span><button type="button" className="settings-close" aria-label="إغلاق المساعدة" onClick={() => setHelpOpen(false)}><X size={17} /></button></div>
-        <h2 id="help-dialog-title">دليل ورقة السريع</h2>
-        <p>أهم أدوات الخريطة واختصارات لوحة المفاتيح.</p>
-        {!TRAINING_DISABLED && <button type="button" className="training-restart-button" onClick={() => { setHelpOpen(false); setTrainingTrialNodeIds([]); setTrainingActionDone(false); setToolsOpen(true); setTrainingStep(0); setTrainingOpen(true) }}><Lightbulb size={15} /> ابدأ التدريب التفاعلي</button>}
-        <span className="help-section-label">أساسيات الخريطة</span>
+        <div className="settings-heading"><span className="confirm-icon settings-icon"><CircleHelp size={20} /></span><button type="button" className="settings-close" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯Ø©" onClick={() => setHelpOpen(false)}><X size={17} /></button></div>
+        <h2 id="help-dialog-title">Ø¯Ù„ÙŠÙ„ ÙˆØ±Ù‚Ø© Ø§Ù„Ø³Ø±ÙŠØ¹</h2>
+        <p>Ø£Ù‡Ù… Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø© ÙˆØ§Ø®ØªØµØ§Ø±Ø§Øª Ù„ÙˆØ­Ø© Ø§Ù„Ù…ÙØ§ØªÙŠØ­.</p>
+        <span className="help-section-label">Ø£Ø³Ø§Ø³ÙŠØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø©</span>
         <ul className="help-list">
-          <li><Lightbulb size={14} /> <span>أضف «فكرة جديدة» من اللوحة أو بالسحب إلى المساحة، ثم حددها وأضف فروعًا يمينًا ويسارًا.</span></li>
-          <li><MousePointer2 size={14} /> <span>اربط عقدتين بالسحب من نقطة طرف العقدة إلى عقدة أخرى، أو بالضغط المطول على عقدة ثم الضغط على عقدة أخرى. كليك يمين على السهم يحذفه.</span></li>
-          <li><StickyNote size={14} /> <span>اضغط أيقونة العقدة لفتح الملاحظة والإيموجي واللون، وتُحفظ مع العقدة تلقائيًا.</span></li>
-          <li><Network size={14} /> <span>«ترتيب الخريطة» يرص العقد حسب تفرّعها، والنقطة على طرف العقدة تطوي فروعها أو تفتحها.</span></li>
-          <li><Copy size={14} /> <span>زر «تحديد جماعي» في اللوحة يفعّل تحديد عدة عقد بالضغط أو بسحب مربع على المساحة (في الحاسوب أيضًا Ctrl + كليك يمين).</span></li>
+          <li><Lightbulb size={14} /> <span>Ø£Ø¶Ù Â«ÙÙƒØ±Ø© Ø¬Ø¯ÙŠØ¯Ø©Â» Ù…Ù† Ø§Ù„Ù„ÙˆØ­Ø© Ø£Ùˆ Ø¨Ø§Ù„Ø³Ø­Ø¨ Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø³Ø§Ø­Ø©ØŒ Ø«Ù… Ø­Ø¯Ø¯Ù‡Ø§ ÙˆØ£Ø¶Ù ÙØ±ÙˆØ¹Ù‹Ø§ ÙŠÙ…ÙŠÙ†Ù‹Ø§ ÙˆÙŠØ³Ø§Ø±Ù‹Ø§.</span></li>
+          <li><MousePointer2 size={14} /> <span>Ø§Ø±Ø¨Ø· Ø¹Ù‚Ø¯ØªÙŠÙ† Ø¨Ø§Ù„Ø³Ø­Ø¨ Ù…Ù† Ù†Ù‚Ø·Ø© Ø·Ø±Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø¥Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ØŒ Ø£Ùˆ Ø¨Ø§Ù„Ø¶ØºØ· Ø§Ù„Ù…Ø·ÙˆÙ„ Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø«Ù… Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰. ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø³Ù‡Ù… ÙŠØ­Ø°ÙÙ‡.</span></li>
+          <li><StickyNote size={14} /> <span>Ø§Ø¶ØºØ· Ø£ÙŠÙ‚ÙˆÙ†Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø© Ù„ÙØªØ­ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø© ÙˆØ§Ù„Ø¥ÙŠÙ…ÙˆØ¬ÙŠ ÙˆØ§Ù„Ù„ÙˆÙ†ØŒ ÙˆØªÙØ­ÙØ¸ Ù…Ø¹ Ø§Ù„Ø¹Ù‚Ø¯Ø© ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§.</span></li>
+          <li><Network size={14} /> <span>Â«ØªØ±ØªÙŠØ¨ Ø§Ù„Ø®Ø±ÙŠØ·Ø©Â» ÙŠØ±Øµ Ø§Ù„Ø¹Ù‚Ø¯ Ø­Ø³Ø¨ ØªÙØ±Ù‘Ø¹Ù‡Ø§ØŒ ÙˆØ§Ù„Ù†Ù‚Ø·Ø© Ø¹Ù„Ù‰ Ø·Ø±Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© ØªØ·ÙˆÙŠ ÙØ±ÙˆØ¹Ù‡Ø§ Ø£Ùˆ ØªÙØªØ­Ù‡Ø§.</span></li>
+          <li><Copy size={14} /> <span>Ø²Ø± Â«ØªØ­Ø¯ÙŠØ¯ Ø¬Ù…Ø§Ø¹ÙŠÂ» ÙÙŠ Ø§Ù„Ù„ÙˆØ­Ø© ÙŠÙØ¹Ù‘Ù„ ØªØ­Ø¯ÙŠØ¯ Ø¹Ø¯Ø© Ø¹Ù‚Ø¯ Ø¨Ø§Ù„Ø¶ØºØ· Ø£Ùˆ Ø¨Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø³Ø§Ø­Ø© (ÙÙŠ Ø§Ù„Ø­Ø§Ø³ÙˆØ¨ Ø£ÙŠØ¶Ù‹Ø§ Ctrl + ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ†).</span></li>
         </ul>
-        <span className="help-section-label">أساسيات اللمس</span>
+        <span className="help-section-label">Ø£Ø³Ø§Ø³ÙŠØ§Øª Ø§Ù„Ù„Ù…Ø³</span>
         <ul className="help-list">
-          <li><MapIcon size={14} /> <span>إصبع واحد يحرّك الخريطة، وإصبعان للتكبير والتصغير.</span></li>
-          <li><Link2 size={14} /> <span>اضغط مطولًا على أي عقدة لبدء الربط، ثم اضغط على عقدة أخرى لإتمامه.</span></li>
-          <li><MoveLeft size={14} /> <span>زر الرجوع في الهاتف يغلق الملاحظات والقوائم واحدًا واحدًا.</span></li>
+          <li><MapIcon size={14} /> <span>Ø¥ØµØ¨Ø¹ ÙˆØ§Ø­Ø¯ ÙŠØ­Ø±Ù‘Ùƒ Ø§Ù„Ø®Ø±ÙŠØ·Ø©ØŒ ÙˆØ¥ØµØ¨Ø¹Ø§Ù† Ù„Ù„ØªÙƒØ¨ÙŠØ± ÙˆØ§Ù„ØªØµØºÙŠØ±.</span></li>
+          <li><Link2 size={14} /> <span>Ø§Ø¶ØºØ· Ù…Ø·ÙˆÙ„Ù‹Ø§ Ø¹Ù„Ù‰ Ø£ÙŠ Ø¹Ù‚Ø¯Ø© Ù„Ø¨Ø¯Ø¡ Ø§Ù„Ø±Ø¨Ø·ØŒ Ø«Ù… Ø§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ø¥ØªÙ…Ø§Ù…Ù‡.</span></li>
+          <li><MoveLeft size={14} /> <span>Ø²Ø± Ø§Ù„Ø±Ø¬ÙˆØ¹ ÙÙŠ Ø§Ù„Ù‡Ø§ØªÙ ÙŠØºÙ„Ù‚ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª ÙˆØ§Ù„Ù‚ÙˆØ§Ø¦Ù… ÙˆØ§Ø­Ø¯Ù‹Ø§ ÙˆØ§Ø­Ø¯Ù‹Ø§.</span></li>
         </ul>
-        <span className="help-section-label">اختصارات لوحة المفاتيح</span>
+        <span className="help-section-label">Ø§Ø®ØªØµØ§Ø±Ø§Øª Ù„ÙˆØ­Ø© Ø§Ù„Ù…ÙØ§ØªÙŠØ­</span>
         <div className="help-shortcuts">
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>S</kbd><span>حفظ المشروع</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>F</kbd><span>بحث في الخريطة</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>Z</kbd><span>تراجع</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>Y</kbd><span>إعادة</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>C</kbd><span>نسخ العقدة وفروعها</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>V</kbd><span>لصق العقدة</span></div>
-          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>D</kbd><span>تكرار العقدة</span></div>
-          <div className="help-shortcut"><kbd>Del</kbd><span>حذف المحدد</span></div>
-          <div className="help-shortcut"><kbd>Esc</kbd><span>إغلاق القوائم والحوارات</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>S</kbd><span>Ø­ÙØ¸ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>F</kbd><span>Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ø®Ø±ÙŠØ·Ø©</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>Z</kbd><span>ØªØ±Ø§Ø¬Ø¹</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>Y</kbd><span>Ø¥Ø¹Ø§Ø¯Ø©</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>C</kbd><span>Ù†Ø³Ø® Ø§Ù„Ø¹Ù‚Ø¯Ø© ÙˆÙØ±ÙˆØ¹Ù‡Ø§</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>V</kbd><span>Ù„ØµÙ‚ Ø§Ù„Ø¹Ù‚Ø¯Ø©</span></div>
+          <div className="help-shortcut"><kbd>Ctrl</kbd><kbd>D</kbd><span>ØªÙƒØ±Ø§Ø± Ø§Ù„Ø¹Ù‚Ø¯Ø©</span></div>
+          <div className="help-shortcut"><kbd>Del</kbd><span>Ø­Ø°Ù Ø§Ù„Ù…Ø­Ø¯Ø¯</span></div>
+          <div className="help-shortcut"><kbd>Esc</kbd><span>Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù‚ÙˆØ§Ø¦Ù… ÙˆØ§Ù„Ø­ÙˆØ§Ø±Ø§Øª</span></div>
         </div>
-        <p className="settings-version">ورقة · الإصدار {pkg.version}</p>
+        <p className="settings-version">ÙˆØ±Ù‚Ø© Â· Ø§Ù„Ø¥ØµØ¯Ø§Ø± {pkg.version}</p>
       </section>
     </div>
-  )
-  const trainingSteps = [
-    { icon: <Lightbulb size={22} />, title: 'أضف أول فكرة', text: 'اضغط زر «فكرة جديدة» المضيء في لوحة الأدوات. هتظهر عقدة جديدة على الخريطة.' },
-    { icon: <Plus size={22} />, title: 'أضف فكرة ثانية للتجربة', text: 'اضغط الزر نفسه مرة ثانية عشان يبقى عندك عقدتين تجرب الربط بينهم.' },
-    { icon: <Pencil size={22} />, title: 'غيّر اسم الفكرة', text: 'اضغط على اسم العقدة المضيئة، ثم اكتب اسمًا للفكرة.' },
-    { icon: <Pencil size={22} />, title: 'اكتب اسم الفكرة', text: 'اكتب الاسم الذي تريده، ثم اضغط «تم التغيير» للمتابعة.' },
-    { icon: <Link2 size={22} />, title: 'جرّب ربط العقد', text: TOUCH_DEVICE ? 'اضغط مطولًا على العقدة الأولى، ثم اضغط على العقدة الثانية لإتمام الربط.' : 'اسحب من نقطة طرف العقدة الأولى إلى نقطة طرف العقدة الثانية. جرّب بنفسك؛ هنتابع لحد ما يظهر الرابط.' },
-    { icon: <GitBranch size={22} />, title: 'أضف فرعًا', text: 'اضغط «فرع يمين» في لوحة الأدوات. لو مش متاح، اضغط على عقدة أولًا لتحديدها.' },
-    { icon: <Move size={22} />, title: 'حرّك عقدة', text: 'اسحب الدائرة الخضراء فوق العقدة لمكان جديد. اسحبها فعلًا عشان نكمل.' },
-    { icon: <StickyNote size={22} />, title: 'افتح ملاحظة العقدة', text: 'اضغط أيقونة الفكرة داخل العقدة لفتح الملاحظة وأدوات الإيموجي واللون.' },
-    { icon: <Pencil size={22} />, title: 'اكتب ملاحظة', text: 'اكتب ملاحظة قصيرة، ثم اضغط «التالي» عندما تنتهي.' },
-    { icon: <Network size={22} />, title: 'رتّب الخريطة', text: 'اضغط زر «ترتيب الخريطة للأمام» في لوحة الأدوات لتنسيق أماكن العقد.' },
-    { icon: <CircleHelp size={22} />, title: 'أنت جاهز!', text: 'كده جرّبت أهم أدوات ورقة بنفسك. أمثلة التدريب هتفضل في خريطتك وتقدر تحذفها أو تتراجع عنها.' },
-  ]
-  const finishTraining = () => {
-    localStorage.setItem('waraqa-interactive-training-v3-complete', 'true')
-    setTrainingOpen(false)
-    setTrainingStep(0)
-    setTrainingActionDone(false)
-    setTrainingTargets([])
-  }
-  const goToTrainingStep = (step) => {
-    if ([0, 1, 5, 9].includes(step)) setToolsOpen(true)
-    if (step === 6) {
-      const nodeToMove = nodes.find((node) => node.selected)
-      if (nodeToMove) {
-        const width = nodeToMove.measured?.width ?? nodeToMove.width ?? 190
-        const height = nodeToMove.measured?.height ?? nodeToMove.height ?? 64
-        window.requestAnimationFrame(() => flowRef.current?.setCenter(nodeToMove.position.x + width / 2, nodeToMove.position.y + height / 2, { zoom: 1.12, duration: 520 }))
-      }
-    }
-    setTrainingActionDone(false)
-    setTrainingStep(step)
-  }
-  const confirmTrainingAction = () => {
-    const nextStep = ({ 0: 1, 1: 2, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10 })[trainingStep]
-    if (nextStep !== undefined && (trainingActionDone || [3, 8].includes(trainingStep))) goToTrainingStep(nextStep)
-  }
-  const trainingCardRef = useRef(null)
-  const [trainingCardPosition, setTrainingCardPosition] = useState({ left: 12, top: 12 })
-  useEffect(() => {
-    const closeTrainingOnMobile = () => {
-      if (!(TOUCH_DEVICE || window.matchMedia('(max-width: 760px)').matches) || !trainingOpen) return
-      setTrainingOpen(false)
-      setTrainingTargets([])
-    }
-    closeTrainingOnMobile()
-    window.addEventListener('resize', closeTrainingOnMobile)
-    return () => window.removeEventListener('resize', closeTrainingOnMobile)
-  }, [trainingOpen])
-  useEffect(() => {
-    if (!trainingOpen) return undefined
-    const placeCard = () => {
-      const card = trainingCardRef.current
-      if (!card) return
-      const cardWidth = card.offsetWidth
-      const cardHeight = card.offsetHeight
-      const margin = 12
-      const gap = 18
-      const maxLeft = Math.max(margin, window.innerWidth - cardWidth - margin)
-      const maxTop = Math.max(margin, window.innerHeight - cardHeight - margin)
-      const clamp = (left, top) => ({ left: Math.max(margin, Math.min(maxLeft, left)), top: Math.max(margin, Math.min(maxTop, top)) })
-      const candidates = [
-        clamp(margin, margin), clamp(maxLeft, margin), clamp(margin, maxTop), clamp(maxLeft, maxTop),
-        clamp((window.innerWidth - cardWidth) / 2, margin), clamp((window.innerWidth - cardWidth) / 2, maxTop),
-        ...trainingTargets.flatMap((target) => [
-          clamp(target.left + target.width / 2 - cardWidth / 2, target.top - cardHeight - gap),
-          clamp(target.left + target.width / 2 - cardWidth / 2, target.bottom + gap),
-          clamp(target.left - cardWidth - gap, target.top + target.height / 2 - cardHeight / 2),
-          clamp(target.right + gap, target.top + target.height / 2 - cardHeight / 2),
-        ]),
-      ]
-      const overlapArea = (position, target) => {
-        const width = Math.max(0, Math.min(position.left + cardWidth, target.right + 16) - Math.max(position.left, target.left - 16))
-        const height = Math.max(0, Math.min(position.top + cardHeight, target.bottom + 16) - Math.max(position.top, target.top - 16))
-        return width * height
-      }
-      const score = (position) => {
-        const collisions = trainingTargets.reduce((sum, target) => sum + overlapArea(position, target), 0)
-        const nearestTarget = trainingTargets.length ? Math.min(...trainingTargets.map((target) => {
-          const dx = position.left + cardWidth / 2 - (target.left + target.width / 2)
-          const dy = position.top + cardHeight / 2 - (target.top + target.height / 2)
-          return Math.hypot(dx, dy)
-        })) : 0
-        return collisions * 10000 - nearestTarget
-      }
-      const best = candidates.reduce((chosen, candidate) => score(candidate) < score(chosen) ? candidate : chosen, candidates[0])
-      setTrainingCardPosition((current) => current.left === best.left && current.top === best.top ? current : best)
-    }
-    placeCard()
-    window.addEventListener('resize', placeCard)
-    return () => window.removeEventListener('resize', placeCard)
-  }, [trainingOpen, trainingStep, trainingTargets])
-  const trainingDialog = trainingOpen && (
-    <>
-      {trainingTargets.map((target) => <span key={`${target.left}-${target.top}`} className="training-tour-spotlight" aria-hidden="true" style={{ left: target.left - 5, top: target.top - 5, width: target.width + 10, height: target.height + 10 }} />)}
-      {trainingStep === 4 && !trainingActionDone && trainingTargets.length === 2 && <svg className="training-link-guide" viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`} aria-hidden="true">
-        <defs><marker id="training-link-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" /></marker></defs>
-        <path className="training-link-guide-path" d={`M ${trainingTargets[0].left + trainingTargets[0].width / 2} ${trainingTargets[0].top + trainingTargets[0].height / 2} L ${trainingTargets[1].left + trainingTargets[1].width / 2} ${trainingTargets[1].top + trainingTargets[1].height / 2}`} markerEnd="url(#training-link-arrow)" />
-        <circle r="5" className="training-link-guide-dot"><animateMotion dur="1.25s" repeatCount="indefinite" path={`M ${trainingTargets[0].left + trainingTargets[0].width / 2} ${trainingTargets[0].top + trainingTargets[0].height / 2} L ${trainingTargets[1].left + trainingTargets[1].width / 2} ${trainingTargets[1].top + trainingTargets[1].height / 2}`} /></circle>
-      </svg>}
-      <section ref={trainingCardRef} className="training-tour-card" role="dialog" aria-modal="false" aria-labelledby="training-title" dir="rtl" style={trainingCardPosition}>
-        <div className="training-tour-copy" key={trainingStep}>
-          <h2 id="training-title">{trainingSteps[trainingStep].title}</h2>
-          <p className="training-description">{trainingSteps[trainingStep].text}</p>
-        </div>
-        <div className="training-actions">
-          {trainingStep < trainingSteps.length - 1 && trainingStep !== 2 && <button type="button" className="training-next" disabled={!trainingActionDone && ![3, 8].includes(trainingStep)} onClick={confirmTrainingAction}>{[3, 8].includes(trainingStep) ? 'تخطي' : trainingStep === 3 ? 'تم التغيير' : 'التالي'}</button>}
-          {trainingStep === trainingSteps.length - 1 && <button type="button" className="training-next" onClick={finishTraining}>إنهاء</button>}
-        </div>
-      </section>
-    </>
   )
   const visibleNodeIds = new Set(nodes.filter((node) => !node.hidden).map((node) => node.id))
   const visibleEdges = edges.filter((edge) => visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target))
   const selectedNode = nodes.find((node) => node.selected)
   const selectedNodes = nodes.filter((node) => node.selected)
   const linkSourceNode = selectedNodes.find((node) => node.id === linkSourceNodeId) || selectedNodes[0]
-  useEffect(() => {
-    if (!trainingOpen) return undefined
-    const selectorsByStep = [
-      ['[data-tour="add-idea"]'], ['[data-tour="add-idea"]'],
-      ['[data-tour="edit-node"]'], ['[data-tour="edit-node-input"]'],
-      [TOUCH_DEVICE ? '[data-tour="connect-source"]' : '[data-tour="connect-source"] .branch-toggle-right', TOUCH_DEVICE ? '[data-tour="connect-target"]' : '[data-tour="connect-target"] .branch-toggle-left'],
-      ['[data-tour="add-branch"]'], ['[data-tour="drag-node"]'],
-      ['[data-tour="note-icon"]'], ['[data-tour="note-input"]'],
-      ['[data-tour="arrange-map"]'], [],
-    ]
-    const selectors = selectorsByStep[trainingStep] || []
-    let timer
-    const updateTargets = () => {
-      const targets = selectors.flatMap((selector) => {
-        const element = document.querySelector(selector)
-        if (!element) return []
-        const rect = element.getBoundingClientRect()
-        const computedStyle = window.getComputedStyle(element)
-        if (!rect.width || !rect.height || computedStyle.display === 'none' || computedStyle.visibility === 'hidden' || Number(computedStyle.opacity) === 0) return []
-        return [{ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }]
-      })
-      setTrainingTargets((current) => JSON.stringify(current) === JSON.stringify(targets) ? current : targets)
-      timer = window.setTimeout(updateTargets, 180)
-    }
-    updateTargets()
-    return () => window.clearTimeout(timer)
-  }, [trainingOpen, trainingStep, trainingTrialNodeIds, nodes, notesOpen, selectedNode?.id])
-  useEffect(() => {
-    if (!trainingOpen) return
-    const firstTarget = document.querySelector([
-      '[data-tour="add-idea"]', '[data-tour="add-idea"]', '[data-tour="edit-node"]',
-      '[data-tour="edit-node-input"]', '[data-tour="connect-source"]', '[data-tour="add-branch"]',
-      '[data-tour="drag-node"]', '[data-tour="note-icon"]', '[data-tour="note-input"]', '[data-tour="arrange-map"]',
-    ][trainingStep])
-    firstTarget?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
-  }, [trainingOpen, trainingStep, trainingTrialNodeIds])
   const isLinkableTarget = (source, target) => Boolean(source && target)
     && source.id !== target.id
     && !edges.some((edge) => edge.target === target.id)
@@ -1024,7 +1661,6 @@ function App() {
   }
 
   const openNotes = (node = selectedNode) => {
-    if (trainingOpen && trainingStep === 7) setTrainingActionDone(true)
     setToolsOpen(false)
     setNotesMounted(true)
     window.requestAnimationFrame(() => {
@@ -1034,6 +1670,7 @@ function App() {
   }
 
   const closeNotes = () => {
+    setNodeNoteMentionPicker(null)
     setNotesOpen(false)
     setToolsOpen(true)
     window.setTimeout(() => setNotesMounted(false), 240)
@@ -1080,6 +1717,7 @@ function App() {
     if (settingsOpen) { setSettingsOpen(false); return true }
     if (renameProjectOpen) { setRenameProjectOpen(false); return true }
     if (pendingDeleteProject) { setPendingDeleteProject(null); return true }
+    if (pendingDeleteWorkspace) { setPendingDeleteWorkspace(null); return true }
     if (pendingCloseProjectId) { setPendingCloseProjectId(null); return true }
     if (linkSourceNodeId) { setLinkSourceNodeId(null); return true }
     if (selectMode) { setSelectMode(false); return true }
@@ -1134,10 +1772,9 @@ function App() {
     setSearchOpen(false)
   }
 
-  const updateNodeLabel = (id, label) => {
-    if (trainingOpen && trainingStep === 3) setTrainingActionDone(Boolean(label.trim()))
+  const updateNodeLabel = (id, label, labelMentions) => {
     setNodes((current) => current.map((node) => (
-      node.id === id ? { ...node, data: { ...node.data, label } } : node
+      node.id === id ? { ...node, data: { ...node.data, label, ...(Array.isArray(labelMentions) ? { labelMentions } : {}) } } : node
     )))
   }
 
@@ -1152,15 +1789,11 @@ function App() {
     data: {
       ...node.data,
       language: appLanguage,
-      trainingRole: trainingOpen && trainingStep === 4 && !trainingActionDone
-        ? trainingTrialNodeIds[0] === node.id ? 'connect-source' : trainingTrialNodeIds[1] === node.id ? 'connect-target' : undefined
-        : undefined,
-      trainingDragTarget: trainingOpen && trainingStep === 6 && !trainingActionDone && node.selected,
-      trainingNoteTarget: trainingOpen && trainingStep === 7 && !trainingActionDone && node.selected,
-      trainingLabelTarget: trainingOpen && trainingStep === 2 && node.selected,
-      trainingLabelInputTarget: trainingOpen && trainingStep === 3 && node.selected,
-      trainingStep,
-      onTrainingStepChange: goToTrainingStep,
+      workspaceProjects,
+      workspaceTasks,
+      workspaceNotes,
+      workspaceFlowcharts,
+      onOpenMention: (mention) => openMentionRef.current?.(mention),
       selectMode,
       isLinkSource: linkSourceNodeId === node.id,
         incomingSides: visibleEdges
@@ -1168,7 +1801,7 @@ function App() {
         .map((edge) => edge.targetHandle?.endsWith('right') ? 'right' : 'left'),
       onSelect: () => selectNode(node.id),
       onToggleSelect: () => toggleNodeSelection(node.id),
-      onLabelChange: (label) => updateNodeLabel(node.id, label),
+      onLabelChange: (label, labelMentions) => updateNodeLabel(node.id, label, labelMentions),
       onCloseNotes: closeNotes,
       onToggleBranch: (side) => toggleBranch(node, side),
       onTouchStart: (event) => beginNodeTouch(event, node.id),
@@ -1325,7 +1958,6 @@ function App() {
     const sourceNode = nodes.find((node) => node.id === normalizedConnection.source)
     const targetNode = nodes.find((node) => node.id === normalizedConnection.target)
     if (isIdeaConnectedToIdeaBranch(sourceNode, targetNode, nodes, edges)) return
-    if (trainingOpen && trainingStep === 4) setTrainingActionDone(true)
     setUndoStack((current) => [...current, { nodes, edges }].slice(-50))
     setRedoStack([])
     let nextEdges = addEdge({
@@ -1425,6 +2057,399 @@ function App() {
     }
   }
 
+  const goToProjectHome = () => {
+    saveNow()
+    setActiveMenu(null)
+    runPageTransition(() => {
+      setActiveProjectId(null)
+      setActiveNoteId(null)
+      setMindMapHomeOpen(false)
+      if (activeWorkspaceId) {
+        setWorkspaceOpen(true)
+        setLibraryOpen(false)
+      } else {
+        setWorkspaceOpen(false)
+        setLibraryOpen(true)
+      }
+    }, 'backward')
+  }
+
+  async function saveWorkspaceBackup() {
+    if (!activeWorkspace) {
+      window.alert('Ø§ÙØªØ­ Ù…Ø´Ø±ÙˆØ¹Ù‹Ø§ Ø£ÙˆÙ„Ù‹Ø§ Ù„Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ù…Ù†Ù‡.')
+      return
+    }
+
+    setExportingWorkspace(true)
+    try {
+      let allProjects = projects
+      if (activeProjectId && activeTool === 'mind-map') {
+        saveNow()
+        const snapshot = normalizeProjectHandles({ title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead })
+        const activeProject = {
+          ...snapshot,
+          id: activeProjectId,
+          workspaceId: activeWorkspaceId,
+          updatedAt: currentTimestamp(),
+        }
+        allProjects = projects.some((project) => project.id === activeProjectId)
+          ? projects.map((project) => project.id === activeProjectId ? activeProject : project)
+          : [activeProject, ...projects]
+      }
+
+      const bundle = {
+        format: 'waraqa-workspace',
+        formatVersion: 1,
+        exportedAt: isoTimestamp(),
+        workspace: activeWorkspace,
+        mindMaps: allProjects.filter((project) => project.workspaceId === activeWorkspaceId),
+        notes: workspaceNotes,
+        tasks: workspaceTasks,
+        taskLists: workspaceTaskLists,
+        flowcharts: workspaceFlowcharts,
+        uiDesigns: workspaceUiDesigns,
+      }
+
+      if (desktopWindow?.exportWorkspace) {
+        const folder = await desktopWindow.exportWorkspace(bundle)
+        window.alert(`ØªÙ… Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ ÙƒØ§Ù…Ù„Ø© ÙÙŠ:\n${folder}`)
+      } else {
+        const json = JSON.stringify(bundle, null, 2)
+        const fileName = `warqa-${(activeWorkspace.title || 'project').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'project'}.json`
+        if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+          await AndroidDownloads.saveJson({ fileName, content: json })
+          window.alert('ØªÙ… Ø­ÙØ¸ Ù…Ù„Ù Ù†Ø³Ø®Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ ÙÙŠ Ù…Ø¬Ù„Ø¯ Ø§Ù„ØªÙ†Ø²ÙŠÙ„Ø§Øª.')
+        } else {
+          const file = new Blob([json], { type: 'application/json' })
+          const url = URL.createObjectURL(file)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = fileName
+          link.click()
+          URL.revokeObjectURL(url)
+          window.alert('ØªÙ… ØªÙ†Ø²ÙŠÙ„ Ù…Ù„Ù Ù†Ø³Ø®Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹. Ù„Ø­ÙØ¸Ù‡ ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§ Ø¯Ø§Ø®Ù„ Ù…Ø¬Ù„Ø¯ warqa Ø§Ø³ØªØ®Ø¯Ù… ØªØ·Ø¨ÙŠÙ‚ Ø³Ø·Ø­ Ø§Ù„Ù…ÙƒØªØ¨.')
+        }
+      }
+    } catch (error) {
+      console.error('Could not export workspace backup.', error)
+      window.alert('ØªØ¹Ø°Ø± Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹. ØªØ­Ù‚Ù‚ Ù…Ù† Ù…Ø³Ø§Ø­Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† ÙˆØ­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.')
+    } finally {
+      setExportingWorkspace(false)
+    }
+  }
+  async function exportWorkspaceArchive(targetWorkspace) {
+    if (!targetWorkspace) return
+    const workspaceId = targetWorkspace.id
+    setExportingWorkspace(true)
+    try {
+      let allProjects = projects
+      if (workspaceId === activeWorkspaceId && activeProjectId && activeTool === 'mind-map') {
+        saveNow()
+        const snapshot = normalizeProjectHandles({ title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead })
+        const activeProject = { ...snapshot, id: activeProjectId, workspaceId, updatedAt: currentTimestamp() }
+        allProjects = projects.some((project) => project.id === activeProjectId)
+          ? projects.map((project) => project.id === activeProjectId ? activeProject : project)
+          : [activeProject, ...projects]
+      }
+      const bundle = {
+        format: 'waraqa-workspace', formatVersion: 1, exportedAt: isoTimestamp(), workspace: targetWorkspace,
+        textDirection: appLanguage === 'en' ? 'ltr' : 'rtl',
+        mindMaps: allProjects.filter((project) => project.workspaceId === workspaceId),
+        notes: standaloneNotes.filter((note) => note.workspaceId === workspaceId),
+        tasks: tasks.filter((task) => task.workspaceId === workspaceId),
+        taskLists: taskLists.filter((list) => list.workspaceId === workspaceId),
+        flowcharts: flowcharts.filter((flowchart) => flowchart.workspaceId === workspaceId),
+        uiDesigns: uiDesigns.filter((design) => design.workspaceId === workspaceId),
+      }
+      const attachmentIds = new Set()
+      const findAttachmentIds = (value) => {
+        if (!value || typeof value !== 'object') return
+        if (typeof value.fileId === 'string') attachmentIds.add(value.fileId)
+        Object.values(value).forEach(findAttachmentIds)
+      }
+      bundle.notes.forEach(findAttachmentIds)
+      const attachments = (await Promise.all([...attachmentIds].map(async (id) => {
+        try { return await readNoteAttachment(id) } catch (error) { console.warn('Could not read a project attachment.', error); return null }
+      }))).filter(Boolean)
+      const previews = await createDesignPreviews(bundle.uiDesigns, {}, appLanguage)
+      const archive = await createWorkspaceArchive(bundle, attachments, previews)
+      const safeName = String(targetWorkspace.title || 'project').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'project'
+      const url = URL.createObjectURL(archive)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${safeName}-waraqa-project.zip`
+      document.body.append(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 5000)
+    } catch (error) {
+      console.error('Could not export complete project archive.', error)
+      window.alert(appLanguage === 'en' ? 'Could not create the project archive.' : 'ØªØ¹Ø°Ø± Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø²Ù…Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹.')
+    } finally {
+      setExportingWorkspace(false)
+    }
+  }
+  async function saveOpenDocumentCopy() {
+    if (!isWorkspaceDocumentOpen) return
+    setExportingWorkspace(true)
+    try {
+      let documentData
+      let baseName
+      if (activeTool === 'mind-map') {
+        saveNow()
+        documentData = {
+          format: 'waraqa-mind-map',
+          formatVersion: 1,
+          title,
+          nodes,
+          edges,
+          edgeStyle,
+          edgeColor,
+          edgeWidth,
+          arrowHead,
+        }
+        baseName = title || 'mind-map'
+      } else if (activeTool === 'notes') {
+        const note = workspaceNotes.find((item) => item.id === activeNoteId)
+          || workspaceNotes.find((item) => openNoteIds.includes(item.id))
+        if (!note) throw new Error('No open note to export.')
+        documentData = { format: 'waraqa-note', formatVersion: 1, note }
+        baseName = note.title || 'note'
+      } else if (activeTool === 'flowchart') {
+        const flowchart = workspaceFlowcharts.find((item) => item.id === activeFlowchartId)
+        if (!flowchart) throw new Error('No open flowchart to export.')
+        documentData = { format: 'waraqa-flowchart', formatVersion: 1, flowchart }
+        baseName = flowchart.title || 'flowchart'
+      } else if (activeTool === 'ui-design') {
+        const design = workspaceUiDesigns.find((item) => item.id === activeUiDesignId) || workspaceUiDesigns[0]
+        if (!design) throw new Error('No open interface design to export.')
+        documentData = { format: 'waraqa-ui-design', formatVersion: 1, design }
+        baseName = design.title || 'interface-design'
+      } else {
+        const defaultListId = `${activeWorkspaceId}-default-task-list`
+        const taskListData = [...workspaceTaskLists]
+        if (workspaceTasks.some((task) => !task.listId) && !taskListData.some((list) => list.id === defaultListId)) {
+          taskListData.push({ id: defaultListId, title: appLanguage === 'en' ? 'My tasks' : 'Ù…Ù‡Ø§Ù…ÙŠ', workspaceId: activeWorkspaceId })
+        }
+        documentData = {
+          format: 'waraqa-tasks',
+          formatVersion: 1,
+          taskLists: taskListData,
+          tasks: workspaceTasks.map((task) => ({ ...task, listId: task.listId || defaultListId })),
+        }
+        baseName = activeWorkspace.title || 'tasks'
+      }
+
+      const safeName = String(baseName).replace(/[\\/:*?"<>|]+/g, '-').trim() || 'waraqa-item'
+      const content = JSON.stringify(documentData, null, 2)
+      let fileName = `${safeName}.json`
+      let fileBlob = new Blob([content], { type: 'application/json' })
+      if (activeTool === 'notes') {
+        const attachmentIds = new Set()
+        const collectAttachmentIds = (value) => {
+          if (!value || typeof value !== 'object') return
+          if (typeof value.fileId === 'string') attachmentIds.add(value.fileId)
+          Object.values(value).forEach(collectAttachmentIds)
+        }
+        collectAttachmentIds(documentData.note)
+        const attachments = []
+        const attachmentFiles = []
+        for (const [index, attachmentId] of [...attachmentIds].entries()) {
+          const attachment = await readNoteAttachment(attachmentId)
+          if (!attachment?.blob) throw new Error(`Could not read note attachment ${attachmentId}.`)
+          const attachmentName = String(attachment.name || `attachment-${index + 1}`).replace(/[\\/:*?"<>|]+/g, '-').trim() || `attachment-${index + 1}`
+          const path = `assets/attachments/${String(index + 1).padStart(3, '0')}-${attachmentName}`
+          attachmentFiles.push({ path, data: attachment.blob })
+          attachments.push({ id: attachment.id, name: attachment.name || attachmentName, type: attachment.type || attachment.blob.type || 'application/octet-stream', path })
+        }
+        fileBlob = await createZipArchive([
+          { path: 'item.json', data: content },
+          { path: 'assets/manifest.json', data: JSON.stringify({ attachments }, null, 2) },
+          ...attachmentFiles,
+        ])
+        fileName = `${safeName}-waraqa-note.zip`
+      }
+      if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android' && activeTool !== 'notes') {
+        await AndroidDownloads.saveJson({ fileName, content })
+        window.alert(appLanguage === 'en' ? 'The open item was saved to Downloads.' : 'ØªÙ… Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ø§Ù„Ø¹Ù†ØµØ± Ø§Ù„Ù…ÙØªÙˆØ­ ÙÙŠ Ù…Ø¬Ù„Ø¯ Ø§Ù„ØªÙ†Ø²ÙŠÙ„Ø§Øª.')
+      } else {
+        const url = URL.createObjectURL(fileBlob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = fileName
+        link.click()
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }
+    } catch (error) {
+      console.error('Could not save the open item.', error)
+      window.alert(appLanguage === 'en' ? 'Could not save a copy of the open item.' : 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ù†Ø³Ø®Ø© Ù…Ù† Ø§Ù„Ø¹Ù†ØµØ± Ø§Ù„Ù…ÙØªÙˆØ­.')
+    } finally {
+      setExportingWorkspace(false)
+    }
+  }
+  async function importOpenDocument(event) {
+    const file = event.currentTarget.files?.[0]
+    event.currentTarget.value = ''
+    if (!file || !activeWorkspace) return
+    try {
+      if (!(await ensureProjectsFolder())) return
+      let imported
+      let archiveEntries = null
+      if (/\.zip$/i.test(file.name)) {
+        archiveEntries = await readZipArchive(file)
+        const itemBytes = archiveEntries.get('item.json')
+          || [...archiveEntries.entries()].find(([path]) => path.endsWith('/item.json'))?.[1]
+        if (!itemBytes) throw new Error('The archive has no item.json document.')
+        imported = JSON.parse(decodeZipText(itemBytes))
+      } else imported = JSON.parse(await file.text())
+      const importedType = imported.format === 'waraqa-note'
+        ? 'notes'
+        : imported.format === 'waraqa-tasks'
+          ? 'tasks'
+          : imported.format === 'waraqa-flowchart'
+            ? 'flowchart'
+          : imported.format === 'waraqa-ui-design'
+            ? 'ui-design'
+          : (imported.format === 'waraqa-mind-map' || (!imported.format && Array.isArray(imported.nodes) && Array.isArray(imported.edges)))
+            ? 'mind-map'
+            : null
+      if (!importedType || imported.format === 'waraqa-workspace') throw new Error('Unsupported item file.')
+      if (isWorkspaceDocumentOpen && importedType !== activeTool) throw new Error('The imported file does not match the open item.')
+
+      if (importedType === 'ui-design') {
+        if (!imported.design || !Array.isArray(imported.design.screens) || imported.design.screens.some((screen) => !screen || typeof screen.title !== 'string' || !Array.isArray(screen.components))) throw new Error('Invalid interface design.')
+        const currentDesign = isWorkspaceDocumentOpen ? workspaceUiDesigns.find((item) => item.id === activeUiDesignId) : null
+        const design = { ...imported.design, id: currentDesign?.id || newProjectId(), workspaceId: activeWorkspaceId, title: imported.design.title || (appLanguage === 'en' ? 'Imported interface design' : 'ØªØµÙ…ÙŠÙ… ÙˆØ§Ø¬Ù‡Ø§Øª Ù…Ø³ØªÙˆØ±Ø¯'), updatedAt: currentTimestamp() }
+        handleWorkspaceUiDesignsChange(currentDesign
+          ? workspaceUiDesigns.map((item) => item.id === currentDesign.id ? design : item)
+          : [design, ...workspaceUiDesigns])
+        setActiveUiDesignId(design.id)
+        setActiveTool('ui-design')
+        setActiveProjectId(null)
+        setActiveNoteId(null)
+        setMindMapHomeOpen(false)
+        setWorkspaceOpen(false)
+        setLibraryOpen(false)
+      } else if (importedType === 'flowchart') {
+        if (!imported.flowchart || !Array.isArray(imported.flowchart.nodes) || !Array.isArray(imported.flowchart.edges)) throw new Error('Invalid flowchart.')
+        const existingFlowchart = isWorkspaceDocumentOpen
+          ? workspaceFlowcharts.find((flowchart) => flowchart.id === activeFlowchartId)
+          : null
+        const flowchart = {
+          ...imported.flowchart,
+          id: existingFlowchart?.id || newProjectId(),
+          workspaceId: activeWorkspaceId,
+          title: imported.flowchart.title || (appLanguage === 'en' ? 'Imported flowchart' : 'Ù…Ø®Ø·Ø· Ø§Ù†Ø³ÙŠØ§Ø¨ÙŠ Ù…Ø³ØªÙˆØ±Ø¯'),
+          nodes: imported.flowchart.nodes,
+          edges: imported.flowchart.edges,
+          updatedAt: currentTimestamp(),
+        }
+        const nextFlowcharts = existingFlowchart
+          ? workspaceFlowcharts.map((item) => item.id === flowchart.id ? flowchart : item)
+          : [flowchart, ...workspaceFlowcharts]
+        handleWorkspaceFlowchartsChange(nextFlowcharts)
+        setActiveFlowchartId(flowchart.id)
+        setActiveTool('flowchart')
+        setActiveProjectId(null)
+        setActiveNoteId(null)
+        setMindMapHomeOpen(false)
+        setWorkspaceOpen(false)
+        setLibraryOpen(false)
+      } else if (importedType === 'mind-map') {
+        if (!Array.isArray(imported.nodes) || !Array.isArray(imported.edges)) throw new Error('Invalid mind map.')
+        const importedMap = normalizeProjectHandles(imported)
+        const mapTitle = imported.title || (appLanguage === 'en' ? 'Imported mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© Ù…Ø³ØªÙˆØ±Ø¯Ø©')
+        if (isWorkspaceDocumentOpen) {
+          remember()
+          setTitle(mapTitle)
+          setNodes(imported.nodes)
+          setEdges(importedMap.edges)
+          setEdgeStyle(imported.edgeStyle || 'smoothstep')
+          setEdgeColor(imported.edgeColor || '#9aaea4')
+          setEdgeWidth(imported.edgeWidth || 2)
+          setArrowHead(imported.arrowHead || 'closed')
+        } else {
+          const project = {
+            id: newProjectId(), workspaceId: activeWorkspaceId, title: mapTitle,
+            nodes: imported.nodes, edges: importedMap.edges,
+            edgeStyle: imported.edgeStyle || 'smoothstep', edgeColor: imported.edgeColor || '#9aaea4',
+            edgeWidth: imported.edgeWidth || 2, arrowHead: imported.arrowHead || 'closed', updatedAt: currentTimestamp(),
+          }
+          const nextProjects = [project, ...projects]
+          localStorage.setItem(PROJECTS_KEY, JSON.stringify(nextProjects))
+          setProjects(nextProjects)
+          projectSavePoints.current.set(project.id, createProjectSavePoint(project))
+          setTitle(project.title)
+          setNodes(project.nodes)
+          setEdges(project.edges)
+          setEdgeStyle(project.edgeStyle)
+          setEdgeColor(project.edgeColor)
+          setEdgeWidth(project.edgeWidth)
+          setArrowHead(project.arrowHead)
+          setActiveProjectId(project.id)
+          setOpenProjectIds((current) => current.includes(project.id) ? current : [...current, project.id])
+          setActiveNoteId(null)
+          setActiveTool('mind-map')
+          setMindMapHomeOpen(false)
+          setWorkspaceOpen(false)
+          setLibraryOpen(false)
+        }
+      } else if (importedType === 'notes') {
+        if (!imported.note || typeof imported.note.title !== 'string' || !Array.isArray(imported.note.pages)) throw new Error('Invalid note.')
+        if (archiveEntries) {
+          const manifestBytes = archiveEntries.get('assets/manifest.json')
+          if (manifestBytes) {
+            const assetManifest = JSON.parse(decodeZipText(manifestBytes))
+            for (const attachment of assetManifest.attachments || []) {
+              const bytes = archiveEntries.get(attachment.path)
+              if (!bytes || typeof attachment.id !== 'string') continue
+              const fileCopy = new File([bytes], attachment.name || 'attachment', { type: attachment.type || 'application/octet-stream' })
+              await saveNoteAttachmentWithId(attachment.id, fileCopy)
+            }
+          }
+        }
+        const replacement = { ...imported.note, id: newProjectId(), workspaceId: activeWorkspaceId, updatedAt: currentTimestamp() }
+        const nextNotes = [replacement, ...standaloneNotes]
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(nextNotes))
+        handleStandaloneNotesChange(nextNotes)
+        saveOpenNoteIds([...openNoteIds, replacement.id])
+        setActiveNoteId(replacement.id)
+        setActiveTool('notes')
+        setMindMapHomeOpen(false)
+        setWorkspaceOpen(false)
+        setLibraryOpen(false)
+      } else {
+        if (!Array.isArray(imported.tasks) || !Array.isArray(imported.taskLists)) throw new Error('Invalid tasks document.')
+        if (imported.tasks.some((task) => !task || typeof task.title !== 'string') || imported.taskLists.some((list) => !list || typeof list.title !== 'string' || typeof list.id !== 'string')) throw new Error('Invalid tasks document.')
+        const idMap = new Map(imported.taskLists.map((list) => [list.id, newProjectId()]))
+        const defaultListId = `${activeWorkspaceId}-default-task-list`
+        const needsDefaultList = imported.tasks.some((task) => !idMap.has(task.listId))
+        const nextImportedLists = imported.taskLists.map((list) => ({ ...list, id: idMap.get(list.id), workspaceId: activeWorkspaceId }))
+        if (needsDefaultList) nextImportedLists.push({ id: defaultListId, title: appLanguage === 'en' ? 'My tasks' : 'Ù…Ù‡Ø§Ù…ÙŠ', workspaceId: activeWorkspaceId })
+        const nextImportedTasks = imported.tasks.map((task) => ({
+          ...task,
+          id: newProjectId(),
+          workspaceId: activeWorkspaceId,
+          listId: idMap.get(task.listId) || defaultListId,
+          completed: Boolean(task.completed),
+        }))
+        const nextTasks = [...tasks.filter((task) => task.workspaceId !== activeWorkspaceId), ...nextImportedTasks]
+        const nextTaskLists = [...taskLists.filter((list) => list.workspaceId !== activeWorkspaceId), ...nextImportedLists]
+        localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(nextTasks))
+        localStorage.setItem(TASK_LISTS_STORAGE_KEY, JSON.stringify(nextTaskLists))
+        setTasks(nextTasks)
+        setTaskLists(nextTaskLists)
+        setActiveNoteId(null)
+        setActiveTool('tasks')
+        setMindMapHomeOpen(false)
+        setWorkspaceOpen(false)
+        setLibraryOpen(false)
+      }
+    } catch (error) {
+      console.error('Could not import a copy into the open item.', error)
+      window.alert(appLanguage === 'en' ? 'This file is invalid or does not match the open item type.' : 'Ø§Ù„Ù…Ù„Ù ØºÙŠØ± ØµØ§Ù„Ø­ Ø£Ùˆ Ù„Ø§ ÙŠØ·Ø§Ø¨Ù‚ Ù†ÙˆØ¹ Ø§Ù„Ø¹Ù†ØµØ± Ø§Ù„Ù…ÙØªÙˆØ­.')
+    }
+  }
   useEffect(() => {
     const saveOnPageExit = () => shortcutActionsRef.current?.saveNow()
     window.addEventListener('pagehide', saveOnPageExit)
@@ -1451,11 +2476,7 @@ function App() {
     }
     remember()
     const id = createId()
-    const trainingPosition = trainingOpen && kind === 'idea' && trainingStep < 2 && flowRef.current?.screenToFlowPosition({
-      x: window.innerWidth / 2 + (trainingStep === 0 ? -145 : 145),
-      y: window.innerHeight * 0.48,
-    })
-    const position = dropPosition || trainingPosition || (parent
+    const position = dropPosition || (parent
       ? { x: branchDirection === 'left' ? parent.position.x - 250 : parent.position.x + 250, y: parent.position.y + 90 }
       : flowRef.current?.screenToFlowPosition({
           x: window.innerWidth * 0.48,
@@ -1467,7 +2488,7 @@ function App() {
       type: 'mapNode',
       position,
       data: {
-        label: parent ? 'فكرة فرعية' : 'فكرتي الجديدة',
+        label: parent ? 'ÙÙƒØ±Ø© ÙØ±Ø¹ÙŠØ©' : 'ÙÙƒØ±ØªÙŠ Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©',
         kind,
         ...(kind === 'idea' && !nodes.some((item) => item.data.isStart) && !nodes.some((item) => item.data.kind === 'idea') ? { isStart: true } : {}),
         ...(kind === 'branch' ? {
@@ -1480,11 +2501,6 @@ function App() {
       draggable: true,
       selected: !keepParentSelected,
     }
-    if (trainingOpen && kind === 'idea' && trainingStep < 2) {
-      setTrainingTrialNodeIds((current) => [...current, id].slice(-2))
-      setTrainingActionDone(true)
-    }
-    if (trainingOpen && kind === 'branch' && trainingStep === 5) setTrainingActionDone(true)
     if (kind === 'branch') {
       const newBranchEdge = parent ? {
         id: `e-${parent.id}-${id}`,
@@ -1548,7 +2564,7 @@ function App() {
           y: selectedNode.position.y,
         },
         data: {
-          label: 'فكرة فرعية',
+          label: 'ÙÙƒØ±Ø© ÙØ±Ø¹ÙŠØ©',
           kind: 'branch',
           branchDirection: parentEdge ? direction : 'left',
           insertedBranch: true,
@@ -1590,7 +2606,7 @@ function App() {
         y: selectedNode.position.y,
       },
       data: {
-        label: 'فكرة فرعية',
+        label: 'ÙÙƒØ±Ø© ÙØ±Ø¹ÙŠØ©',
         kind: 'branch',
         branchDirection,
         insertedBranch: true,
@@ -1686,10 +2702,76 @@ function App() {
   }
 
   const updateSelected = (changes) => {
-    if (trainingOpen && trainingStep === 8 && Object.hasOwn(changes, 'note')) setTrainingActionDone(Boolean(changes.note?.trim()))
     setNodes((current) => current.map((node) => (
       node.id === selectedNode?.id ? { ...node, data: { ...node.data, ...changes } } : node
     )))
+  }
+
+  const handleNodeNoteInput = (event) => {
+    const { value, selectionStart: caret } = event.currentTarget
+    const mentions = (selectedNode?.data.mentions || []).filter((mention) => value.includes(mention.text))
+    updateSelected({ note: value, mentions })
+    if (nodeNoteMentionPicker?.nodeId === selectedNode?.id) {
+      const query = value.slice(nodeNoteMentionPicker.queryStart, caret)
+      if (caret < nodeNoteMentionPicker.queryStart || query.includes('\n')) setNodeNoteMentionPicker(null)
+      else setNodeNoteMentionPicker({ ...nodeNoteMentionPicker, end: caret, query })
+    } else if (value[caret - 1] === '@') {
+      setNodeNoteMentionPicker({ nodeId: selectedNode?.id, start: caret - 1, queryStart: caret, end: caret, step: 'type', kind: null, containerId: null, query: '' })
+    }
+  }
+
+  const setNodeMentionKind = (kind) => {
+    if (!nodeNoteMentionPicker) return
+    const note = selectedNode?.data.note || ''
+    updateSelected({ note: `${note.slice(0, nodeNoteMentionPicker.start + 1)}${note.slice(nodeNoteMentionPicker.end)}` })
+    const queryStart = nodeNoteMentionPicker.start + 1
+    setNodeNoteMentionPicker({ ...nodeNoteMentionPicker, step: kind === 'task' || kind === 'note' ? 'item' : 'container', kind, containerId: null, queryStart, end: queryStart, query: '' })
+    requestAnimationFrame(() => { nodeNoteInputRef.current?.focus(); nodeNoteInputRef.current?.setSelectionRange(queryStart, queryStart) })
+  }
+
+  const setNodeMentionContainer = (container) => {
+    if (!nodeNoteMentionPicker) return
+    const note = selectedNode?.data.note || ''
+    updateSelected({ note: `${note.slice(0, nodeNoteMentionPicker.start + 1)}${note.slice(nodeNoteMentionPicker.end)}` })
+    const queryStart = nodeNoteMentionPicker.start + 1
+    setNodeNoteMentionPicker({ ...nodeNoteMentionPicker, step: 'item', containerId: container.id, queryStart, end: queryStart, query: '' })
+    requestAnimationFrame(() => { nodeNoteInputRef.current?.focus(); nodeNoteInputRef.current?.setSelectionRange(queryStart, queryStart) })
+  }
+
+  const backNodeMentionPicker = () => {
+    if (!nodeNoteMentionPicker || !selectedNode) return
+    const previousStep = nodeNoteMentionPicker.step === 'item' && !['task', 'note'].includes(nodeNoteMentionPicker.kind) ? 'container' : 'type'
+    const note = selectedNode.data.note || ''
+    const nextNote = `${note.slice(0, nodeNoteMentionPicker.start + 1)}${note.slice(nodeNoteMentionPicker.end)}`
+    updateSelected({ note: nextNote })
+    const queryStart = nodeNoteMentionPicker.start + 1
+    setNodeNoteMentionPicker({ ...nodeNoteMentionPicker, step: previousStep, kind: previousStep === 'type' ? null : nodeNoteMentionPicker.kind, containerId: previousStep === 'type' ? null : nodeNoteMentionPicker.containerId, queryStart, end: queryStart, query: '' })
+    requestAnimationFrame(() => { nodeNoteInputRef.current?.focus(); nodeNoteInputRef.current?.setSelectionRange(queryStart, queryStart) })
+  }
+
+  const insertNodeNoteMention = (item) => {
+    const picker = nodeNoteMentionPicker
+    if (!picker || picker.nodeId !== selectedNode?.id) return
+    const container = picker.kind === 'mind-map' ? workspaceProjects.find((project) => project.id === picker.containerId)
+      : picker.kind === 'flowchart' ? workspaceFlowcharts.find((flowchart) => flowchart.id === picker.containerId) : null
+    if (!['task', 'note'].includes(picker.kind) && !container) return
+    const itemTitle = picker.kind === 'task' ? (item.title || 'Ù…Ù‡Ù…Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†') : picker.kind === 'note' ? (item.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†') : (item.data?.label || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')
+    const containerTitle = container?.title || ''
+    const prefix = picker.kind === 'mind-map' ? 'ðŸ§ ' : picker.kind === 'task' ? 'âœ“' : picker.kind === 'note' ? 'ðŸ“' : 'â†—'
+    const mentionText = `@${prefix} ${containerTitle ? `${containerTitle} / ` : ''}${itemTitle}`
+    const note = selectedNode.data.note || ''
+    const nextNote = `${note.slice(0, picker.start)}${mentionText}${note.slice(picker.end)}`
+    const mention = picker.kind === 'mind-map'
+      ? { type: 'mind-map-node', projectId: container.id, nodeId: item.id, projectTitle: containerTitle, nodeTitle: itemTitle, text: mentionText }
+      : picker.kind === 'task'
+        ? { type: 'task', taskId: item.id, taskTitle: itemTitle, workspaceId: item.workspaceId, text: mentionText }
+        : picker.kind === 'note'
+          ? { type: 'note', noteId: item.id, noteTitle: itemTitle, workspaceId: item.workspaceId, text: mentionText }
+          : { type: 'flowchart-node', flowchartId: container.id, flowchartTitle: containerTitle, nodeId: item.id, nodeTitle: itemTitle, text: mentionText }
+    updateSelected({ note: nextNote, mentions: [...(selectedNode.data.mentions || []), mention] })
+    setNodeNoteMentionPicker(null)
+    const caret = picker.start + mentionText.length
+    requestAnimationFrame(() => { nodeNoteInputRef.current?.focus(); nodeNoteInputRef.current?.setSelectionRange(caret, caret) })
   }
 
   const removeNodeById = (nodeId) => {
@@ -1796,7 +2878,6 @@ function App() {
       style: { stroke: edgeColor, strokeWidth: edgeWidth },
     }
     const nextEdges = [...edges, edge]
-    if (trainingOpen && trainingStep === 4) setTrainingActionDone(true)
     const detachedIds = new Set([source.id, target.id].filter((id) => nodes.find((node) => node.id === id)?.data.detached))
     const nextNodes = nodes.map((node) => detachedIds.has(node.id) ? { ...node, data: { ...node.data, detached: false } } : node)
     setEdges(nextEdges)
@@ -1950,20 +3031,6 @@ function App() {
   })
 
   useEffect(() => {
-    const guardTrainingKeys = (event) => {
-      if (!trainingOpen || event.key === 'Escape') return
-      const target = event.target
-      const isTrainingInput = target instanceof HTMLElement && target.matches('[data-tour="edit-node-input"], [data-tour="note-input"]')
-      const selectAll = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a'
-      if (isTrainingInput && ((!(event.ctrlKey || event.metaKey || event.altKey) && event.key !== 'Tab') || selectAll)) return
-      event.preventDefault()
-      event.stopImmediatePropagation()
-    }
-    const guardTrainingContextMenu = (event) => {
-      if (!trainingOpen) return
-      event.preventDefault()
-      event.stopImmediatePropagation()
-    }
     const handleShortcut = (event) => {
       const key = (event.code?.startsWith('Key') ? event.code.slice(3) : event.key).toLowerCase()
       const target = event.target
@@ -1975,12 +3042,10 @@ function App() {
         setSearchOpen(false)
         setHelpOpen(false)
         setSettingsOpen(false)
-        if (trainingOpen) finishTraining()
         setLinkSourceNodeId(null)
         setSelectMode(false)
         return
       }
-      if (trainingOpen) return
       if (!(event.ctrlKey || event.metaKey) || isEditingText) return
 
       if (key === 'f') {
@@ -2016,17 +3081,13 @@ function App() {
       if (event.target instanceof Element && !event.target.closest('.app-menubar')) setActiveMenu(null)
       if (event.target instanceof Element && !event.target.closest('.search-panel, .app-menubar')) setSearchOpen(false)
     }
-    window.addEventListener('keydown', guardTrainingKeys, true)
-    window.addEventListener('contextmenu', guardTrainingContextMenu, true)
     window.addEventListener('keydown', handleShortcut)
     window.addEventListener('pointerdown', handleOutsideClick)
     return () => {
-      window.removeEventListener('keydown', guardTrainingKeys, true)
-      window.removeEventListener('contextmenu', guardTrainingContextMenu, true)
       window.removeEventListener('keydown', handleShortcut)
       window.removeEventListener('pointerdown', handleOutsideClick)
     }
-  }, [trainingOpen])
+  }, [])
 
   const exportMap = async () => {
     const json = JSON.stringify({
@@ -2048,11 +3109,11 @@ function App() {
     if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
       try {
         await AndroidDownloads.saveJson({ fileName: `${fileName}.json`, content: json })
-        window.alert('تم حفظ ملف JSON في مجلد التنزيلات.')
+        window.alert('ØªÙ… Ø­ÙØ¸ Ù…Ù„Ù JSON ÙÙŠ Ù…Ø¬Ù„Ø¯ Ø§Ù„ØªÙ†Ø²ÙŠÙ„Ø§Øª.')
         return
       } catch (error) {
         console.error('Could not save JSON to Downloads:', error)
-        window.alert('تعذر حفظ الملف في التنزيلات. حاول مرة أخرى.')
+        window.alert('ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„Ù…Ù„Ù ÙÙŠ Ø§Ù„ØªÙ†Ø²ÙŠÙ„Ø§Øª. Ø­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.')
         return
       }
     }
@@ -2090,7 +3151,7 @@ function App() {
       link.href = image
       link.click()
     } catch {
-      window.alert('تعذر تصدير الصورة. جرّب مرة أخرى بعد ظهور الخريطة بالكامل.')
+      window.alert('ØªØ¹Ø°Ø± ØªØµØ¯ÙŠØ± Ø§Ù„ØµÙˆØ±Ø©. Ø¬Ø±Ù‘Ø¨ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ø¨Ø¹Ø¯ Ø¸Ù‡ÙˆØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„.')
     } finally {
       setExportingImage(false)
     }
@@ -2110,21 +3171,21 @@ function App() {
       link.href = svg
       link.click()
     } catch {
-      window.alert('تعذر تصدير SVG. جرّب مرة أخرى بعد ظهور الخريطة بالكامل.')
+      window.alert('ØªØ¹Ø°Ø± ØªØµØ¯ÙŠØ± SVG. Ø¬Ø±Ù‘Ø¨ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ø¨Ø¹Ø¯ Ø¸Ù‡ÙˆØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„.')
     }
   }
 
   const exportMarkdown = () => {
     const nodeText = nodes.map((node) => {
-      const note = node.data.note ? `\n  - ملاحظة: ${node.data.note.replace(/\n/g, ' ')}` : ''
-      return `- **${node.data.label || 'بدون عنوان'}**${note}`
+      const note = node.data.note ? `\n  - Ù…Ù„Ø§Ø­Ø¸Ø©: ${node.data.note.replace(/\n/g, ' ')}` : ''
+      return `- **${node.data.label || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}**${note}`
     }).join('\n')
     const links = edges.map((edge) => {
       const source = nodes.find((node) => node.id === edge.source)?.data.label || edge.source
       const target = nodes.find((node) => node.id === edge.target)?.data.label || edge.target
       return `- ${source} -> ${target}`
     }).join('\n')
-    const markdown = `# ${title || 'خريطة بدون عنوان'}\n\n## العقد\n${nodeText || '- لا توجد عقد'}\n\n## الروابط\n${links || '- لا توجد روابط'}\n`
+    const markdown = `# ${title || 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}\n\n## Ø§Ù„Ø¹Ù‚Ø¯\n${nodeText || '- Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¹Ù‚Ø¯'}\n\n## Ø§Ù„Ø±ÙˆØ§Ø¨Ø·\n${links || '- Ù„Ø§ ØªÙˆØ¬Ø¯ Ø±ÙˆØ§Ø¨Ø·'}\n`
     const fileName = (title || 'mind-map').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'mind-map'
     const link = document.createElement('a')
     link.download = `${fileName}.md`
@@ -2142,7 +3203,7 @@ function App() {
         throw new Error('Invalid map')
       }
       remember()
-      setTitle(imported.title || 'خريطة مستوردة')
+      setTitle(imported.title || 'Ø®Ø±ÙŠØ·Ø© Ù…Ø³ØªÙˆØ±Ø¯Ø©')
       setNodes(imported.nodes)
       setEdges(normalizeProjectHandles(imported).edges)
       setEdgeStyle(imported.edgeStyle || 'smoothstep')
@@ -2150,7 +3211,7 @@ function App() {
       setEdgeWidth(imported.edgeWidth || 2)
       setArrowHead(imported.arrowHead || 'closed')
     } catch {
-      window.alert('الملف غير صالح أو لا يحتوي على خريطة محفوظة.')
+      window.alert('Ø§Ù„Ù…Ù„Ù ØºÙŠØ± ØµØ§Ù„Ø­ Ø£Ùˆ Ù„Ø§ ÙŠØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ø®Ø±ÙŠØ·Ø© Ù…Ø­ÙÙˆØ¸Ø©.')
     }
     event.target.value = ''
   }
@@ -2205,7 +3266,6 @@ function App() {
     } else setBranchDropHint(null)
   }
   const onNodeDragStop = (_event, draggedNode) => {
-    if (trainingOpen && trainingStep === 6 && draggedNode) setTrainingActionDone(true)
     setBranchDropHint(null)
     if (dragSnapshot.current) {
       const snapshot = dragSnapshot.current
@@ -2260,11 +3320,14 @@ function App() {
   }
 
   const openProject = (project) => {
-    if (trainingOpen) setToolsOpen(true)
+    setActiveTool('mind-map')
+    setMindMapHomeOpen(false)
+    if (project.workspaceId) setActiveWorkspaceId(project.workspaceId)
     if (activeProjectId === project.id) {
       saveNow()
       projectSavePoints.current.set(project.id, createProjectSavePoint({ title, nodes, edges, edgeStyle, edgeColor, edgeWidth, arrowHead }))
       setLibraryOpen(false)
+      setWorkspaceOpen(false)
       return
     }
     if (activeProjectId && activeProjectId !== project.id) saveNow()
@@ -2273,7 +3336,7 @@ function App() {
       projectSavePoints.current.set(latestProject.id, createProjectSavePoint(latestProject))
     }
     runPageTransition(() => {
-    setTitle(project.title || 'مشروع جديد')
+    setTitle(project.title || 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯')
     setNodes(latestProject.nodes || [])
     setEdges(latestProject.edges || [])
     setEdgeStyle(latestProject.edgeStyle || 'smoothstep')
@@ -2283,39 +3346,396 @@ function App() {
     setActiveProjectId(latestProject.id)
     setOpenProjectIds((current) => current.includes(latestProject.id) ? current : [...current, latestProject.id])
       setLibraryOpen(false)
-    })
+      setWorkspaceOpen(false)
+    }, activeProjectId ? 'lateral' : 'forward')
   }
-  const createProject = () => {
-    const project = { id: newProjectId(), title: 'مشروع جديد', nodes: [], edges: [], edgeStyle: 'smoothstep', edgeColor: '#9aaea4', edgeWidth: 2, arrowHead: 'closed', updatedAt: currentTimestamp() }
+
+  const openFlowchart = (flowchart) => runPageTransition(() => {
+    if (activeTool === 'mind-map') shortcutActionsRef.current?.saveNow()
+    setActiveWorkspaceId(flowchart.workspaceId)
+    setActiveProjectId(null)
+    setActiveNoteId(null)
+    setActiveFlowchartId(flowchart.id)
+    setActiveTool('flowchart')
+    setMindMapHomeOpen(false)
+    setWorkspaceOpen(false)
+    setLibraryOpen(false)
+  }, 'lateral')
+
+  const openUiDesign = (design) => runPageTransition(() => {
+    if (activeTool === 'mind-map') shortcutActionsRef.current?.saveNow()
+    setActiveWorkspaceId(design.workspaceId)
+    setActiveProjectId(null)
+    setActiveNoteId(null)
+    setActiveUiDesignId(design.id)
+    setActiveTool('ui-design')
+    setMindMapHomeOpen(false)
+    setWorkspaceOpen(false)
+    setLibraryOpen(false)
+  }, 'lateral')
+
+  const openMention = (mentionOrProjectId, legacyNodeId) => {
+    const mention = typeof mentionOrProjectId === 'string'
+      ? { type: 'mind-map-node', projectId: mentionOrProjectId, nodeId: legacyNodeId }
+      : mentionOrProjectId
+    if (mention?.type === 'task') {
+      const task = tasks.find((item) => item.id === mention.taskId)
+      if (!task) return
+      setPendingTaskMentionFocus(task.id)
+      setActiveWorkspaceId(task.workspaceId || activeWorkspaceId)
+      setActiveProjectId(null)
+      setActiveNoteId(null)
+      setActiveTool('tasks')
+      setMindMapHomeOpen(false)
+      setWorkspaceOpen(false)
+      setLibraryOpen(false)
+      return
+    }
+    if (mention?.type === 'note') {
+      const note = standaloneNotes.find((item) => item.id === mention.noteId)
+      if (note) selectNoteTab(note.id)
+      return
+    }
+    if (mention?.type === 'flowchart-node') {
+      const flowchart = flowcharts.find((item) => item.id === mention.flowchartId)
+      if (!flowchart) return
+      setPendingFlowchartMentionFocus({ flowchartId: flowchart.id, nodeId: mention.nodeId })
+      openFlowchart(flowchart)
+      return
+    }
+    const projectId = mention?.projectId
+    const nodeId = mention?.nodeId
+    const project = projects.find((item) => item.id === projectId)
+    if (!project) {
+      console.warn('Could not open mention: the referenced project no longer exists.', { projectId, nodeId })
+      return
+    }
+    setPendingMentionFocus({ projectId, nodeId, openNodeNote: mention?.type === 'mind-map-note' })
+    openProject(project)
+    setActiveTool('mind-map')
+  }
+  openMentionRef.current = openMention
+
+  useEffect(() => {
+    if (!pendingMentionFocus || activeProjectId !== pendingMentionFocus.projectId) return
+    const node = nodes.find((item) => item.id === pendingMentionFocus.nodeId)
+    if (!node) {
+      const frame = window.requestAnimationFrame(() => {
+        console.warn('Could not open mention: the referenced node no longer exists.', pendingMentionFocus)
+        setPendingMentionFocus(null)
+      })
+      return () => window.cancelAnimationFrame(frame)
+    }
+
+    const revealIds = new Set([node.id])
+    let foundParent = true
+    while (foundParent) {
+      foundParent = false
+      edges.forEach((edge) => {
+        if (revealIds.has(edge.target) && !revealIds.has(edge.source)) {
+          revealIds.add(edge.source)
+          foundParent = true
+        }
+      })
+    }
+    const targetNode = { ...node, hidden: false }
+    const frame = window.requestAnimationFrame(() => {
+      setNodes((current) => current.map((item) => ({
+        ...item,
+        hidden: revealIds.has(item.id) ? false : item.hidden,
+        selected: item.id === node.id,
+      })))
+      window.requestAnimationFrame(() => {
+        if (pendingMentionFocus.openNodeNote) openNotes(targetNode)
+        else focusNode(targetNode)
+      })
+      setPendingMentionFocus(null)
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [activeProjectId, edges, nodes, pendingMentionFocus])
+
+  const createProject = async () => {
+    if (!(await ensureProjectsFolder())) return
+    let workspaceId = activeWorkspaceId
+    if (!workspaceId) {
+      const workspace = { id: newProjectId(), title: 'Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯', createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+      workspaceId = workspace.id
+      saveWorkspaces([workspace, ...workspaces])
+      setActiveWorkspaceId(workspaceId)
+    }
+    const project = { id: newProjectId(), workspaceId, title: 'Ø®Ø±ÙŠØ·Ø© Ø¬Ø¯ÙŠØ¯Ø©', nodes: [], edges: [], edgeStyle: 'smoothstep', edgeColor: '#9aaea4', edgeWidth: 2, arrowHead: 'closed', updatedAt: currentTimestamp() }
     setProjects((current) => { const next = [project, ...current]; localStorage.setItem(PROJECTS_KEY, JSON.stringify(next)); return next })
     openProject(project)
     setRenameProjectDraft(project.title)
     setRenameProjectOpen(true)
   }
-  const createTrainingProject = () => {
-    if (TRAINING_DISABLED) return
-    const project = { id: newProjectId(), title: 'تجربة التدريب', nodes: [], edges: [], edgeStyle: 'smoothstep', edgeColor: '#9aaea4', edgeWidth: 2, arrowHead: 'closed', updatedAt: currentTimestamp() }
-    const nextProjects = [project, ...projects]
-    localStorage.setItem(PROJECTS_KEY, JSON.stringify(nextProjects))
-    setProjects(nextProjects)
-    setToolsOpen(true)
-    setTrainingTrialNodeIds([])
-    setTrainingActionDone(false)
-    setTrainingStep(0)
-    setTrainingOpen(true)
-    openProject(project)
-  }
   const importProjectFile = async (event) => {
-    const file = event.target.files?.[0]
+    const selectedFiles = [...(event.target.files || [])]
+    const file = selectedFiles[0]
     if (!file) return
     try {
-      const imported = JSON.parse(await file.text())
+      if (!(await ensureProjectsFolder())) return
+      let archiveEntries = null
+      let imported
+      if (selectedFiles.some((item) => item.webkitRelativePath)) {
+        archiveEntries = new Map()
+        for (const item of selectedFiles) {
+          const relativePath = item.webkitRelativePath.split('/').slice(1).join('/')
+          if (relativePath) archiveEntries.set(relativePath, new Uint8Array(await item.arrayBuffer()))
+        }
+        const projectBytes = archiveEntries.get('project.json')
+          || [...archiveEntries.entries()].find(([entryPath]) => entryPath.endsWith('/project.json'))?.[1]
+        const workspaceBytes = archiveEntries.get('workspace.json')
+          || [...archiveEntries.entries()].find(([entryPath]) => entryPath.endsWith('/workspace.json'))?.[1]
+        const manifestBytes = archiveEntries.get('assets/manifest.json')
+          || [...archiveEntries.entries()].find(([entryPath]) => entryPath.endsWith('/assets/manifest.json'))?.[1]
+        if (!projectBytes && !workspaceBytes) throw new Error('The selected folder has no project.json or workspace.json.')
+        if (manifestBytes && !archiveEntries.has('assets/manifest.json')) {
+          for (const [entryPath, bytes] of [...archiveEntries.entries()]) {
+            const marker = entryPath.lastIndexOf('/assets/')
+            if (marker >= 0) archiveEntries.set(entryPath.slice(marker + 1), bytes)
+          }
+        }
+        imported = JSON.parse(decodeZipText(projectBytes || workspaceBytes))
+      } else if (/\.zip$/i.test(file.name)) {
+        archiveEntries = await readZipArchive(file)
+        const projectBytes = archiveEntries.get('project.json')
+          || [...archiveEntries.entries()].find(([path]) => path.endsWith('/project.json'))?.[1]
+        const itemBytes = archiveEntries.get('item.json')
+          || [...archiveEntries.entries()].find(([path]) => path.endsWith('/item.json'))?.[1]
+        if (!projectBytes && !itemBytes) throw new Error('The archive has no project or item JSON document.')
+        imported = JSON.parse(decodeZipText(projectBytes || itemBytes))
+      } else imported = JSON.parse(await file.text())
+      if (imported.format === 'waraqa-note' && imported.formatVersion === 1) {
+        if (!(await ensureProjectsFolder())) return
+        if (!imported.note || typeof imported.note.title !== 'string' || !Array.isArray(imported.note.pages)) throw new Error('Invalid note document.')
+        if (archiveEntries) {
+          const manifestBytes = archiveEntries.get('assets/manifest.json')
+          if (manifestBytes) {
+            const assetManifest = JSON.parse(decodeZipText(manifestBytes))
+            for (const attachment of assetManifest.attachments || []) {
+              const bytes = archiveEntries.get(attachment.path)
+              if (!bytes || typeof attachment.id !== 'string') continue
+              const fileCopy = new File([bytes], attachment.name || 'attachment', { type: attachment.type || 'application/octet-stream' })
+              await saveNoteAttachmentWithId(attachment.id, fileCopy)
+            }
+          }
+        }
+        const workspaceId = newProjectId()
+        const noteId = newProjectId()
+        const note = { ...imported.note, id: noteId, workspaceId, updatedAt: currentTimestamp() }
+        const title = note.title.trim() || file.name.replace(/(?:-waraqa-note)?\.(?:json|zip)$/i, '') || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ù…Ø³ØªÙˆØ±Ø¯Ø©'
+        const workspace = { id: workspaceId, title, createdAt: currentTimestamp(), updatedAt: currentTimestamp() }
+        const nextNotes = [note, ...standaloneNotes]
+        saveWorkspaces([workspace, ...workspaces])
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(nextNotes))
+        setStandaloneNotes(nextNotes)
+        setActiveWorkspaceId(workspaceId)
+        setActiveProjectId(null)
+        setActiveNoteId(noteId)
+        saveOpenNoteIds([...openNoteIds, noteId])
+        setActiveTool('notes')
+        setWorkspaceOpen(true)
+        setMindMapHomeOpen(false)
+        setLibraryOpen(false)
+        setPendingDeleteWorkspace(null)
+        setOpenProjectIds([])
+        event.target.value = ''
+        return
+      }
+      if (imported.format === 'waraqa-workspace' && imported.formatVersion === 1) {
+        if (!(await ensureProjectsFolder())) return
+        if (!imported.workspace || !Array.isArray(imported.mindMaps) || !Array.isArray(imported.notes)
+          || (imported.tasks !== undefined && !Array.isArray(imported.tasks))
+          || (imported.flowcharts !== undefined && !Array.isArray(imported.flowcharts))
+          || (imported.uiDesigns !== undefined && !Array.isArray(imported.uiDesigns))
+          || (imported.flowcharts || []).some((flowchart) => !flowchart || typeof flowchart.title !== 'string' || !Array.isArray(flowchart.nodes) || !Array.isArray(flowchart.edges))
+          || (imported.uiDesigns || []).some((design) => !design || typeof design.title !== 'string' || !Array.isArray(design.screens) || design.screens.some((screen) => !screen || !Array.isArray(screen.components)))
+          || imported.mindMaps.some((project) => !project || typeof project.id !== 'string' || !Array.isArray(project.nodes) || !Array.isArray(project.edges))
+          || imported.notes.some((note) => !note || typeof note.id !== 'string' || typeof note.title !== 'string')) {
+          throw new Error('Invalid workspace backup')
+        }
+        if (archiveEntries) {
+          const manifestBytes = archiveEntries.get('assets/manifest.json')
+          if (manifestBytes) {
+            const assetManifest = JSON.parse(decodeZipText(manifestBytes))
+            for (const attachment of assetManifest.attachments || []) {
+              const bytes = archiveEntries.get(attachment.path)
+              if (!bytes || typeof attachment.id !== 'string') continue
+              const fileCopy = new File([bytes], attachment.name || 'attachment', { type: attachment.type || 'application/octet-stream' })
+              await saveNoteAttachmentWithId(attachment.id, fileCopy)
+            }
+          }
+        }
+        const workspaceId = newProjectId()
+        const workspace = {
+          id: workspaceId,
+          title: imported.workspace.title || file.name.replace(/\.json$/i, ''),
+          createdAt: currentTimestamp(),
+          updatedAt: currentTimestamp(),
+        }
+        const projectIds = new Map(imported.mindMaps.map((project) => [project.id, newProjectId()]))
+        const projectNodeIds = new Map(imported.mindMaps.flatMap((project) => (project.nodes || []).map((node) => [node.id, newProjectId()])))
+        const importedTaskIds = new Map((imported.tasks || []).map((task) => [task.id, newProjectId()]))
+        const importedNoteIds = new Map(imported.notes.map((note) => [note.id, newProjectId()]))
+        const importedFlowchartIds = new Map((imported.flowcharts || []).map((flowchart) => [flowchart.id, newProjectId()]))
+        const flowchartNodeIds = new Map((imported.flowcharts || []).flatMap((flowchart) => (flowchart.nodes || []).map((node) => [node.id, newProjectId()])))
+        const importedUiDesignIds = new Map((imported.uiDesigns || []).map((design) => [design.id, newProjectId()]))
+        const uiScreenIds = new Map((imported.uiDesigns || []).flatMap((design) => (design.screens || []).map((screen) => [screen.id, newProjectId()])))
+        const uiElementIds = new Map((imported.uiDesigns || []).flatMap((design) => (design.screens || []).flatMap((screen) => [
+          ...(screen.components || []),
+          ...Object.values(screen.viewportLayouts || {}).flat(),
+        ].map((component) => [component.id, newProjectId()]))))
+        const remapWorkspaceMention = (mention) => ({
+          ...mention,
+          ...(mention.type === 'task' ? { taskId: importedTaskIds.get(mention.taskId) || mention.taskId } : {}),
+          ...(mention.type === 'note' ? { noteId: importedNoteIds.get(mention.noteId) || mention.noteId } : {}),
+          ...(mention.type === 'flowchart-node' ? {
+            flowchartId: importedFlowchartIds.get(mention.flowchartId) || mention.flowchartId,
+            nodeId: flowchartNodeIds.get(mention.nodeId) || mention.nodeId,
+          } : {}),
+          ...(mention.type === 'mind-map-node' || mention.type === 'mind-map-note' || !mention.type ? {
+            projectId: projectIds.get(mention.projectId) || mention.projectId,
+            nodeId: projectNodeIds.get(mention.nodeId) || mention.nodeId,
+          } : {}),
+        })
+        const importedProjects = imported.mindMaps.map((project) => normalizeProjectHandles({
+          ...project,
+          id: projectIds.get(project.id),
+          workspaceId,
+          nodes: project.nodes.map((node) => ({
+            ...node,
+            id: projectNodeIds.get(node.id),
+            data: {
+              ...node.data,
+              ...(Array.isArray(node.data?.mentions) ? { mentions: node.data.mentions.map(remapWorkspaceMention) } : {}),
+              ...(Array.isArray(node.data?.labelMentions) ? { labelMentions: node.data.labelMentions.map(remapWorkspaceMention) } : {}),
+            },
+          })),
+          edges: project.edges.map((edge) => ({
+            ...edge,
+            source: projectNodeIds.get(edge.source) || edge.source,
+            target: projectNodeIds.get(edge.target) || edge.target,
+          })),
+        }))
+        const importedNotes = imported.notes.map((note) => ({
+          ...note,
+          id: importedNoteIds.get(note.id),
+          workspaceId,
+          pageTextBlocks: Array.isArray(note.pageTextBlocks)
+            ? note.pageTextBlocks.map((page) => Array.isArray(page)
+              ? page.map((block) => ({
+                ...block,
+                mentions: Array.isArray(block.mentions)
+                  ? block.mentions.map((mention) => ({
+                    ...remapWorkspaceMention(mention),
+                  }))
+                  : block.mentions,
+              }))
+              : page)
+            : note.pageTextBlocks,
+        }))
+        const importedTaskLists = (imported.taskLists || []).map((list) => ({ ...list, id: newProjectId(), workspaceId }))
+        const importedTaskListIds = new Map((imported.taskLists || []).map((list, index) => [list.id, importedTaskLists[index].id]))
+        const importedTasks = (imported.tasks || []).map((task) => ({
+          ...task,
+          id: importedTaskIds.get(task.id),
+          workspaceId,
+          listId: importedTaskListIds.get(task.listId) || undefined,
+          completed: Boolean(task.completed),
+          ...(Array.isArray(task.mentions) ? { mentions: task.mentions.map(remapWorkspaceMention) } : {}),
+        }))
+        const importedFlowcharts = (imported.flowcharts || []).map((flowchart) => ({
+          ...flowchart,
+          id: importedFlowchartIds.get(flowchart.id),
+          workspaceId,
+          nodes: flowchart.nodes.map((node) => ({
+            ...node,
+            id: flowchartNodeIds.get(node.id),
+            data: {
+              ...node.data,
+              ...(Array.isArray(node.data?.mentions) ? { mentions: node.data.mentions.map(remapWorkspaceMention) } : {}),
+              ...(Array.isArray(node.data?.labelMentions) ? { labelMentions: node.data.labelMentions.map(remapWorkspaceMention) } : {}),
+            },
+          })),
+          edges: flowchart.edges.map((edge) => ({
+            ...edge,
+            source: flowchartNodeIds.get(edge.source) || edge.source,
+            target: flowchartNodeIds.get(edge.target) || edge.target,
+          })),
+        }))
+        const importedUiDesigns = (imported.uiDesigns || []).map((design) => ({
+          ...design,
+          id: importedUiDesignIds.get(design.id),
+          workspaceId,
+          activeScreenId: uiScreenIds.get(design.activeScreenId) || uiScreenIds.get(design.screens[0]?.id),
+          screens: design.screens.map((screen) => ({
+            ...screen,
+            id: uiScreenIds.get(screen.id),
+            components: screen.components.map((component) => ({
+              ...component,
+              id: uiElementIds.get(component.id),
+              targetScreenId: uiScreenIds.get(component.targetScreenId) || null,
+            })),
+            viewportLayouts: Object.fromEntries(Object.entries(screen.viewportLayouts || {}).map(([viewportId, components]) => [viewportId, components.map((component) => ({
+              ...component,
+              id: uiElementIds.get(component.id) || newProjectId(),
+              targetScreenId: uiScreenIds.get(component.targetScreenId) || null,
+            }))])),
+          })),
+        }))
+        const nextProjects = [...importedProjects, ...projects]
+        const nextNotes = [...importedNotes, ...standaloneNotes]
+        const nextTasks = [...importedTasks, ...tasks]
+        const nextTaskLists = [...importedTaskLists, ...taskLists]
+        const nextFlowcharts = [...importedFlowcharts, ...flowcharts]
+        const nextUiDesigns = [...importedUiDesigns, ...uiDesigns]
+        saveWorkspaces([workspace, ...workspaces])
+        setProjects(nextProjects)
+        setStandaloneNotes(nextNotes)
+        setTasks(nextTasks)
+        setTaskLists(nextTaskLists)
+        setFlowcharts(nextFlowcharts)
+        setUiDesigns(nextUiDesigns)
+        localStorage.setItem(PROJECTS_KEY, JSON.stringify(nextProjects))
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(nextNotes))
+        localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(nextTasks))
+        localStorage.setItem(TASK_LISTS_STORAGE_KEY, JSON.stringify(nextTaskLists))
+        localStorage.setItem(FLOWCHARTS_STORAGE_KEY, JSON.stringify(nextFlowcharts))
+        localStorage.setItem(UI_DESIGNS_STORAGE_KEY, JSON.stringify(nextUiDesigns))
+        setActiveWorkspaceId(workspaceId)
+        setActiveProjectId(null)
+        setActiveNoteId(null)
+        setWorkspaceOpen(true)
+        setLibraryOpen(false)
+        setActiveTool('mind-map')
+        setPendingDeleteWorkspace(null)
+        setOpenProjectIds([])
+        window.alert('ØªÙ… Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ Ø¨ÙƒÙ„ Ø®Ø±Ø§Ø¦Ø·Ù‡ ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙ‡.')
+        event.target.value = ''
+        return
+      }
       if (!Array.isArray(imported.nodes) || !Array.isArray(imported.edges)) throw new Error('Invalid project')
       delete imported._metadata
-      const project = normalizeProjectHandles({ ...imported, id: newProjectId(), title: imported.title || file.name.replace(/\.json$/i, ''), updatedAt: currentTimestamp() })
+      let workspaceId = activeWorkspaceId
+      if (!workspaceId) {
+        const workspace = {
+          id: newProjectId(),
+          title: imported.title || file.name.replace(/\.json$/i, ''),
+          createdAt: currentTimestamp(),
+          updatedAt: currentTimestamp(),
+        }
+        workspaceId = workspace.id
+        saveWorkspaces([workspace, ...workspaces])
+        setActiveWorkspaceId(workspaceId)
+      }
+      const project = normalizeProjectHandles({ ...imported, id: newProjectId(), workspaceId, title: imported.title || file.name.replace(/\.json$/i, ''), updatedAt: currentTimestamp() })
       setProjects((current) => { const next = [project, ...current]; localStorage.setItem(PROJECTS_KEY, JSON.stringify(next)); return next })
       openProject(project)
-    } catch { window.alert('الملف غير صالح أو لا يحتوي على خريطة محفوظة.') }
+    } catch (error) {
+      console.error('Could not import a project or standalone note.', error)
+      window.alert(appLanguage === 'en' ? 'This file is not a supported Waraqa project or note.' : 'Ù‡Ø°Ø§ Ø§Ù„Ù…Ù„Ù Ù„ÙŠØ³ Ù…Ø´Ø±ÙˆØ¹Ù‹Ø§ Ø£Ùˆ Ù…Ù„Ø§Ø­Ø¸Ø© Ù…Ø¯Ø¹ÙˆÙ…Ø© Ù…Ù† ÙˆØ±Ù‚Ø©.')
+    }
     event.target.value = ''
   }
   const requestDeleteProject = (id) => setPendingDeleteProject(projects.find((project) => project.id === id) || null)
@@ -2330,17 +3750,60 @@ function App() {
       return next
     })
   }
+  const confirmDeleteWorkspace = () => {
+    if (!pendingDeleteWorkspace) return
+    const workspaceId = pendingDeleteWorkspace.id
+    desktopWindow?.removeWorkspaceFolder?.(workspaceId).catch((error) => console.error('Could not remove the saved project folder.', error))
+    const nextWorkspaces = workspaces.filter((workspace) => workspace.id !== workspaceId)
+    const nextProjects = projects.filter((project) => project.workspaceId !== workspaceId)
+    const nextNotes = standaloneNotes.filter((note) => note.workspaceId !== workspaceId)
+    const nextTasks = tasks.filter((task) => task.workspaceId !== workspaceId)
+    const nextTaskLists = taskLists.filter((list) => list.workspaceId !== workspaceId)
+    const nextFlowcharts = flowcharts.filter((flowchart) => flowchart.workspaceId !== workspaceId)
+    const nextUiDesigns = uiDesigns.filter((design) => design.workspaceId !== workspaceId)
+    saveWorkspaces(nextWorkspaces)
+    setProjects(nextProjects)
+    setStandaloneNotes(nextNotes)
+    setTasks(nextTasks)
+    setTaskLists(nextTaskLists)
+    setFlowcharts(nextFlowcharts)
+    setUiDesigns(nextUiDesigns)
+    localStorage.setItem(PROJECTS_KEY, JSON.stringify(nextProjects))
+    localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(nextNotes))
+    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(nextTasks))
+    localStorage.setItem(TASK_LISTS_STORAGE_KEY, JSON.stringify(nextTaskLists))
+    localStorage.setItem(FLOWCHARTS_STORAGE_KEY, JSON.stringify(nextFlowcharts))
+    localStorage.setItem(UI_DESIGNS_STORAGE_KEY, JSON.stringify(nextUiDesigns))
+    setOpenProjectIds((current) => current.filter((id) => !projects.some((project) => project.workspaceId === workspaceId && project.id === id)))
+    setOpenNoteIds((current) => {
+      const deletedNoteIds = new Set(standaloneNotes.filter((note) => note.workspaceId === workspaceId).map((note) => note.id))
+      const next = current.filter((id) => !deletedNoteIds.has(id))
+      localStorage.setItem(OPEN_NOTES_STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+    if (activeWorkspaceId === workspaceId) {
+      setActiveWorkspaceId(null)
+      setActiveProjectId(null)
+      setActiveNoteId(null)
+      setWorkspaceOpen(false)
+      setMindMapHomeOpen(false)
+      setLibraryOpen(true)
+    }
+    setPendingDeleteWorkspace(null)
+  }
   const finishCloseProjectTab = (id, projectList = projects) => {
     const remaining = openProjectIds.filter((projectId) => projectId !== id)
     setOpenProjectIds(remaining)
     projectSavePoints.current.delete(id)
     if (id === activeProjectId) {
-      const nextProject = projectList.find((project) => project.id === remaining.at(-1))
+      const nextProject = projectList.find((project) => remaining.includes(project.id) && project.workspaceId === activeWorkspaceId)
       if (nextProject) openProject(nextProject)
       else runPageTransition(() => {
         setActiveProjectId(null)
-        setLibraryOpen(true)
-      })
+        setWorkspaceOpen(Boolean(activeWorkspaceId))
+        setLibraryOpen(!activeWorkspaceId)
+        setMindMapHomeOpen(Boolean(activeWorkspaceId))
+      }, 'backward')
     }
   }
   const closeProjectTab = (id) => {
@@ -2394,283 +3857,568 @@ function App() {
     <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) resolveCloseProject('cancel') }}>
       <section className="confirm-dialog close-project-dialog" role="alertdialog" aria-modal="true" aria-labelledby="close-project-title" aria-describedby="close-project-description" dir="rtl">
         <span className="confirm-icon save-confirm-icon"><Save size={21} /></span>
-        <h2 id="close-project-title">حفظ تغييرات المشروع؟</h2>
-        <p id="close-project-description">هل تريد حفظ التغييرات على <strong>{closingProject?.title || title || 'المشروع'}</strong> قبل إغلاقه؟</p>
+        <h2 id="close-project-title">Ø­ÙØ¸ ØªØºÙŠÙŠØ±Ø§Øª Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ØŸ</h2>
+        <p id="close-project-description">Ù‡Ù„ ØªØ±ÙŠØ¯ Ø­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª Ø¹Ù„Ù‰ <strong>{closingProject?.title || title || 'Ø§Ù„Ù…Ø´Ø±ÙˆØ¹'}</strong> Ù‚Ø¨Ù„ Ø¥ØºÙ„Ø§Ù‚Ù‡ØŸ</p>
         <div className="confirm-actions">
-          <button type="button" className="confirm-save" onClick={() => resolveCloseProject('save')}>حفظ وإغلاق</button>
-          <button type="button" className="confirm-discard" onClick={() => resolveCloseProject('discard')}>إغلاق بدون حفظ</button>
-          <button type="button" className="confirm-cancel" onClick={() => resolveCloseProject('cancel')}>إلغاء</button>
+          <button type="button" className="confirm-save" onClick={() => resolveCloseProject('save')}>Ø­ÙØ¸ ÙˆØ¥ØºÙ„Ø§Ù‚</button>
+          <button type="button" className="confirm-discard" onClick={() => resolveCloseProject('discard')}>Ø¥ØºÙ„Ø§Ù‚ Ø¨Ø¯ÙˆÙ† Ø­ÙØ¸</button>
+          <button type="button" className="confirm-cancel" onClick={() => resolveCloseProject('cancel')}>Ø¥Ù„ØºØ§Ø¡</button>
         </div>
       </section>
     </div>
   )
 
-  if (libraryOpen) return (
+  if (workspaceOpen) return (
     <LocalizedContent language={appLanguage}>
-    <main className={`library-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
-      <header className="topbar library-topbar" aria-label="شريط النافذة">
-        <div className="brand-lockup topbar-brand" aria-label="ورقة">
+    <main className={`library-shell workspace-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
+      <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
+      <header className="topbar library-topbar" aria-label="Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©">
+        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©">
           <span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span>
         </div>
-        <button type="button" className="topbar-settings" title="إعدادات البرنامج" aria-label="إعدادات البرنامج" onClick={() => setSettingsOpen(true)}><Settings2 size={16} /></button>
-        {desktopWindow && <div className="window-controls" aria-label="أزرار النافذة">
-          <button type="button" className="window-control" title="تصغير" aria-label="تصغير النافذة" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
-          <button type="button" className="window-control" title={desktopMaximized ? 'استعادة' : 'تكبير'} aria-label={desktopMaximized ? 'استعادة النافذة' : 'تكبير النافذة'} onClick={() => desktopWindow.toggleMaximize()}>
+        <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
+        <ToolSwitcher activeTool={activeTool} onSelect={selectTool} language={appLanguage} />
+        {desktopWindow && <div className="window-controls" aria-label="Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©">
+          <button type="button" className="window-control" title="ØªØµØºÙŠØ±" aria-label="ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©' : 'ØªÙƒØ¨ÙŠØ±'} aria-label={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.toggleMaximize()}>
             {desktopMaximized ? <Copy size={12} /> : <Square size={13} />}
           </button>
-          <button type="button" className="window-control window-control-close" title="إغلاق" aria-label="إغلاق النافذة" onClick={() => desktopWindow.close()}><X size={16} /></button>
+          <button type="button" className="window-control window-control-close" title="Ø¥ØºÙ„Ø§Ù‚" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.close()}><X size={16} /></button>
         </div>}
       </header>
-      <nav className="project-tabs library-project-tabs" aria-label="المشاريع المفتوحة">
-        <div className="project-tabs-list">{openProjectIds.map((id) => {
-          const project = projects.find((item) => item.id === id)
-          if (!project) return null
-          return <div className={`project-tab${id === activeProjectId ? ' is-active' : ''}`} key={id}>
-            <button className="project-tab-select" type="button" onClick={() => openProject(project)} title={project.title}>{project.title || 'مشروع بدون عنوان'}</button>
-            <button className="project-tab-close" type="button" onClick={() => closeProjectTab(id)} aria-label={`إغلاق ${project.title}`}><X size={13} /></button>
-          </div>
-        })}</div>
-        <span className="project-tabs-library">كل المشاريع</span>
-      </nav>
-      <header className="library-header"><div className="library-brand"><span className="brand-mark"><Workflow size={20} /></span><strong>ورقة</strong><span>مساحة مشاريعك</span></div><div className="library-actions"><button className="library-button secondary theme-toggle" type="button" onClick={toggleTheme}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />} {theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}</button><label className="library-button secondary"><ArrowUpFromLine size={17} /> استيراد مشروع<input type="file" accept="application/json,.json" onChange={importProjectFile} /></label><button className="library-button primary" onClick={createProject}><Plus size={18} /> مشروع جديد</button></div></header>
-      <section className="library-content"><span className="library-kicker">مساحة العمل</span><h1>مشاريعك</h1><p className="library-subtitle">كل خرائطك الذهنية في مكان واحد.</p>
-         {projects.length ? <div className="project-grid">{projects.map((project) => <article className="project-card" key={project.id}><button className="project-open" onClick={() => openProject(project)}><span className="project-art"><Workflow size={28} /></span><strong>{project.title || 'مشروع بدون عنوان'}</strong><small>{project.nodes?.length || 0} عقدة · {project.edges?.length || 0} رابط</small><small>آخر تعديل: {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString(appLanguage === 'en' ? 'en-GB' : 'ar-EG') : '—'}</small></button><button className="project-delete" aria-label="حذف المشروع" onClick={() => requestDeleteProject(project.id)}><Trash2 size={16} /></button></article>)}</div> : <div className="library-empty"><span className="empty-bulb"><Lightbulb size={28} /></span><h2>ابدأ أول مشروع لك</h2><p>أنشئ خريطة ذهنية جديدة أو استورد مشروعًا محفوظًا.</p><button className="library-button primary" onClick={createProject}><Plus size={18} /> إنشاء مشروع</button></div>}
+      {mindMapHomeOpen ? (<>
+        {sharedProjectTabs}
+        <section className="mind-map-home">
+          <aside className={`mind-map-home-sidebar${mapListCollapsed ? ' is-collapsed' : ''}`} aria-label={appLanguage === 'en' ? 'Mind maps in this workspace' : 'Ø®Ø±Ø§Ø¦Ø· Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„'}>
+            <div className="mind-map-home-heading">
+              <button type="button" className="mind-map-list-toggle" aria-label={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'Ø¥Ø¸Ù‡Ø§Ø± Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·') : (appLanguage === 'en' ? 'Collapse mind maps' : 'Ø·ÙŠ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·')} title={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'Ø¥Ø¸Ù‡Ø§Ø± Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·') : (appLanguage === 'en' ? 'Collapse mind maps' : 'Ø·ÙŠ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·')} aria-expanded={!mapListCollapsed} onClick={() => setMapListCollapsed((collapsed) => {
+                const next = !collapsed
+                localStorage.setItem('waraqa-map-list-collapsed', String(next))
+                return next
+              })}>{mapListCollapsed ? <PanelRightOpen size={16} /> : <PanelRightClose size={16} />}</button>
+              {!mapListCollapsed && <>
+                <button type="button" className="workspace-back" onClick={() => setMindMapHomeOpen(false)} title={appLanguage === 'en' ? 'Back to workspace' : 'Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„'}><ArrowRight size={16} /></button>
+                <strong><Workflow size={16} />{appLanguage === 'en' ? 'Mind maps' : 'Ø§Ù„Ø®Ø±Ø§Ø¦Ø· Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'}</strong>
+                <button type="button" className="mind-map-list-add" aria-label={appLanguage === 'en' ? 'Create mind map' : 'Ø¥Ù†Ø´Ø§Ø¡ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©'} title={appLanguage === 'en' ? 'Create mind map' : 'Ø¥Ù†Ø´Ø§Ø¡ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©'} onClick={createProject}><Plus size={16} /></button>
+              </>}
+            </div>
+            {!mapListCollapsed && <div className="mind-map-home-items">
+              {workspaceProjects.map((project) => <div className="mind-map-list-row" key={project.id}>
+                <button type="button" className="mind-map-list-item" title={project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')} onClick={() => openProject(project)}>
+                  <Workflow size={15} /><span>{project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</span>
+                </button>
+                <button type="button" className="mind-map-item-delete" aria-label={`${appLanguage === 'en' ? 'Delete mind map' : 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'} ${project.title || ''}`} title={appLanguage === 'en' ? 'Delete mind map' : 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'} onClick={() => requestDeleteProject(project.id)}><Trash2 size={14} /></button>
+              </div>)}
+              {!workspaceProjects.length && <span className="mind-map-list-empty">{appLanguage === 'en' ? 'No mind maps yet.' : 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø®Ø±Ø§Ø¦Ø· Ø°Ù‡Ù†ÙŠØ© Ø¨Ø¹Ø¯.'}</span>}
+            </div>}
+          </aside>
+          <section className="mind-map-home-main">
+            <span className="mind-map-home-icon"><Workflow size={30} /></span>
+            <h1>{appLanguage === 'en' ? 'Start a mind map' : 'Ø§Ø¨Ø¯Ø£ Ø®Ø±ÙŠØ·ØªÙƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'}</h1>
+            <p>{workspaceProjects.length
+              ? (appLanguage === 'en' ? 'Choose a mind map from the sidebar, or create a new one.' : 'Ø§Ø®ØªØ± Ø®Ø±ÙŠØ·Ø© Ù…Ù† Ø§Ù„Ø´Ø±ÙŠØ· Ø§Ù„Ø¬Ø§Ù†Ø¨ÙŠ Ø£Ùˆ Ø£Ù†Ø´Ø¦ Ø®Ø±ÙŠØ·Ø© Ø¬Ø¯ÙŠØ¯Ø©.')
+              : (appLanguage === 'en' ? 'Create your first mind map in this workspace.' : 'Ø£Ù†Ø´Ø¦ Ø£ÙˆÙ„ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© ÙÙŠ Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„ Ù‡Ø°Ù‡.')}</p>
+            <button type="button" className="library-button primary" onClick={createProject}><Plus size={17} />{appLanguage === 'en' ? 'Create mind map' : 'Ø¥Ù†Ø´Ø§Ø¡ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©'}</button>
+          </section>
+        </section>
+      </>) : <>
+      <header className="library-header workspace-header">
+        <div className="library-brand"><button type="button" className="workspace-back" onClick={() => runPageTransition(() => { setWorkspaceOpen(false); setActiveWorkspaceId(null); setActiveProjectId(null); setActiveNoteId(null); setLibraryOpen(true) }, 'backward')}><ArrowRight size={17} /> ÙƒÙ„ Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹</button><span className="brand-mark"><Workflow size={20} /></span><strong>ÙˆØ±Ù‚Ø©</strong></div>
+        <div className="library-actions">
+          <DocumentImportButton onClick={() => documentImportRef.current?.click()} language={appLanguage} />
+          <input ref={documentImportRef} type="file" accept="application/json,.json" onChange={importOpenDocument} hidden />
+          <button className="library-button secondary" type="button" onClick={createWorkspaceNote}><StickyNote size={16} /> Ù…Ù„Ø§Ø­Ø¸Ø© Ø¬Ø¯ÙŠØ¯Ø©</button>
+          <button className="library-button secondary" type="button" onClick={() => selectTool('ui-design')}><LayoutTemplate size={16} /> ØªØµÙ…ÙŠÙ… ÙˆØ§Ø¬Ù‡Ø§Øª</button>
+          <button className="library-button primary" type="button" onClick={createProject}><Plus size={18} /> Ø®Ø±ÙŠØ·Ø© Ø¬Ø¯ÙŠØ¯Ø©</button>
+        </div>
+      </header>
+      <section className="library-content workspace-content">
+        <span className="library-kicker">Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹</span>
+        <input className="workspace-title-input" aria-label="Ø§Ø³Ù… Ø§Ù„Ù…Ø´Ø±ÙˆØ¹" value={activeWorkspace?.title || ''} onChange={(event) => renameWorkspace(activeWorkspaceId, event.target.value)} />
+        <p className="library-subtitle">Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯.</p>
+        <div className="workspace-document-grid">
+          {workspaceProjects.map((project) => (
+            <article className="workspace-document-card" key={project.id}>
+              <button type="button" className="workspace-document-open" onClick={() => openProject(project)}>
+                <span className="project-art"><Workflow size={25} /></span>
+                <strong>{project.title || 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong>
+                <small>{project.nodes?.length || 0} Ø¹Ù‚Ø¯Ø© Â· {project.edges?.length || 0} Ø±Ø§Ø¨Ø·</small>
+              </button>
+              <button type="button" className="project-delete" aria-label={`Ø­Ø°Ù ${project.title || 'Ø§Ù„Ø®Ø±ÙŠØ·Ø©'}`} onClick={() => requestDeleteProject(project.id)}><Trash2 size={15} /></button>
+            </article>
+          ))}
+          {workspaceNotes.map((note) => (
+            <article className="workspace-document-card" key={note.id}>
+              <button type="button" className="workspace-document-open" onClick={() => selectNoteTab(note.id)}>
+                <span className="project-art"><StickyNote size={25} /></span>
+                <strong>{note.title || 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong>
+                <small>{note.pages?.length || 1} ØµÙØ­Ø©</small>
+              </button>
+            </article>
+          ))}
+          {workspaceFlowcharts.map((flowchart) => (
+            <article className="workspace-document-card" key={flowchart.id}>
+              <button type="button" className="workspace-document-open" onClick={() => openFlowchart(flowchart)}>
+                <span className="project-art"><GitBranch size={25} /></span>
+                <strong>{flowchart.title || (appLanguage === 'en' ? 'Untitled flowchart' : 'Ù…Ø®Ø·Ø· Ø§Ù†Ø³ÙŠØ§Ø¨ÙŠ Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</strong>
+                <small>{flowchart.nodes.length} {appLanguage === 'en' ? 'shapes' : 'Ø´ÙƒÙ„'}</small>
+              </button>
+            </article>
+          ))}
+          {workspaceUiDesigns.map((design) => (
+            <article className="workspace-document-card" key={design.id}>
+              <button type="button" className="workspace-document-open" onClick={() => openUiDesign(design)}>
+                <span className="project-art"><LayoutTemplate size={25} /></span>
+                <strong>{design.title || (appLanguage === 'en' ? 'Untitled UI design' : 'ØªØµÙ…ÙŠÙ… ÙˆØ§Ø¬Ù‡Ø§Øª Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</strong>
+                <small>{design.screens.length} {appLanguage === 'en' ? 'screens' : 'Ø´Ø§Ø´Ø©'}</small>
+              </button>
+            </article>
+          ))}
+          {workspaceTasks.length > 0 && <article className="workspace-document-card">
+            <button type="button" className="workspace-document-open" onClick={() => selectTool('tasks')}>
+              <span className="project-art"><ListTodo size={25} /></span>
+              <strong>{appLanguage === 'en' ? 'Tasks' : 'Ø§Ù„Ù…Ù‡Ø§Ù…'}</strong>
+              <small>{workspaceTasks.filter((task) => !task.completed).length} {appLanguage === 'en' ? 'remaining' : 'Ù…ØªØ¨Ù‚ÙŠØ©'}</small>
+            </button>
+          </article>}
+          {!workspaceProjects.length && !workspaceNotes.length && !workspaceTasks.length && !workspaceFlowcharts.length && !workspaceUiDesigns.length && (
+            <div className="workspace-empty">
+              <span className="empty-bulb"><Lightbulb size={26} /></span>
+              <h2>Ø§Ø¨Ø¯Ø£ Ù…Ø³Ø§Ø­Ø© Ù…Ø´Ø±ÙˆØ¹Ùƒ</h2>
+              <p>Ø£Ø¶Ù Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© Ø£Ùˆ Ù…Ù„Ø§Ø­Ø¸Ø© Ø¬Ø¯ÙŠØ¯Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹.</p>
+            </div>
+          )}
+        </div>
       </section>
-      {!TRAINING_DISABLED && <button type="button" className="library-training-restart" dir="rtl" onClick={createTrainingProject}><Lightbulb size={17} /> إعادة التدريب</button>}
+      </>}
       {pendingDeleteProject && <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setPendingDeleteProject(null) }}>
-        <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description" dir="rtl">
+        <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-map-title" dir="rtl">
           <span className="confirm-icon"><Trash2 size={21} /></span>
-          <h2 id="delete-dialog-title">حذف المشروع؟</h2>
-          <p id="delete-dialog-description">هل تريد حذف <strong>{pendingDeleteProject.title || 'مشروع بدون عنوان'}</strong>؟ سيتم حذف المشروع نهائيًا.</p>
-          <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setPendingDeleteProject(null)}>إلغاء</button><button type="button" className="confirm-delete" onClick={confirmDeleteProject}>حذف المشروع</button></div>
+          <h2 id="delete-map-title">Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø©ØŸ</h2>
+          <p>Ù‡Ù„ ØªØ±ÙŠØ¯ Ø­Ø°Ù <strong>{pendingDeleteProject.title || 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong> Ù†Ù‡Ø§Ø¦ÙŠÙ‹Ø§ØŸ</p>
+          <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setPendingDeleteProject(null)}>Ø¥Ù„ØºØ§Ø¡</button><button type="button" className="confirm-delete" onClick={confirmDeleteProject}>Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø©</button></div>
         </section>
       </div>}
-      {closeProjectDialog}
       {settingsDialog}
       {helpDialog}
     </main>
     </LocalizedContent>
   )
 
-  return (
+  if (activeTool === 'ui-design') return (
     <LocalizedContent language={appLanguage}>
-    <main className={`app-shell${theme === 'dark' ? ' theme-dark' : ''}${trainingOpen ? ' is-training' : ''}`} dir="rtl">
-      <header className="topbar">
-        <div className="brand-lockup topbar-brand" aria-label="ورقة">
+    <main className={`app-shell ui-design-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
+      <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
+      <header className="topbar flowchart-topbar" aria-label={appLanguage === 'en' ? 'Window bar' : 'Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
+        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©"><span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span></div>
+        <DocumentImportButton onClick={() => documentImportRef.current?.click()} language={appLanguage} />
+        <input ref={documentImportRef} type="file" accept="application/json,.json" onChange={importOpenDocument} hidden />
+        <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
+        <ToolSwitcher activeTool={activeTool} onSelect={selectTool} language={appLanguage} />
+        {desktopWindow && <div className="window-controls" aria-label={appLanguage === 'en' ? 'Window controls' : 'Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
+          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Minimize' : 'ØªØµØºÙŠØ±'} aria-label={appLanguage === 'en' ? 'Minimize window' : 'ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? (appLanguage === 'en' ? 'Restore' : 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©') : (appLanguage === 'en' ? 'Maximize' : 'ØªÙƒØ¨ÙŠØ±')} aria-label={desktopMaximized ? (appLanguage === 'en' ? 'Restore window' : 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©') : (appLanguage === 'en' ? 'Maximize window' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©')} onClick={() => desktopWindow.toggleMaximize()}>{desktopMaximized ? <Copy size={12} /> : <Square size={13} />}</button>
+          <button type="button" className="window-control window-control-close" title={appLanguage === 'en' ? 'Close' : 'Ø¥ØºÙ„Ø§Ù‚'} aria-label={appLanguage === 'en' ? 'Close window' : 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.close()}><X size={16} /></button>
+        </div>}
+      </header>
+      {sharedProjectTabs}
+      <UiDesignerWorkspace language={appLanguage} workspaceId={activeWorkspaceId} designs={workspaceUiDesigns} selectedDesignId={activeUiDesignId} onSelectedDesignChange={setActiveUiDesignId} onDesignsChange={handleWorkspaceUiDesignsChange} />
+      {settingsDialog}
+      {helpDialog}
+    </main>
+    </LocalizedContent>
+  )
+
+  if (activeTool === 'flowchart') return (
+    <LocalizedContent language={appLanguage}>
+    <main className={`app-shell flowchart-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
+      <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
+      <header className="topbar flowchart-topbar" aria-label={appLanguage === 'en' ? 'Window bar' : 'Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
+        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©"><span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span></div>
+        <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
+        <ToolSwitcher activeTool={activeTool} onSelect={selectTool} language={appLanguage} />
+        {desktopWindow && <div className="window-controls" aria-label={appLanguage === 'en' ? 'Window controls' : 'Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
+          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Minimize' : 'ØªØµØºÙŠØ±'} aria-label={appLanguage === 'en' ? 'Minimize window' : 'ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Maximize' : 'ØªÙƒØ¨ÙŠØ±'} aria-label={appLanguage === 'en' ? 'Maximize window' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.toggleMaximize()}><Square size={13} /></button>
+          <button type="button" className="window-control window-control-close" title={appLanguage === 'en' ? 'Close' : 'Ø¥ØºÙ„Ø§Ù‚'} aria-label={appLanguage === 'en' ? 'Close window' : 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.close()}><X size={16} /></button>
+        </div>}
+      </header>
+      {sharedProjectTabs}
+      <FlowchartWorkspace
+        language={appLanguage}
+        workspaceId={activeWorkspaceId}
+        flowcharts={workspaceFlowcharts}
+        activeFlowchartId={activeFlowchartId}
+        focusNodeId={pendingFlowchartMentionFocus?.flowchartId === activeFlowchartId ? pendingFlowchartMentionFocus.nodeId : null}
+        onFocusNodeHandled={clearPendingFlowchartMentionFocus}
+        onActiveFlowchartChange={setActiveFlowchartId}
+        onFlowchartsChange={handleWorkspaceFlowchartsChange}
+        projects={workspaceProjects}
+        tasks={workspaceTasks}
+        notes={workspaceNotes}
+        onOpenMention={openMention}
+      />
+      {settingsDialog}
+      {helpDialog}
+    </main>
+    </LocalizedContent>
+  )
+
+  if (activeTool === 'notes') return (
+    <LocalizedContent language={appLanguage}>
+    <main className={`app-shell notes-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
+      <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
+      <header className="topbar notes-topbar" aria-label="Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©">
+        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©">
           <span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span>
         </div>
-        <button type="button" className="topbar-settings" title="إعدادات البرنامج" aria-label="إعدادات البرنامج" onClick={() => setSettingsOpen(true)}><Settings2 size={16} /></button>
-        <nav className="app-menubar" aria-label="قائمة التطبيق" role="menubar">
+        <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
+        <ToolSwitcher activeTool={activeTool} onSelect={selectTool} language={appLanguage} />
+        {desktopWindow && <div className="window-controls" aria-label="Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©">
+          <button type="button" className="window-control" title="ØªØµØºÙŠØ±" aria-label="ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©' : 'ØªÙƒØ¨ÙŠØ±'} aria-label={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.toggleMaximize()}>
+            {desktopMaximized ? <Copy size={12} /> : <Square size={13} />}
+          </button>
+          <button type="button" className="window-control window-control-close" title="Ø¥ØºÙ„Ø§Ù‚" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.close()}><X size={16} /></button>
+        </div>}
+      </header>
+      {sharedProjectTabs}
+      <NotesWorkspace
+        language={appLanguage}
+        notes={standaloneNotes}
+        onNotesChange={handleStandaloneNotesChange}
+        workspaceId={activeWorkspaceId}
+        workspaceTitle={activeWorkspace?.title}
+        selectedNoteId={activeNoteId || workspaceNotes.find((note) => openNoteIds.includes(note.id))?.id || null}
+        onSelectNote={openNoteFromList}
+        projects={workspaceProjects}
+        tasks={workspaceTasks}
+        flowcharts={workspaceFlowcharts}
+        noteDocuments={workspaceNotes}
+        onOpenMention={openMention}
+      />
+      {settingsDialog}
+      {helpDialog}
+    </main>
+    </LocalizedContent>
+  )
+
+  if (activeTool === 'tasks') return (
+    <LocalizedContent language={appLanguage}>
+    <main className={`app-shell tasks-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
+      <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
+      <header className="topbar tasks-topbar" aria-label={appLanguage === 'en' ? 'Window bar' : 'Ø´Ø±ÙŠØ· Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
+        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©">
+          <span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span>
+        </div>
+        <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
+        <ToolSwitcher activeTool={activeTool} onSelect={selectTool} language={appLanguage} />
+        {desktopWindow && <div className="window-controls" aria-label={appLanguage === 'en' ? 'Window controls' : 'Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©'}>
+          <button type="button" className="window-control" title={appLanguage === 'en' ? 'Minimize' : 'ØªØµØºÙŠØ±'} aria-label={appLanguage === 'en' ? 'Minimize window' : 'ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? (appLanguage === 'en' ? 'Restore' : 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©') : (appLanguage === 'en' ? 'Maximize' : 'ØªÙƒØ¨ÙŠØ±')} aria-label={desktopMaximized ? (appLanguage === 'en' ? 'Restore window' : 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©') : (appLanguage === 'en' ? 'Maximize window' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©')} onClick={() => desktopWindow.toggleMaximize()}>{desktopMaximized ? <Copy size={12} /> : <Square size={13} />}</button>
+          <button type="button" className="window-control window-control-close" title={appLanguage === 'en' ? 'Close' : 'Ø¥ØºÙ„Ø§Ù‚'} aria-label={appLanguage === 'en' ? 'Close window' : 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.close()}><X size={16} /></button>
+        </div>}
+      </header>
+      {sharedProjectTabs}
+      <TasksWorkspace language={appLanguage} tasks={workspaceTasks} taskLists={workspaceTaskLists} workspaceId={activeWorkspaceId} focusTaskId={pendingTaskMentionFocus} onFocusTaskHandled={clearPendingTaskMentionFocus} projects={workspaceProjects} notes={workspaceNotes} flowcharts={workspaceFlowcharts} onOpenMention={openMention} onTasksChange={handleWorkspaceTasksChange} onTaskListsChange={handleWorkspaceTaskListsChange} />
+      {settingsDialog}
+      {helpDialog}
+    </main>
+    </LocalizedContent>
+  )
+
+  if (libraryOpen) return (
+    <LocalizedContent language={appLanguage}>
+    <main className={`library-shell library-home-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
+      {desktopWindow && <header className="topbar library-window-bar" aria-label="Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©">
+        <div className="window-controls" aria-label="Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©">
+          <button type="button" className="window-control" title="ØªØµØºÙŠØ±" aria-label="ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©' : 'ØªÙƒØ¨ÙŠØ±'} aria-label={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.toggleMaximize()}>
+            {desktopMaximized ? <Copy size={12} /> : <Square size={13} />}
+          </button>
+          <button type="button" className="window-control window-control-close" title="Ø¥ØºÙ„Ø§Ù‚" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.close()}><X size={16} /></button>
+        </div>
+      </header>}
+      <header className="library-header"><div className="library-brand"><span className="brand-mark"><Workflow size={20} /></span><strong>ÙˆØ±Ù‚Ø©</strong><span>Ù…Ø³Ø§Ø­Ø© Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ</span></div><div className="library-actions"><button type="button" className="library-button secondary" onClick={() => projectFolderImportRef.current?.click()}><ArrowUpFromLine size={17} /> Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ù…Ø¬Ù„Ø¯</button><input ref={projectFolderImportRef} type="file" webkitdirectory="" directory="" multiple hidden onChange={importProjectFile} /><button className="library-button primary" onClick={createWorkspace}><Plus size={18} /> Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯</button></div></header>
+      <section className="library-content"><span className="library-kicker">Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„</span><h1>Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ</h1><p className="library-subtitle">ÙƒÙ„ Ù…Ø´Ø±ÙˆØ¹ ÙŠØ¶Ù… Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ.</p>
+         {workspaces.length ? <div className="project-grid">{workspaces.map((workspace) => {
+           const mapCount = projects.filter((project) => project.workspaceId === workspace.id).length
+           const noteCount = standaloneNotes.filter((note) => note.workspaceId === workspace.id).length
+           const taskCount = tasks.filter((task) => task.workspaceId === workspace.id).length
+           return <article className="project-card" key={workspace.id}><button className="project-open" onClick={() => openWorkspace(workspace)}><span className="project-art"><Workflow size={28} /></span><strong>{workspace.title || 'Ù…Ø´Ø±ÙˆØ¹ Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong><small>{mapCount} Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© Â· {noteCount} Ù…Ù„Ø§Ø­Ø¸Ø© Â· {taskCount} Ù…Ù‡Ù…Ø©</small><small>Ø¢Ø®Ø± ØªØ¹Ø¯ÙŠÙ„: {workspace.updatedAt ? new Date(workspace.updatedAt).toLocaleDateString(appLanguage === 'en' ? 'en-GB' : 'ar-EG') : 'â€”'}</small></button><button className="project-export" title={appLanguage === 'en' ? 'Export AI-ready project' : 'ØªØµØ¯ÙŠØ± Ø­Ø²Ù…Ø© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹'} disabled={exportingWorkspace} onClick={(event) => { event.stopPropagation(); exportWorkspaceArchive(workspace) }}><ArrowDownToLine size={15} /></button><button className="project-delete" aria-label="Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹" onClick={() => setPendingDeleteWorkspace(workspace)}><Trash2 size={16} /></button></article>
+         })}</div> : <div className="library-empty"><span className="empty-bulb"><Lightbulb size={28} /></span><h2>Ø§Ø¨Ø¯Ø£ Ø£ÙˆÙ„ Ù…Ø´Ø±ÙˆØ¹ Ù„Ùƒ</h2><p>Ø£Ù†Ø´Ø¦ Ù…Ø´Ø±ÙˆØ¹Ù‹Ø§ ÙŠØ¬Ù…Ø¹ Ø®Ø±Ø§Ø¦Ø·Ùƒ Ø§Ù„Ø°Ù‡Ù†ÙŠØ© ÙˆÙ…Ù„Ø§Ø­Ø¸Ø§ØªÙƒ.</p><button className="library-button primary" onClick={createWorkspace}><Plus size={18} /> Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø´Ø±ÙˆØ¹</button></div>}
+      </section>
+      {pendingDeleteWorkspace && <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setPendingDeleteWorkspace(null) }}>
+        <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-workspace-title" aria-describedby="delete-workspace-description" dir="rtl">
+          <span className="confirm-icon"><Trash2 size={21} /></span>
+          <h2 id="delete-workspace-title">Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ØŸ</h2>
+          <p id="delete-workspace-description">Ø³ÙŠØªÙ… Ø­Ø°Ù <strong>{pendingDeleteWorkspace.title || 'Ù…Ø´Ø±ÙˆØ¹ Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong> ÙˆÙƒÙ„ Ø§Ù„Ø®Ø±Ø§Ø¦Ø· ÙˆØ§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ù„Ù…ÙˆØ¬ÙˆØ¯Ø© Ø¨Ø¯Ø§Ø®Ù„Ù‡ Ù†Ù‡Ø§Ø¦ÙŠÙ‹Ø§.</p>
+          <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setPendingDeleteWorkspace(null)}>Ø¥Ù„ØºØ§Ø¡</button><button type="button" className="confirm-delete" onClick={confirmDeleteWorkspace}>Ø­Ø°Ù Ø§Ù„Ù…Ø´Ø±ÙˆØ¹</button></div>
+        </section>
+      </div>}
+    </main>
+    </LocalizedContent>
+  )
+
+  return (
+    <LocalizedContent language={appLanguage}>
+    <main className={`app-shell${theme === 'dark' ? ' theme-dark' : ''}`} dir="rtl">
+      <ToolSidebar activeTool={workspaceOpen && !mindMapHomeOpen ? null : activeTool} onSelect={selectTool} onHome={goToProjectHome} homeActive={workspaceOpen && !mindMapHomeOpen} language={appLanguage} />
+      <header className="topbar">
+        <div className="brand-lockup topbar-brand" aria-label="ÙˆØ±Ù‚Ø©">
+          <span className="brand-mark"><Workflow size={15} strokeWidth={2.2} /></span>
+        </div>
+        <SettingsButton onClick={() => setSettingsOpen(true)} language={appLanguage} />
+        <ToolSwitcher activeTool={activeTool} onSelect={selectTool} language={appLanguage} />
+        <button
+          type="button"
+          className="tools-toggle-button"
+          aria-label={toolsOpen ? (appLanguage === 'en' ? 'Hide map tools' : 'Ø¥Ø®ÙØ§Ø¡ Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø©') : (appLanguage === 'en' ? 'Show map tools' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø©')}
+          title={toolsOpen ? (appLanguage === 'en' ? 'Hide map tools' : 'Ø¥Ø®ÙØ§Ø¡ Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø©') : (appLanguage === 'en' ? 'Show map tools' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø®Ø±ÙŠØ·Ø©')}
+          aria-expanded={toolsOpen}
+          onClick={() => setToolsOpen((open) => !open)}
+        >{toolsOpen ? <PanelRightClose size={17} /> : <PanelRightOpen size={17} />}</button>
+        <nav className="app-menubar" aria-label="Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„ØªØ·Ø¨ÙŠÙ‚" role="menubar">
           <div className="app-menu-item">
-            <button className={`app-menu-trigger${activeMenu === 'file' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'file'} onClick={() => setActiveMenu((menu) => menu === 'file' ? null : 'file')}>ملف</button>
+            <button className={`app-menu-trigger${activeMenu === 'file' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'file'} onClick={() => setActiveMenu((menu) => menu === 'file' ? null : 'file')}>Ù…Ù„Ù</button>
             {activeMenu === 'file' && <div className="app-menu-popover" role="menu">
-              <button type="button" role="menuitem" onClick={() => { saveNow(); setActiveMenu(null) }}><Save size={15} /><span>حفظ المشروع</span><kbd>Ctrl+S</kbd></button>
-              <button type="button" role="menuitem" onClick={() => { setActiveMenu(null); createProject() }}><Plus size={15} /><span>مشروع جديد</span></button>
-              <button type="button" role="menuitem" onClick={() => { saveNow(); setActiveMenu(null); runPageTransition(() => setLibraryOpen(true)) }}><Workflow size={15} /><span>كل المشاريع</span></button>
-              <button type="button" role="menuitem" onClick={openRenameProject}><Pencil size={15} /><span>إعادة تسمية المشروع...</span></button>
+              <button type="button" role="menuitem" onClick={() => { saveNow(); setActiveMenu(null) }}><Save size={15} /><span>Ø­ÙØ¸ Ø§Ù„Ù…Ø´Ø±ÙˆØ¹</span><kbd>Ctrl+S</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { setActiveMenu(null); createProject() }}><Plus size={15} /><span>Ù…Ø´Ø±ÙˆØ¹ Ø¬Ø¯ÙŠØ¯</span></button>
+              <button type="button" role="menuitem" onClick={() => { saveNow(); setActiveMenu(null); runPageTransition(() => { setActiveProjectId(null); setActiveWorkspaceId(null); setActiveNoteId(null); setWorkspaceOpen(false); setLibraryOpen(true) }, 'backward') }}><Workflow size={15} /><span>ÙƒÙ„ Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹</span></button>
+              <button type="button" role="menuitem" onClick={openRenameProject}><Pencil size={15} /><span>Ø¥Ø¹Ø§Ø¯Ø© ØªØ³Ù…ÙŠØ© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹...</span></button>
               <span className="app-menu-separator" />
-              <button type="button" role="menuitem" onClick={() => { setActiveMenu(null); importRef.current?.click() }}><ArrowUpFromLine size={15} /><span>استيراد خريطة...</span></button>
+              <button type="button" role="menuitem" onClick={() => { setActiveMenu(null); importRef.current?.click() }}><ArrowUpFromLine size={15} /><span>Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø®Ø±ÙŠØ·Ø©...</span></button>
               <input ref={importRef} type="file" accept="application/json,.json" onChange={importMap} hidden />
               <span className="app-menu-separator" />
-              <button type="button" role="menuitem" onClick={() => { exportImage(); setActiveMenu(null) }} disabled={!nodes.length || exportingImage}><Image size={15} /><span>تصدير صورة PNG</span></button>
-              <button type="button" role="menuitem" onClick={() => { exportSvg(); setActiveMenu(null) }} disabled={!nodes.length}><Image size={15} /><span>تصدير صورة SVG</span></button>
-              <button type="button" role="menuitem" onClick={() => { exportMarkdown(); setActiveMenu(null) }}><FileText size={15} /><span>تصدير Markdown</span></button>
-              <button type="button" role="menuitem" onClick={() => { exportMap(); setActiveMenu(null) }}><ArrowDownToLine size={15} /><span>تصدير JSON</span></button>
+              <button type="button" role="menuitem" onClick={() => { exportImage(); setActiveMenu(null) }} disabled={!nodes.length || exportingImage}><Image size={15} /><span>ØªØµØ¯ÙŠØ± ØµÙˆØ±Ø© PNG</span></button>
+              <button type="button" role="menuitem" onClick={() => { exportSvg(); setActiveMenu(null) }} disabled={!nodes.length}><Image size={15} /><span>ØªØµØ¯ÙŠØ± ØµÙˆØ±Ø© SVG</span></button>
+              <button type="button" role="menuitem" onClick={() => { exportMarkdown(); setActiveMenu(null) }}><FileText size={15} /><span>ØªØµØ¯ÙŠØ± Markdown</span></button>
+              <button type="button" role="menuitem" onClick={() => { exportMap(); setActiveMenu(null) }}><ArrowDownToLine size={15} /><span>ØªØµØ¯ÙŠØ± JSON</span></button>
             </div>}
           </div>
 
           <div className="app-menu-item">
-            <button className={`app-menu-trigger${activeMenu === 'edit' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'edit'} onClick={() => setActiveMenu((menu) => menu === 'edit' ? null : 'edit')}>تحرير</button>
+            <button className={`app-menu-trigger${activeMenu === 'edit' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'edit'} onClick={() => setActiveMenu((menu) => menu === 'edit' ? null : 'edit')}>ØªØ­Ø±ÙŠØ±</button>
             {activeMenu === 'edit' && <div className="app-menu-popover" role="menu">
-              <button type="button" role="menuitem" onClick={() => { undo(); setActiveMenu(null) }} disabled={!undoStack.length}><Undo2 size={15} /><span>تراجع</span><kbd>Ctrl+Z</kbd></button>
-              <button type="button" role="menuitem" onClick={() => { redo(); setActiveMenu(null) }} disabled={!redoStack.length}><Redo2 size={15} /><span>إعادة</span><kbd>Ctrl+Y</kbd></button>
-              <button type="button" role="menuitem" onClick={() => { arrangeAllNodes(); setActiveMenu(null) }} disabled={nodes.length < 2}><Network size={15} /><span>ترتيب الخريطة</span><kbd>Ctrl+Shift+L</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { undo(); setActiveMenu(null) }} disabled={!undoStack.length}><Undo2 size={15} /><span>ØªØ±Ø§Ø¬Ø¹</span><kbd>Ctrl+Z</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { redo(); setActiveMenu(null) }} disabled={!redoStack.length}><Redo2 size={15} /><span>Ø¥Ø¹Ø§Ø¯Ø©</span><kbd>Ctrl+Y</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { arrangeAllNodes(); setActiveMenu(null) }} disabled={nodes.length < 2}><Network size={15} /><span>ØªØ±ØªÙŠØ¨ Ø§Ù„Ø®Ø±ÙŠØ·Ø©</span><kbd>Ctrl+Shift+L</kbd></button>
               <span className="app-menu-separator" />
-              <button type="button" role="menuitem" onClick={() => { copySelected(); setActiveMenu(null) }} disabled={!selectedNode}><Copy size={15} /><span>{selectedNode?.data.kind === 'branch' ? 'نسخ الفرع وفروعه' : 'نسخ العقدة وفروعها'}</span><kbd>Ctrl+C</kbd></button>
-              <button type="button" role="menuitem" onClick={() => { pasteCopiedNode(); setActiveMenu(null) }} disabled={!copiedNode}><ClipboardPaste size={15} /><span>{copiedNode?.nodes?.length > 1 ? 'لصق الفرع وفروعه' : 'لصق العقدة'}</span><kbd>Ctrl+V</kbd></button>
-              <button type="button" role="menuitem" onClick={() => { duplicateSelected(); setActiveMenu(null) }} disabled={!selectedNode}><Copy size={15} /><span>تكرار العقدة</span><kbd>Ctrl+D</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { copySelected(); setActiveMenu(null) }} disabled={!selectedNode}><Copy size={15} /><span>{selectedNode?.data.kind === 'branch' ? 'Ù†Ø³Ø® Ø§Ù„ÙØ±Ø¹ ÙˆÙØ±ÙˆØ¹Ù‡' : 'Ù†Ø³Ø® Ø§Ù„Ø¹Ù‚Ø¯Ø© ÙˆÙØ±ÙˆØ¹Ù‡Ø§'}</span><kbd>Ctrl+C</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { pasteCopiedNode(); setActiveMenu(null) }} disabled={!copiedNode}><ClipboardPaste size={15} /><span>{copiedNode?.nodes?.length > 1 ? 'Ù„ØµÙ‚ Ø§Ù„ÙØ±Ø¹ ÙˆÙØ±ÙˆØ¹Ù‡' : 'Ù„ØµÙ‚ Ø§Ù„Ø¹Ù‚Ø¯Ø©'}</span><kbd>Ctrl+V</kbd></button>
+              <button type="button" role="menuitem" onClick={() => { duplicateSelected(); setActiveMenu(null) }} disabled={!selectedNode}><Copy size={15} /><span>ØªÙƒØ±Ø§Ø± Ø§Ù„Ø¹Ù‚Ø¯Ø©</span><kbd>Ctrl+D</kbd></button>
               <button type="button" role="menuitem" onClick={() => {
                 if (selectedNodes.length > 1) removeSelectedNodes()
                 else removeSelected()
                 setActiveMenu(null)
-              }} disabled={!selectedNodes.length}><Trash2 size={15} /><span>حذف المحدد</span><kbd>Del</kbd></button>
+              }} disabled={!selectedNodes.length}><Trash2 size={15} /><span>Ø­Ø°Ù Ø§Ù„Ù…Ø­Ø¯Ø¯</span><kbd>Del</kbd></button>
             </div>}
           </div>
 
           <div className="app-menu-item">
-            <button className={`app-menu-trigger${activeMenu === 'view' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'view'} onClick={() => setActiveMenu((menu) => menu === 'view' ? null : 'view')}>عرض</button>
+            <button className={`app-menu-trigger${activeMenu === 'view' ? ' is-active' : ''}`} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={activeMenu === 'view'} onClick={() => setActiveMenu((menu) => menu === 'view' ? null : 'view')}>Ø¹Ø±Ø¶</button>
             {activeMenu === 'view' && <div className="app-menu-popover" role="menu">
-              <button type="button" role="menuitem" onClick={openSearch}><Search size={15} /><span>بحث في الخريطة...</span><kbd>Ctrl+F</kbd></button>
+              <button type="button" role="menuitem" onClick={openSearch}><Search size={15} /><span>Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ø®Ø±ÙŠØ·Ø©...</span><kbd>Ctrl+F</kbd></button>
               <span className="app-menu-separator" />
-              <button type="button" role="menuitem" onClick={() => { toggleTheme(); setActiveMenu(null) }}>{theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}<span>{theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}</span></button>
-              <button type="button" role="menuitem" onClick={() => { setToolsOpen((open) => !open); setActiveMenu(null) }}>{toolsOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}<span>{toolsOpen ? 'إخفاء شريط الأدوات' : 'إظهار شريط الأدوات'}</span></button>
-              <button type="button" role="menuitem" onClick={() => { setMiniMapVisible((visible) => { localStorage.setItem('waraqa-minimap-visible', String(!visible)); return !visible }); setActiveMenu(null) }}><MapIcon size={15} /><span>{miniMapVisible ? 'إخفاء الخريطة المصغرة' : 'إظهار الخريطة المصغرة'}</span></button>
+              <button type="button" role="menuitem" onClick={() => { toggleTheme(); setActiveMenu(null) }}>{theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}<span>{theme === 'dark' ? 'Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù†Ù‡Ø§Ø±ÙŠ' : 'Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù„ÙŠÙ„ÙŠ'}</span></button>
+              <button type="button" role="menuitem" onClick={() => { setToolsOpen((open) => !open); setActiveMenu(null) }}>{toolsOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}<span>{toolsOpen ? 'Ø¥Ø®ÙØ§Ø¡ Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª'}</span></button>
+              <button type="button" role="menuitem" onClick={() => { setMiniMapVisible((visible) => { localStorage.setItem('waraqa-minimap-visible', String(!visible)); return !visible }); setActiveMenu(null) }}><MapIcon size={15} /><span>{miniMapVisible ? 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ù…ØµØºØ±Ø©' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ù…ØµØºØ±Ø©'}</span></button>
 
             </div>}
           </div>
         </nav>
 
-        <div className="mobile-history-controls" role="group" aria-label="التراجع والإعادة">
-          <button type="button" className="mobile-history-button" title="تراجع" aria-label="تراجع" onClick={undo} disabled={!undoStack.length}><Undo2 size={17} /></button>
-          <button type="button" className="mobile-history-button" title="إعادة" aria-label="إعادة" onClick={redo} disabled={!redoStack.length}><Redo2 size={17} /></button>
+        <div className="mobile-history-controls" role="group" aria-label="Ø§Ù„ØªØ±Ø§Ø¬Ø¹ ÙˆØ§Ù„Ø¥Ø¹Ø§Ø¯Ø©">
+          <button type="button" className="mobile-history-button" title="ØªØ±Ø§Ø¬Ø¹" aria-label="ØªØ±Ø§Ø¬Ø¹" onClick={undo} disabled={!undoStack.length}><Undo2 size={17} /></button>
+          <button type="button" className="mobile-history-button" title="Ø¥Ø¹Ø§Ø¯Ø©" aria-label="Ø¥Ø¹Ø§Ø¯Ø©" onClick={redo} disabled={!redoStack.length}><Redo2 size={17} /></button>
         </div>
 
-        {desktopWindow && <div className="window-controls" aria-label="أزرار النافذة">
-          <button type="button" className="window-control" title="تصغير" aria-label="تصغير النافذة" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
-          <button type="button" className="window-control" title={desktopMaximized ? 'استعادة' : 'تكبير'} aria-label={desktopMaximized ? 'استعادة النافذة' : 'تكبير النافذة'} onClick={() => desktopWindow.toggleMaximize()}>
+        {desktopWindow && <div className="window-controls" aria-label="Ø£Ø²Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°Ø©">
+          <button type="button" className="window-control" title="ØªØµØºÙŠØ±" aria-label="ØªØµØºÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.minimize()}><Minus size={15} /></button>
+          <button type="button" className="window-control" title={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø©' : 'ØªÙƒØ¨ÙŠØ±'} aria-label={desktopMaximized ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù†Ø§ÙØ°Ø©' : 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ù†Ø§ÙØ°Ø©'} onClick={() => desktopWindow.toggleMaximize()}>
             {desktopMaximized ? <Copy size={12} /> : <Square size={13} />}
           </button>
-          <button type="button" className="window-control window-control-close" title="إغلاق" aria-label="إغلاق النافذة" onClick={() => desktopWindow.close()}><X size={16} /></button>
+          <button type="button" className="window-control window-control-close" title="Ø¥ØºÙ„Ø§Ù‚" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©" onClick={() => desktopWindow.close()}><X size={16} /></button>
         </div>}
 
         {searchOpen && <div className="search-panel">
           <div className="search-box">
             <Search size={16} />
-            <input ref={searchInputRef} aria-label="البحث في الخريطة" placeholder="ابحث في العقد والملاحظات..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setSearchOpen(false) }} />
+            <input ref={searchInputRef} aria-label="Ø§Ù„Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ø®Ø±ÙŠØ·Ø©" placeholder="Ø§Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ø¹Ù‚Ø¯ ÙˆØ§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setSearchOpen(false) }} />
             <kbd>Esc</kbd>
             {searchResults.length > 0 && <div className="search-results" role="listbox">
-              {searchResults.map((node) => <button key={node.id} type="button" onClick={() => chooseSearchResult(node)}><strong>{node.data.label || 'بدون عنوان'}</strong>{node.data.note && <small>{node.data.note}</small>}</button>)}
+              {searchResults.map((node) => <button key={node.id} type="button" onClick={() => chooseSearchResult(node)}><strong>{node.data.label || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong>{node.data.note && <small>{node.data.note}</small>}</button>)}
             </div>}
           </div>
-          <button className="search-close" type="button" title="إغلاق البحث" aria-label="إغلاق البحث" onClick={() => { setSearchOpen(false); setSearchQuery('') }}><X size={16} /></button>
+          <button className="search-close" type="button" title="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø¨Ø­Ø«" aria-label="Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø¨Ø­Ø«" onClick={() => { setSearchOpen(false); setSearchQuery('') }}><X size={16} /></button>
         </div>}
       </header>
 
-      <nav className="project-tabs" aria-label="المشاريع المفتوحة">
-        <div className="project-tabs-list">{openProjectIds.map((id) => {
-          const project = projects.find((item) => item.id === id)
-          if (!project) return null
-          return <div className={`project-tab${id === activeProjectId ? ' is-active' : ''}`} key={id}>
-            <button className="project-tab-select" type="button" onClick={() => openProject(project)} title={project.title}>{project.title || 'مشروع بدون عنوان'}</button>
-            <button className="project-tab-close" type="button" onClick={() => closeProjectTab(id)} aria-label={`إغلاق ${project.title}`}><X size={13} /></button>
-          </div>
-        })}</div>
-        <button
-          className="project-tabs-library"
-          type="button"
-          onClick={() => { saveNow(); runPageTransition(() => setLibraryOpen(true)) }}
-          title="العودة إلى قائمة المشاريع"
-        >كل المشاريع</button>
-      </nav>
+      {sharedProjectTabs}
 
       <section className="workspace">
-        <aside className={`tool-panel${toolsOpen ? ' is-open' : ' is-collapsed'}`} aria-label="لوحة الأدوات">
+        <aside className={`mind-map-list-panel${mapListCollapsed ? ' is-collapsed' : ''}`} aria-label={appLanguage === 'en' ? 'Mind maps' : 'Ø§Ù„Ø®Ø±Ø§Ø¦Ø· Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'}>
+          <div className="mind-map-list-heading">
+            <button
+              type="button"
+              className="mind-map-list-toggle"
+              aria-label={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±Ø§Ø¦Ø·') : (appLanguage === 'en' ? 'Hide mind maps' : 'Ø·ÙŠ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·')}
+              title={mapListCollapsed ? (appLanguage === 'en' ? 'Show mind maps' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±Ø§Ø¦Ø·') : (appLanguage === 'en' ? 'Hide mind maps' : 'Ø·ÙŠ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø®Ø±Ø§Ø¦Ø·')}
+              aria-expanded={!mapListCollapsed}
+              onClick={() => setMapListCollapsed((collapsed) => {
+                const next = !collapsed
+                localStorage.setItem('waraqa-map-list-collapsed', String(next))
+                return next
+              })}
+            >{mapListCollapsed ? <PanelRightOpen size={16} /> : <PanelRightClose size={16} />}</button>
+            {!mapListCollapsed && <>
+              <strong><Workflow size={16} />{appLanguage === 'en' ? 'Mind maps' : 'Ø§Ù„Ø®Ø±Ø§Ø¦Ø· Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'}</strong>
+              <button type="button" className="mind-map-list-add" aria-label={appLanguage === 'en' ? 'Create mind map' : 'Ø¥Ù†Ø´Ø§Ø¡ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©'} title={appLanguage === 'en' ? 'Create mind map' : 'Ø¥Ù†Ø´Ø§Ø¡ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©'} onClick={createProject}><Plus size={16} /></button>
+            </>}
+          </div>
+          {!mapListCollapsed && <div className="mind-map-list-items">
+            {(activeWorkspaceId ? workspaceProjects : projects).map((project) => <div className="mind-map-list-row" key={project.id}>
+              <button
+                type="button"
+                className={`mind-map-list-item${project.id === activeProjectId ? ' is-active' : ''}`}
+                aria-current={project.id === activeProjectId ? 'page' : undefined}
+                title={project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}
+                onClick={() => openProject(project)}
+              >
+                <Workflow size={15} />
+                <span>{project.title || (appLanguage === 'en' ? 'Untitled mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</span>
+              </button>
+              <button type="button" className="mind-map-item-delete" aria-label={`${appLanguage === 'en' ? 'Delete mind map' : 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'} ${project.title || ''}`} title={appLanguage === 'en' ? 'Delete mind map' : 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©'} onClick={() => requestDeleteProject(project.id)}><Trash2 size={14} /></button>
+            </div>)}
+            {!(activeWorkspaceId ? workspaceProjects : projects).length && <span className="mind-map-list-empty">{appLanguage === 'en' ? 'Create a mind map to get started.' : 'Ø£Ù†Ø´Ø¦ Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ© Ù„Ù„Ø¨Ø¯Ø¡.'}</span>}
+          </div>}
+        </aside>
+        <aside className={`tool-panel${toolsOpen ? ' is-open' : ' is-collapsed'}`} aria-label="Ù„ÙˆØ­Ø© Ø§Ù„Ø£Ø¯ÙˆØ§Øª">
           <div className="panel-heading">
             <div>
-              <span className="eyebrow">مساحة العمل</span>
-              <h1>الأدوات</h1>
+              <span className="eyebrow">Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„</span>
+              <h1>Ø§Ù„Ø£Ø¯ÙˆØ§Øª</h1>
             </div>
-            <button className="help-button" type="button" title="مساعدة" aria-label="مساعدة" onClick={() => setHelpOpen(true)}><CircleHelp size={18} /></button>
+            <button className="help-button" type="button" title="Ù…Ø³Ø§Ø¹Ø¯Ø©" aria-label="Ù…Ø³Ø§Ø¹Ø¯Ø©" onClick={() => setHelpOpen(true)}><CircleHelp size={18} /></button>
           </div>
 
           <div className="tool-section">
-            <h2>أضف إلى الخريطة</h2>
+            <h2>Ø£Ø¶Ù Ø¥Ù„Ù‰ Ø§Ù„Ø®Ø±ÙŠØ·Ø©</h2>
             <div className="tool-grid">
               <button type="button" className="tool-tile" onClick={() => setMiniMapVisible((visible) => {
                 localStorage.setItem('waraqa-minimap-visible', String(!visible))
                 return !visible
-              })} aria-pressed={miniMapVisible}><MapIcon size={18} /><span>{miniMapVisible ? 'إخفاء الخريطة' : 'إظهار الخريطة'}</span></button>
-              <button type="button" className="tool-tile" data-tour={trainingOpen && trainingStep < 2 && !trainingActionDone ? 'add-idea' : undefined} draggable="true" onDragStart={(event) => startToolDrag(event, 'idea')} onClick={() => addNode('idea')} disabled={trainingOpen && trainingStep < 2 && trainingActionDone}><Lightbulb size={18} /><span>فكرة جديدة</span></button>
-              <button type="button" className="tool-tile" data-tour={trainingOpen && trainingStep === 5 && !trainingActionDone ? 'add-branch' : undefined} draggable="true" onDragStart={(event) => startToolDrag(event, 'branch', 'right')} onClick={() => selectedNode && addNode('branch', selectedNode, null, true, 'right')} disabled={!canBranchRight || (trainingOpen && trainingStep === 5 && trainingActionDone)}><MoveRight size={18} /><span>فرع يمين</span></button>
-              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'branch', 'left')} onClick={() => selectedNode && addNode('branch', selectedNode, null, true, 'left')} disabled={!canBranchLeft}><MoveLeft size={18} /><span>فرع يسار</span></button>
-              <button type="button" className="tool-tile" title="ينقل الفروع المرتبطة بالعقدة المحددة لتصبح متفرعة من الفرع الجديد" onClick={() => insertBranchBeforeChildren('right')} disabled={!canInsertBranchRight}><MoveRight size={18} /><span>إدراج فرع يمين</span></button>
-              <button type="button" className="tool-tile" title="يضيف فرعًا قبل العقدة المحددة، ويضع العقدة الحالية تحته" onClick={() => insertBranchBeforeChildren('left')} disabled={!selectedNode}><MoveLeft size={18} /><span>إدراج فرع يسار</span></button>
-              <button type="button" className={`tool-tile select-mode-tile${selectMode ? ' is-active' : ''}`} aria-pressed={selectMode} title="تحديد عدة عقد بالضغط أو بسحب مربع على المساحة" onClick={() => {
+              })} aria-pressed={miniMapVisible}><MapIcon size={18} /><span>{miniMapVisible ? 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ø®Ø±ÙŠØ·Ø©' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø®Ø±ÙŠØ·Ø©'}</span></button>
+              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'idea')} onClick={() => addNode('idea')}><Lightbulb size={18} /><span>ÙÙƒØ±Ø© Ø¬Ø¯ÙŠØ¯Ø©</span></button>
+              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'branch', 'right')} onClick={() => selectedNode && addNode('branch', selectedNode, null, true, 'right')} disabled={!canBranchRight}><MoveRight size={18} /><span>ÙØ±Ø¹ ÙŠÙ…ÙŠÙ†</span></button>
+              <button type="button" className="tool-tile" draggable="true" onDragStart={(event) => startToolDrag(event, 'branch', 'left')} onClick={() => selectedNode && addNode('branch', selectedNode, null, true, 'left')} disabled={!canBranchLeft}><MoveLeft size={18} /><span>ÙØ±Ø¹ ÙŠØ³Ø§Ø±</span></button>
+              <button type="button" className="tool-tile" title="ÙŠÙ†Ù‚Ù„ Ø§Ù„ÙØ±ÙˆØ¹ Ø§Ù„Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© Ù„ØªØµØ¨Ø­ Ù…ØªÙØ±Ø¹Ø© Ù…Ù† Ø§Ù„ÙØ±Ø¹ Ø§Ù„Ø¬Ø¯ÙŠØ¯" onClick={() => insertBranchBeforeChildren('right')} disabled={!canInsertBranchRight}><MoveRight size={18} /><span>Ø¥Ø¯Ø±Ø§Ø¬ ÙØ±Ø¹ ÙŠÙ…ÙŠÙ†</span></button>
+              <button type="button" className="tool-tile" title="ÙŠØ¶ÙŠÙ ÙØ±Ø¹Ù‹Ø§ Ù‚Ø¨Ù„ Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©ØŒ ÙˆÙŠØ¶Ø¹ Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ© ØªØ­ØªÙ‡" onClick={() => insertBranchBeforeChildren('left')} disabled={!selectedNode}><MoveLeft size={18} /><span>Ø¥Ø¯Ø±Ø§Ø¬ ÙØ±Ø¹ ÙŠØ³Ø§Ø±</span></button>
+              <button type="button" className={`tool-tile select-mode-tile${selectMode ? ' is-active' : ''}`} aria-pressed={selectMode} title="ØªØ­Ø¯ÙŠØ¯ Ø¹Ø¯Ø© Ø¹Ù‚Ø¯ Ø¨Ø§Ù„Ø¶ØºØ· Ø£Ùˆ Ø¨Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø³Ø§Ø­Ø©" onClick={() => {
                 setSelectMode((active) => !active)
                 setLinkSourceNodeId(null)
-              }}><MousePointer2 size={18} /><span>{selectMode ? 'إنهاء التحديد' : 'تحديد جماعي'}</span></button>
+              }}><MousePointer2 size={18} /><span>{selectMode ? 'Ø¥Ù†Ù‡Ø§Ø¡ Ø§Ù„ØªØ­Ø¯ÙŠØ¯' : 'ØªØ­Ø¯ÙŠØ¯ Ø¬Ù…Ø§Ø¹ÙŠ'}</span></button>
             </div>
           </div>
 
           <div className="tool-section layout-section">
-            <h2>تنظيم الخريطة</h2>
-            <div className="layout-modes" role="group" aria-label="نمط الترتيب">
-              <button type="button" className={layoutMode === 'tree' ? 'is-active' : ''} onClick={() => changeLayoutMode('tree')}><Spline size={14} /> شجرة</button>
-              <button type="button" className={layoutMode === 'auto' ? 'is-active' : ''} onClick={() => changeLayoutMode('auto')}><Network size={14} /> تلقائي</button>
+            <h2>ØªÙ†Ø¸ÙŠÙ… Ø§Ù„Ø®Ø±ÙŠØ·Ø©</h2>
+            <div className="layout-modes" role="group" aria-label="Ù†Ù…Ø· Ø§Ù„ØªØ±ØªÙŠØ¨">
+              <button type="button" className={layoutMode === 'tree' ? 'is-active' : ''} onClick={() => changeLayoutMode('tree')}><Spline size={14} /> Ø´Ø¬Ø±Ø©</button>
+              <button type="button" className={layoutMode === 'auto' ? 'is-active' : ''} onClick={() => changeLayoutMode('auto')}><Network size={14} /> ØªÙ„Ù‚Ø§Ø¦ÙŠ</button>
             </div>
-            <button className="layout-button" type="button" data-tour={trainingOpen && trainingStep === 9 && !trainingActionDone ? 'arrange-map' : undefined} onClick={() => { arrangeAllNodes(); if (trainingOpen && trainingStep === 9) setTrainingActionDone(true) }} disabled={nodes.length < 2 || (trainingOpen && trainingStep === 9 && trainingActionDone)}>
+            <button className="layout-button" type="button" onClick={arrangeAllNodes} disabled={nodes.length < 2}>
               <Network size={17} />
-              <span>ترتيب الخريطة للأمام</span>
+              <span>{String.fromCharCode(0x62a,0x631,0x62a,0x64a,0x628,0x20,0x627,0x644,0x62e,0x631,0x64a,0x637,0x629,0x20,0x644,0x644,0x623,0x645,0x627,0x645)}</span>
             </button>
           </div>
 
           <div className="tool-section connection-hint">
-            <h2>ربط الأفكار</h2>
-            <div className="hint-row"><span className="hint-icon"><MousePointer2 size={16} /></span><p>اسحب من النقطة على طرف العقدة إلى عقدة أخرى لربطهما. اضغط كليك يمين على السهم لحذفه.</p></div>
+            <h2>Ø±Ø¨Ø· Ø§Ù„Ø£ÙÙƒØ§Ø±</h2>
+            <div className="hint-row"><span className="hint-icon"><MousePointer2 size={16} /></span><p>Ø§Ø³Ø­Ø¨ Ù…Ù† Ø§Ù„Ù†Ù‚Ø·Ø© Ø¹Ù„Ù‰ Ø·Ø±Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø¥Ù„Ù‰ Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ø±Ø¨Ø·Ù‡Ù…Ø§. Ø§Ø¶ØºØ· ÙƒÙ„ÙŠÙƒ ÙŠÙ…ÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø³Ù‡Ù… Ù„Ø­Ø°ÙÙ‡.</p></div>
             <div className="edge-style-picker">
-              <label htmlFor="edge-style">شكل السهم</label>
+              <label htmlFor="edge-style">Ø´ÙƒÙ„ Ø§Ù„Ø³Ù‡Ù…</label>
               <div className="edge-style-control">
                 <Spline size={15} />
                 <select id="edge-style" value={edgeStyle} onChange={(event) => changeEdgeStyle(event.target.value)}>
-                  <option value="smoothstep">متدرج</option>
-                  <option value="default">منحني</option>
-                  <option value="straight">مستقيم</option>
+                  <option value="smoothstep">Ù…ØªØ¯Ø±Ø¬</option>
+                  <option value="default">Ù…Ù†Ø­Ù†ÙŠ</option>
+                  <option value="straight">Ù…Ø³ØªÙ‚ÙŠÙ…</option>
                 </select>
               </div>
               <div className="edge-options">
-                <label>لون وسُمك السهم</label>
+                <label>Ù„ÙˆÙ† ÙˆØ³ÙÙ…Ùƒ Ø§Ù„Ø³Ù‡Ù…</label>
                 <div className="edge-option-row">
-                  <input type="color" aria-label="لون السهم" value={edgeColor} onChange={(event) => changeEdgeSettings({ edgeColor: event.target.value })} />
-                  <select aria-label="سُمك السهم" value={edgeWidth} onChange={(event) => changeEdgeSettings({ edgeWidth: Number(event.target.value) })}>
-                    <option value="1">رفيع</option>
-                    <option value="2">متوسط</option>
-                    <option value="3">عريض</option>
-                    <option value="4">عريض جدًا</option>
+                  <input type="color" aria-label="Ù„ÙˆÙ† Ø§Ù„Ø³Ù‡Ù…" value={edgeColor} onChange={(event) => changeEdgeSettings({ edgeColor: event.target.value })} />
+                  <select aria-label="Ø³ÙÙ…Ùƒ Ø§Ù„Ø³Ù‡Ù…" value={edgeWidth} onChange={(event) => changeEdgeSettings({ edgeWidth: Number(event.target.value) })}>
+                    <option value="1">Ø±ÙÙŠØ¹</option>
+                    <option value="2">Ù…ØªÙˆØ³Ø·</option>
+                    <option value="3">Ø¹Ø±ÙŠØ¶</option>
+                    <option value="4">Ø¹Ø±ÙŠØ¶ Ø¬Ø¯Ù‹Ø§</option>
                   </select>
                 </div>
-                <label>رأس السهم</label>
-                <select className="edge-arrow-select" aria-label="رأس السهم" value={arrowHead} onChange={(event) => changeEdgeSettings({ arrowHead: event.target.value })}>
-                  <option value="closed">ممتلئ</option>
-                  <option value="open">مفتوح</option>
-                  <option value="none">بدون رأس</option>
+                <label>Ø±Ø£Ø³ Ø§Ù„Ø³Ù‡Ù…</label>
+                <select className="edge-arrow-select" aria-label="Ø±Ø£Ø³ Ø§Ù„Ø³Ù‡Ù…" value={arrowHead} onChange={(event) => changeEdgeSettings({ arrowHead: event.target.value })}>
+                  <option value="closed">Ù…Ù…ØªÙ„Ø¦</option>
+                  <option value="open">Ù…ÙØªÙˆØ­</option>
+                  <option value="none">Ø¨Ø¯ÙˆÙ† Ø±Ø£Ø³</option>
                 </select>
               </div>
             </div>
           </div>
 
           <div className="tool-section appearance-section">
-            <h2>{selectedNode ? 'تنسيق العقدة' : 'لون العقدة الجديدة'}</h2>
-            {selectedNode && <input className="node-text-input" aria-label="نص العقدة المحددة" value={selectedNode.data.label} onChange={(event) => updateSelected({ label: event.target.value })} />}
-            {!selectedNode && <div className="swatches" role="group" aria-label="اختيار لون العقدة الجديدة">
+            <h2>{selectedNode ? 'ØªÙ†Ø³ÙŠÙ‚ Ø§Ù„Ø¹Ù‚Ø¯Ø©' : 'Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©'}</h2>
+            {selectedNode && <input className="node-text-input" aria-label="Ù†Øµ Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©" value={selectedNode.data.label} onChange={(event) => updateSelected({ label: event.target.value })} />}
+            {!selectedNode && <div className="swatches" role="group" aria-label="Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©">
               {tones.map((tone) => (
-                <button key={tone} type="button" className={`swatch swatch-${tone}${activeTone === tone ? ' is-active' : ''}`} aria-label={`لون ${tone}`} onClick={() => setActiveTone(tone)} />
+                <button key={tone} type="button" className={`swatch swatch-${tone}${activeTone === tone ? ' is-active' : ''}`} aria-label={`Ù„ÙˆÙ† ${tone}`} onClick={() => setActiveTone(tone)} />
               ))}
-              <label className={`swatch custom-swatch${activeTone === 'custom' ? ' is-active' : ''}`} style={{ '--picker-color': pickerColor }} title="اختيار لون مخصص">
-                <input type="color" aria-label="اختيار لون مخصص" value={pickerColor} onChange={(event) => { setActiveTone('custom'); setActiveCustomColor(event.target.value) }} />
+              <label className={`swatch custom-swatch${activeTone === 'custom' ? ' is-active' : ''}`} style={{ '--picker-color': pickerColor }} title="Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ù…Ø®ØµØµ">
+                <input type="color" aria-label="Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ù…Ø®ØµØµ" value={pickerColor} onChange={(event) => { setActiveTone('custom'); setActiveCustomColor(event.target.value) }} />
               </label>
             </div>}
-            {selectedNode && <button className="delete-button" type="button" onClick={removeSelected}><Trash2 size={16} /> حذف العقدة المحددة</button>}
+            {selectedNode && <button className="delete-button" type="button" onClick={removeSelected}><Trash2 size={16} /> Ø­Ø°Ù Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©</button>}
           </div>
 
           {selectedNode && (
-            <div className="quick-actions" aria-label="تحكم سريع في العقدة">
-              <h2>تحكم سريع</h2>
+            <div className="quick-actions" aria-label="ØªØ­ÙƒÙ… Ø³Ø±ÙŠØ¹ ÙÙŠ Ø§Ù„Ø¹Ù‚Ø¯Ø©">
+              <h2>ØªØ­ÙƒÙ… Ø³Ø±ÙŠØ¹</h2>
               <div className="quick-actions-grid">
-                <button type="button" onClick={openNotes}><StickyNote size={15} /><span>ملاحظة</span></button>
-                <button type="button" onClick={() => addNode('branch', selectedNode, null, true, 'right')} disabled={!canBranchRight}><MoveRight size={15} /><span>يمين</span></button>
-                <button type="button" onClick={() => addNode('branch', selectedNode, null, true, 'left')} disabled={!canBranchLeft}><MoveLeft size={15} /><span>يسار</span></button>
-                <button type="button" onClick={() => toggleBranch(selectedNode)} disabled={!descendants.length}><ChevronsDownUp size={15} /><span>{branchCollapsed ? 'فتح' : 'طي'}</span></button>
-                <button type="button" onClick={duplicateSelected}><Copy size={15} /><span>تكرار</span></button>
-                <button type="button" className="quick-delete" onClick={removeSelected}><Trash2 size={15} /><span>حذف</span></button>
+                <button type="button" onClick={openNotes}><StickyNote size={15} /><span>Ù…Ù„Ø§Ø­Ø¸Ø©</span></button>
+                <button type="button" onClick={() => addNode('branch', selectedNode, null, true, 'right')} disabled={!canBranchRight}><MoveRight size={15} /><span>ÙŠÙ…ÙŠÙ†</span></button>
+                <button type="button" onClick={() => addNode('branch', selectedNode, null, true, 'left')} disabled={!canBranchLeft}><MoveLeft size={15} /><span>ÙŠØ³Ø§Ø±</span></button>
+                <button type="button" onClick={() => toggleBranch(selectedNode)} disabled={!descendants.length}><ChevronsDownUp size={15} /><span>{branchCollapsed ? 'ÙØªØ­' : 'Ø·ÙŠ'}</span></button>
+                <button type="button" onClick={duplicateSelected}><Copy size={15} /><span>ØªÙƒØ±Ø§Ø±</span></button>
+                <button type="button" className="quick-delete" onClick={removeSelected}><Trash2 size={15} /><span>Ø­Ø°Ù</span></button>
               </div>
             </div>
           )}
           {selectedNodes.length > 1 && (
-            <div className="bulk-selection-bar" aria-label="تحكم جماعي في العقد">
-              <span>{selectedNodes.length} عقد محددة</span>
-              <button type="button" className="bulk-link-button" onClick={linkSelectedNodes} disabled={!linkableSelectedNodes.length} title="يربط العقد المحددة بالعقدة التي بدأت بها التحديد"><Link2 size={15} /> ربط المحدد</button>
-              <button type="button" onClick={removeSelectedNodes}><Trash2 size={15} /> حذف المحدد</button>
+            <div className="bulk-selection-bar" aria-label="ØªØ­ÙƒÙ… Ø¬Ù…Ø§Ø¹ÙŠ ÙÙŠ Ø§Ù„Ø¹Ù‚Ø¯">
+              <span>{selectedNodes.length} Ø¹Ù‚Ø¯ Ù…Ø­Ø¯Ø¯Ø©</span>
+              <button type="button" className="bulk-link-button" onClick={linkSelectedNodes} disabled={!linkableSelectedNodes.length} title="ÙŠØ±Ø¨Ø· Ø§Ù„Ø¹Ù‚Ø¯ Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© Ø¨Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„ØªÙŠ Ø¨Ø¯Ø£Øª Ø¨Ù‡Ø§ Ø§Ù„ØªØ­Ø¯ÙŠØ¯"><Link2 size={15} /> Ø±Ø¨Ø· Ø§Ù„Ù…Ø­Ø¯Ø¯</button>
+              <button type="button" onClick={removeSelectedNodes}><Trash2 size={15} /> Ø­Ø°Ù Ø§Ù„Ù…Ø­Ø¯Ø¯</button>
             </div>
           )}
 
           <div className="panel-footer">
             <span className="footer-mark"><Workflow size={15} /></span>
-            <span>{nodes.length} عقدة</span>
-            <span className="footer-separator">·</span>
-            <span>{edges.length} رابط</span>
-            <button type="button" className="footer-clear" title="مسح التحديد" aria-label="مسح التحديد" onClick={() => setNodes((current) => current.map((node) => ({ ...node, selected: false })))}><Minus size={15} /></button>
+            <span>{nodes.length} Ø¹Ù‚Ø¯Ø©</span>
+            <span className="footer-separator">Â·</span>
+            <span>{edges.length} Ø±Ø§Ø¨Ø·</span>
+            <button type="button" className="footer-clear" title="Ù…Ø³Ø­ Ø§Ù„ØªØ­Ø¯ÙŠØ¯" aria-label="Ù…Ø³Ø­ Ø§Ù„ØªØ­Ø¯ÙŠØ¯" onClick={() => setNodes((current) => current.map((node) => ({ ...node, selected: false })))}><Minus size={15} /></button>
           </div>
         </aside>
+        <button
+          type="button"
+          className="tool-panel-edge-toggle"
+          style={{ right: `calc(${mapListCollapsed ? 42 : 220}px + ${toolsOpen ? 260 : 0}px - 16px)` }}
+          aria-label={toolsOpen ? 'Ø·ÙŠ Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª'}
+          title={toolsOpen ? 'Ø·ÙŠ Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª' : 'Ø¥Ø¸Ù‡Ø§Ø± Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ø¯ÙˆØ§Øª'}
+          aria-expanded={toolsOpen}
+          onClick={() => setToolsOpen((open) => !open)}
+        >{toolsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}</button>
 
         <div
           className={`canvas-wrap${selectionDrag ? ' is-selecting' : ''}${selectMode ? ' is-select-mode' : ''}`}
@@ -2697,14 +4445,14 @@ function App() {
           )}
           {linkSourceNodeId && (
             <div className="link-mode-bar" dir="rtl">
-              <span className="link-mode-text"><Link2 size={14} /> اختر عقدة أخرى للربط</span>
-              <button type="button" className="link-mode-cancel" title="إلغاء الربط" aria-label="إلغاء الربط" onClick={() => setLinkSourceNodeId(null)}><X size={14} /></button>
+              <span className="link-mode-text"><Link2 size={14} /> Ø§Ø®ØªØ± Ø¹Ù‚Ø¯Ø© Ø£Ø®Ø±Ù‰ Ù„Ù„Ø±Ø¨Ø·</span>
+              <button type="button" className="link-mode-cancel" title="Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø±Ø¨Ø·" aria-label="Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø±Ø¨Ø·" onClick={() => setLinkSourceNodeId(null)}><X size={14} /></button>
             </div>
           )}
           {exportingImage && (
             <div className="export-brand" dir="rtl">
               <span className="brand-mark"><Workflow size={18} strokeWidth={2.2} /></span>
-              <span><strong>ورقة</strong><small>{title}</small></span>
+              <span><strong>ÙˆØ±Ù‚Ø©</strong><small>{title}</small></span>
             </div>
           )}
           <ReactFlow
@@ -2770,73 +4518,107 @@ function App() {
           </ReactFlow>
           {!nodes.length && (
             <div className="empty-state" dir="rtl">
-              <div className="empty-illustration"><span className="orbit orbit-one" /><span className="orbit orbit-two" /><span className="empty-bulb"><Lightbulb size={25} /></span><span className="spark spark-a">✳</span><span className="spark spark-b">✦</span></div>
-              <span className="empty-kicker">كل فكرة تبدأ من هنا</span>
-              <h2>مساحة أفكارك مفتوحة</h2>
-              <p>أضف فكرتك الأولى، ثم دع الأفكار تتفرع وتتصل ببعضها.</p>
-              <button type="button" className="empty-add-button" onClick={() => addNode('idea')}><Plus size={17} /> أضف أول فكرة</button>
+              <div className="empty-illustration"><span className="orbit orbit-one" /><span className="orbit orbit-two" /><span className="empty-bulb"><Lightbulb size={25} /></span><span className="spark spark-a">âœ³</span><span className="spark spark-b">âœ¦</span></div>
+              <span className="empty-kicker">ÙƒÙ„ ÙÙƒØ±Ø© ØªØ¨Ø¯Ø£ Ù…Ù† Ù‡Ù†Ø§</span>
+              <h2>Ù…Ø³Ø§Ø­Ø© Ø£ÙÙƒØ§Ø±Ùƒ Ù…ÙØªÙˆØ­Ø©</h2>
+              <p>Ø£Ø¶Ù ÙÙƒØ±ØªÙƒ Ø§Ù„Ø£ÙˆÙ„Ù‰ØŒ Ø«Ù… Ø¯Ø¹ Ø§Ù„Ø£ÙÙƒØ§Ø± ØªØªÙØ±Ø¹ ÙˆØªØªØµÙ„ Ø¨Ø¨Ø¹Ø¶Ù‡Ø§.</p>
+              <button type="button" className="empty-add-button" onClick={() => addNode('idea')}><Plus size={17} /> Ø£Ø¶Ù Ø£ÙˆÙ„ ÙÙƒØ±Ø©</button>
             </div>
           )}
-          <div className="canvas-caption"><span className="canvas-live-dot" /> مساحة الرسم <span>·</span> {selectMode ? 'اضغط العقد لتحديدها أو اسحب مربعًا' : 'اسحب العقد لترتيبها'}</div>
+          <div className="canvas-caption"><span className="canvas-live-dot" /> Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø±Ø³Ù… <span>Â·</span> {selectMode ? 'Ø§Ø¶ØºØ· Ø§Ù„Ø¹Ù‚Ø¯ Ù„ØªØ­Ø¯ÙŠØ¯Ù‡Ø§ Ø£Ùˆ Ø§Ø³Ø­Ø¨ Ù…Ø±Ø¨Ø¹Ù‹Ø§' : 'Ø§Ø³Ø­Ø¨ Ø§Ù„Ø¹Ù‚Ø¯ Ù„ØªØ±ØªÙŠØ¨Ù‡Ø§'}</div>
         </div>
 
         {notesMounted && selectedNode && (
-          <aside className={`notes-panel${notesOpen ? ' is-open' : ' is-closing'}`} aria-label="ملاحظات العقدة">
+          <aside className={`notes-panel${notesOpen ? ' is-open' : ' is-closing'}`} aria-label="Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ù„Ø¹Ù‚Ø¯Ø©">
             <div className="notes-heading">
               <div>
-                <span className="eyebrow">ملاحظة العقدة</span>
-                <h2>{selectedNode.data.label || 'عقدة بدون عنوان'}</h2>
+                <span className="eyebrow">Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø©</span>
+                <h2>{selectedNode.data.label || 'Ø¹Ù‚Ø¯Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</h2>
               </div>
-              <button className="notes-close" type="button" title="إخفاء الملاحظة" aria-label="إخفاء الملاحظة" onClick={closeNotes}>
+              <button className="notes-close" type="button" title="Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©" aria-label="Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©" onClick={closeNotes}>
                 <X size={17} />
               </button>
             </div>
             <textarea
+              ref={nodeNoteInputRef}
               className="node-note-input"
-              data-tour={trainingOpen && trainingStep === 8 ? 'note-input' : undefined}
-              aria-label="ملاحظة العقدة المحددة"
-              placeholder="اكتب ملاحظتك هنا..."
+              aria-label="Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©"
+              placeholder="Ø§ÙƒØªØ¨ Ù…Ù„Ø§Ø­Ø¸ØªÙƒ Ù‡Ù†Ø§..."
               value={selectedNode.data.note || ''}
-              onChange={(event) => updateSelected({ note: event.target.value })}
+              onChange={handleNodeNoteInput}
+              onKeyDown={(event) => { if (event.key === 'Escape') setNodeNoteMentionPicker(null) }}
             />
+            {nodeNoteMentionPicker?.nodeId === selectedNode.id && <div className="node-note-mention-picker" role="listbox">
+              <div className="notes-mention-heading">
+                <strong>{nodeNoteMentionPicker.step === 'type' ? 'Ø§Ø®ØªØ± Ù†ÙˆØ¹ Ø§Ù„Ø¹Ù†ØµØ±' : nodeNoteMentionPicker.step === 'container' ? (nodeNoteMentionPicker.kind === 'mind-map' ? 'Ø§Ø®ØªØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø©' : 'Ø§Ø®ØªØ± Ø§Ù„Ù…Ø®Ø·Ø·') : (nodeNoteMentionPicker.kind === 'mind-map' ? 'Ø§Ø®ØªØ± Ø§Ù„Ø¹Ù‚Ø¯Ø©' : nodeNoteMentionPicker.kind === 'task' ? 'Ø§Ø®ØªØ± Ø§Ù„Ù…Ù‡Ù…Ø©' : nodeNoteMentionPicker.kind === 'note' ? 'Ø§Ø®ØªØ± Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©' : 'Ø§Ø®ØªØ± Ø§Ù„Ø´ÙƒÙ„')}</strong>
+                {nodeNoteMentionPicker.step !== 'type' && <button type="button" onClick={backNodeMentionPicker}>Ø±Ø¬ÙˆØ¹</button>}
+              </div>
+              <div className="notes-mention-options">
+                {(nodeNoteMentionPicker.step === 'type'
+                  ? [
+                    { id: 'mind-map', title: 'Ø®Ø±ÙŠØ·Ø© Ø°Ù‡Ù†ÙŠØ©', count: workspaceProjects.length },
+                    { id: 'task', title: 'Ù…Ù‡Ù…Ø©', count: workspaceTasks.length },
+                    { id: 'note', title: 'Ù…Ù„Ø§Ø­Ø¸Ø©', count: workspaceNotes.length },
+                    { id: 'flowchart', title: 'Ù…Ø®Ø·Ø· Ø§Ù†Ø³ÙŠØ§Ø¨ÙŠ', count: workspaceFlowcharts.length },
+                  ].filter((item) => `${item.title}`.includes(nodeNoteMentionPicker.query))
+                  : nodeNoteMentionPicker.step === 'container'
+                    ? (nodeNoteMentionPicker.kind === 'mind-map' ? workspaceProjects : workspaceFlowcharts).filter((item) => (item.title || '').toLowerCase().includes(nodeNoteMentionPicker.query.toLowerCase()))
+                    : nodeNoteMentionPicker.kind === 'mind-map'
+                      ? (workspaceProjects.find((item) => item.id === nodeNoteMentionPicker.containerId)?.nodes || []).filter((item) => (item.data?.label || '').toLowerCase().includes(nodeNoteMentionPicker.query.toLowerCase()))
+                    : nodeNoteMentionPicker.kind === 'task'
+                        ? workspaceTasks.filter((item) => (item.title || '').toLowerCase().includes(nodeNoteMentionPicker.query.toLowerCase()))
+                        : nodeNoteMentionPicker.kind === 'note'
+                          ? workspaceNotes.filter((item) => (item.title || '').toLowerCase().includes(nodeNoteMentionPicker.query.toLowerCase()))
+                        : (workspaceFlowcharts.find((item) => item.id === nodeNoteMentionPicker.containerId)?.nodes || []).filter((item) => (item.data?.label || '').toLowerCase().includes(nodeNoteMentionPicker.query.toLowerCase()))
+                ).map((item) => nodeNoteMentionPicker.step === 'type'
+                  ? <button type="button" role="option" key={item.id} onClick={() => setNodeMentionKind(item.id)}><strong>{item.title}</strong><small>{item.count} {item.id === 'task' ? 'Ù…Ù‡Ù…Ø©' : item.id === 'note' ? 'Ù…Ù„Ø§Ø­Ø¸Ø©' : item.id === 'mind-map' ? 'Ø®Ø±ÙŠØ·Ø©' : 'Ù…Ø®Ø·Ø·'}</small></button>
+                  : nodeNoteMentionPicker.step === 'container'
+                    ? <button type="button" role="option" key={item.id} onClick={() => setNodeMentionContainer(item)}><strong>{item.title}</strong><small>{item.nodes?.length || 0} {nodeNoteMentionPicker.kind === 'mind-map' ? 'Ø¹Ù‚Ø¯Ø©' : 'Ø´ÙƒÙ„'}</small></button>
+                    : <button type="button" role="option" key={item.id} onClick={() => insertNodeNoteMention(item)}><strong>{nodeNoteMentionPicker.kind === 'task' || nodeNoteMentionPicker.kind === 'note' ? item.title : item.data?.label || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†'}</strong></button>
+                )}
+              </div>
+            </div>}
+            {!!selectedNode.data.mentions?.length && <div className="node-note-mention-links" aria-label="Ø§Ù„Ø¹Ù†Ø§ØµØ± Ø§Ù„Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ù‡Ø°Ù‡ Ø§Ù„Ø¹Ù‚Ø¯Ø©">
+              {selectedNode.data.mentions.map((mention, index) => <button type="button" key={`${mention.type}-${mention.text}-${index}`} onClick={() => openMention(mention)}>{mention.type === 'task' ? 'âœ“' : mention.type === 'note' ? 'ðŸ“' : mention.type === 'flowchart-node' ? 'â†—' : 'ðŸ§ '} {mention.taskTitle || mention.noteTitle || mention.nodeTitle}</button>)}
+            </div>}
             <div className="notes-settings">
               <div className="emoji-picker-heading">
-                <h3>إيموجي العقدة</h3>
+                <h3>Ø¥ÙŠÙ…ÙˆØ¬ÙŠ Ø§Ù„Ø¹Ù‚Ø¯Ø©</h3>
                 <button className="emoji-picker-toggle" type="button" aria-expanded={emojiPickerOpen} aria-controls="notes-emoji-picker" onClick={() => setEmojiPickerOpen((open) => !open)}>
-                  {emojiPickerOpen ? 'إخفاء' : 'إظهار'}
+                  {emojiPickerOpen ? 'Ø¥Ø®ÙØ§Ø¡' : 'Ø¥Ø¸Ù‡Ø§Ø±'}
                 </button>
               </div>
               <div id="notes-emoji-picker" hidden={!emojiPickerOpen}>
                 {emojiPickerOpen && <>
-                  <div className="notes-emoji-picker" role="group" aria-label="اختيار إيموجي للعقدة">
-                    <button type="button" className={`notes-emoji-choice emoji-none${!selectedNode.data.emoji ? ' is-active' : ''}`} aria-label="بدون إيموجي" aria-pressed={!selectedNode.data.emoji} onClick={() => updateSelected({ emoji: '' })}>×</button>
+                  <div className="notes-emoji-picker" role="group" aria-label="Ø§Ø®ØªÙŠØ§Ø± Ø¥ÙŠÙ…ÙˆØ¬ÙŠ Ù„Ù„Ø¹Ù‚Ø¯Ø©">
+                    <button type="button" className={`notes-emoji-choice emoji-none${!selectedNode.data.emoji ? ' is-active' : ''}`} aria-label="Ø¨Ø¯ÙˆÙ† Ø¥ÙŠÙ…ÙˆØ¬ÙŠ" aria-pressed={!selectedNode.data.emoji} onClick={() => updateSelected({ emoji: '' })}>Ã—</button>
                     {nodeEmojis.map(({ emoji, label }) => <button key={emoji} type="button" className={`notes-emoji-choice${selectedNode.data.emoji === emoji ? ' is-active' : ''}`} aria-label={label} title={label} aria-pressed={selectedNode.data.emoji === emoji} onClick={() => updateSelected({ emoji })}><EmojiGlyph emoji={emoji} /></button>)}
                   </div>
-                  <a className="emoji-credit" href="https://github.com/jdecked/twemoji" target="_blank" rel="noreferrer">الرسومات من Twemoji</a>
+                  <a className="emoji-credit" href="https://github.com/jdecked/twemoji" target="_blank" rel="noreferrer">Ø§Ù„Ø±Ø³ÙˆÙ…Ø§Øª Ù…Ù† Twemoji</a>
                 </>}
               </div>
-              <h3>لون العقدة</h3>
-              <div className="notes-swatches" role="group" aria-label="لون العقدة المحددة">
+              <h3>Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø©</h3>
+              <div className="notes-swatches" role="group" aria-label="Ù„ÙˆÙ† Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©">
                 {tones.map((tone) => (
                   <button
                     key={tone}
                     type="button"
                     className={`swatch swatch-${tone}${selectedNode.data.tone === tone && !selectedNode.data.customColor ? ' is-active' : ''}`}
-                    aria-label={`لون ${tone}`}
+                    aria-label={`Ù„ÙˆÙ† ${tone}`}
                     onClick={() => updateSelected({ tone, customColor: '' })}
                   />
                 ))}
-                <label className={`swatch custom-swatch${selectedNode.data.customColor ? ' is-active' : ''}`} style={{ '--picker-color': getToneColor(selectedNode.data.tone, selectedNode.data.customColor) }} title="اختيار لون مخصص">
+                <label className={`swatch custom-swatch${selectedNode.data.customColor ? ' is-active' : ''}`} style={{ '--picker-color': getToneColor(selectedNode.data.tone, selectedNode.data.customColor) }} title="Ø§Ø®ØªÙŠØ§Ø± Ù„ÙˆÙ† Ù…Ø®ØµØµ">
                   <input
                     type="color"
-                    aria-label="لون مخصص للعقدة"
+                    aria-label="Ù„ÙˆÙ† Ù…Ø®ØµØµ Ù„Ù„Ø¹Ù‚Ø¯Ø©"
                     value={getToneColor(selectedNode.data.tone, selectedNode.data.customColor)}
                     onChange={(event) => updateSelected({ tone: 'custom', customColor: event.target.value })}
                   />
                 </label>
               </div>
             </div>
-            <div className="notes-footer">تُحفظ الملاحظة مع هذه العقدة تلقائيًا</div>
+            <div className="notes-footer">ØªÙØ­ÙØ¸ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø© Ù…Ø¹ Ù‡Ø°Ù‡ Ø§Ù„Ø¹Ù‚Ø¯Ø© ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§</div>
           </aside>
         )}
       </section>
@@ -2844,19 +4626,26 @@ function App() {
         <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setRenameProjectOpen(false) }}>
           <section className="confirm-dialog rename-dialog" role="dialog" aria-modal="true" aria-labelledby="rename-dialog-title" dir="rtl">
             <span className="confirm-icon rename-icon"><Pencil size={20} /></span>
-            <span className="rename-eyebrow">تنظيم مشاريعك</span>
-            <h2 id="rename-dialog-title">ما اسم مشروعك؟</h2>
-            <p>اختر اسمًا واضحًا يسهل عليك الوصول إليه لاحقًا.</p>
-            <label className="rename-field-label" htmlFor="rename-project-input">اسم المشروع</label>
-            <input ref={renameInputRef} id="rename-project-input" className="rename-project-input" aria-label="اسم المشروع الجديد" autoFocus value={renameProjectDraft} onChange={(event) => setRenameProjectDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') renameProject(); if (event.key === 'Escape') setRenameProjectOpen(false) }} />
-            <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setRenameProjectOpen(false)}>إلغاء</button><button type="button" className="confirm-save" onClick={renameProject} disabled={!renameProjectDraft.trim()}>حفظ الاسم</button></div>
+            <span className="rename-eyebrow">ØªÙ†Ø¸ÙŠÙ… Ù…Ø´Ø§Ø±ÙŠØ¹Ùƒ</span>
+            <h2 id="rename-dialog-title">Ù…Ø§ Ø§Ø³Ù… Ù…Ø´Ø±ÙˆØ¹ÙƒØŸ</h2>
+            <p>Ø§Ø®ØªØ± Ø§Ø³Ù…Ù‹Ø§ ÙˆØ§Ø¶Ø­Ù‹Ø§ ÙŠØ³Ù‡Ù„ Ø¹Ù„ÙŠÙƒ Ø§Ù„ÙˆØµÙˆÙ„ Ø¥Ù„ÙŠÙ‡ Ù„Ø§Ø­Ù‚Ù‹Ø§.</p>
+            <label className="rename-field-label" htmlFor="rename-project-input">Ø§Ø³Ù… Ø§Ù„Ù…Ø´Ø±ÙˆØ¹</label>
+            <input ref={renameInputRef} id="rename-project-input" className="rename-project-input" aria-label="Ø§Ø³Ù… Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ Ø§Ù„Ø¬Ø¯ÙŠØ¯" autoFocus value={renameProjectDraft} onChange={(event) => setRenameProjectDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') renameProject(); if (event.key === 'Escape') setRenameProjectOpen(false) }} />
+            <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setRenameProjectOpen(false)}>Ø¥Ù„ØºØ§Ø¡</button><button type="button" className="confirm-save" onClick={renameProject} disabled={!renameProjectDraft.trim()}>Ø­ÙØ¸ Ø§Ù„Ø§Ø³Ù…</button></div>
           </section>
         </div>
       )}
+      {pendingDeleteProject && <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setPendingDeleteProject(null) }}>
+        <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-map-editor-title" dir="rtl">
+          <span className="confirm-icon"><Trash2 size={21} /></span>
+          <h2 id="delete-map-editor-title">{appLanguage === 'en' ? 'Delete mind map?' : 'Ø­Ø°Ù Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø°Ù‡Ù†ÙŠØ©ØŸ'}</h2>
+          <p>{appLanguage === 'en' ? 'Delete' : 'Ù‡Ù„ ØªØ±ÙŠØ¯ Ø­Ø°Ù'} <strong>{pendingDeleteProject.title || (appLanguage === 'en' ? 'Untitled mind map' : 'Ø®Ø±ÙŠØ·Ø© Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')}</strong>?</p>
+          <div className="confirm-actions"><button type="button" className="confirm-cancel" onClick={() => setPendingDeleteProject(null)}>{appLanguage === 'en' ? 'Cancel' : 'Ø¥Ù„ØºØ§Ø¡'}</button><button type="button" className="confirm-delete" onClick={confirmDeleteProject}>{appLanguage === 'en' ? 'Delete' : 'Ø­Ø°Ù'}</button></div>
+        </section>
+      </div>}
       {closeProjectDialog}
       {settingsDialog}
       {helpDialog}
-      {trainingDialog}
     </main>
     </LocalizedContent>
   )
