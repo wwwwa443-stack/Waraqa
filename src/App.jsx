@@ -190,7 +190,7 @@ const englishTranslations = {
   'اضغط مطولًا على أي عقدة لبدء الربط، ثم اضغط على عقدة أخرى لإتمامه.': 'Long-press any node to start linking, then tap another node to finish.',
   'زر الرجوع في الهاتف يغلق الملاحظات والقوائم واحدًا واحدًا.': 'On phones, the back button closes the notes panel and menus one by one.',
   'اربط عقدتين بالسحب من نقطة طرف العقدة إلى عقدة أخرى، أو بالضغط المطول على عقدة ثم الضغط على عقدة أخرى. كليك يمين على السهم يحذفه.': 'Link two nodes by dragging from a node handle to another node, or long-press a node then tap another. Right-click a connector deletes it.',
-  'زر «تحديد جماعي» في اللوحة يفعّل تحديد عدة عقد بالضغط أو بسحب مربع على المساحة (في الحاسوب أيضًا Ctrl + كليك يمين).': 'The â€œMulti-selectâ€ tool selects several nodes by tapping or dragging a box on the canvas (also Ctrl + right-click drag on desktop).',
+  'زر «تحديد جماعي» في اللوحة يفعّل تحديد عدة عقد بالضغط أو بسحب مربع على المساحة (في الحاسوب أيضًا Ctrl + كليك يمين).': 'The “Multi-select” tool selects several nodes by tapping or dragging a box on the canvas (also Ctrl + right-click drag on desktop).',
 }
 function translateToEnglish(value) {
   const trimmed = value.trim()
@@ -201,8 +201,8 @@ function translateToEnglish(value) {
   if (linkCount) return `${linkCount[1]} links`
   const selectedCount = trimmed.match(/^(\d+) عقد محددة$/)
   if (selectedCount) return `${selectedCount[1]} nodes selected`
-  const projectCounts = trimmed.match(/^(\d+) عقدة Â· (\d+) رابط$/)
-  if (projectCounts) return `${projectCounts[1]} nodes Â· ${projectCounts[2]} links`
+  const projectCounts = trimmed.match(/^(\d+) عقدة · (\d+) رابط$/)
+  if (projectCounts) return `${projectCounts[1]} nodes · ${projectCounts[2]} links`
   const tone = trimmed.match(/^لون (.+)$/)
   if (tone) return `Color ${tone[1]}`
   const emoji = trimmed.match(/^إيموجي (.+)$/)
@@ -255,7 +255,7 @@ function runPageTransition(update, direction = 'forward') {
 }
 function WorkspaceBackupButton({ onClick, busy, disabled, language }) {
   const label = busy
-    ? language === 'en' ? 'Savingâ€¦' : 'جارٍ الحفظ…'
+    ? language === 'en' ? 'Saving…' : 'جارٍ الحفظ…'
     : language === 'en' ? 'Export item' : 'تصدير العنصر'
   return (
     <button className="workspace-backup-button" type="button" onClick={onClick} disabled={busy || disabled} title={language === 'en' ? 'Export a separate copy of the open item' : 'تصدير نسخة مستقلة من العنصر المفتوح'}>
@@ -365,48 +365,48 @@ const toneColors = {
 }
 const tones = Object.keys(toneColors)
 const nodeEmojis = [
-  { emoji: 'ðŸ’¡', label: 'فكرة' },
-  { emoji: 'ðŸª„', label: 'إبداع' },
-  { emoji: 'ðŸŽ¯', label: 'هدف' },
-  { emoji: 'ðŸ§ ', label: 'تفكير' },
-  { emoji: 'ðŸ§©', label: 'حل' },
-  { emoji: 'ðŸ§­', label: 'اتجاه' },
-  { emoji: 'ðŸ—ºï¸', label: 'خريطة' },
-  { emoji: 'ðŸ“š', label: 'تعلم' },
-  { emoji: 'ðŸ“–', label: 'قراءة' },
-  { emoji: 'ðŸ“', label: 'ملاحظة' },
-  { emoji: 'ðŸ”', label: 'بحث' },
-  { emoji: 'ðŸ”¬', label: 'استكشاف' },
-  { emoji: 'ðŸ§ª', label: 'تجربة علمية' },
-  { emoji: 'ðŸ§¬', label: 'علوم' },
-  { emoji: 'â­', label: 'مهم' },
-  { emoji: 'ðŸ’Ž', label: 'قيمة' },
-  { emoji: 'ðŸŒ±', label: 'نمو' },
-  { emoji: 'âœ…', label: 'مكتمل' },
-  { emoji: 'âš¡', label: 'سريع' },
-  { emoji: 'ðŸ’¬', label: 'نقاش' },
-  { emoji: 'ðŸ¤', label: 'تعاون' },
-  { emoji: 'ðŸ‘¥', label: 'فريق' },
-  { emoji: 'ðŸŽ¨', label: 'إبداع' },
-  { emoji: 'âš™ï¸', label: 'إعداد' },
-  { emoji: 'ðŸ› ï¸', label: 'عمل' },
-  { emoji: 'ðŸ“Œ', label: 'تثبيت' },
-  { emoji: 'ðŸš€', label: 'انطلاق' },
-  { emoji: 'ðŸ’­', label: 'خواطر' },
-  { emoji: 'ðŸ”—', label: 'رابط' },
-  { emoji: 'ðŸ“Š', label: 'بيانات' },
-  { emoji: 'ðŸ“…', label: 'موعد' },
-  { emoji: 'ðŸ—“ï¸', label: 'خطة زمنية' },
-  { emoji: 'â³', label: 'مدة' },
-  { emoji: 'ðŸ””', label: 'تنبيه' },
-  { emoji: 'ðŸ†', label: 'إنجاز' },
-  { emoji: 'ðŸ', label: 'مرحلة' },
-  { emoji: 'âš ï¸', label: 'تحذير' },
-  { emoji: 'â›”', label: 'متوقف' },
-  { emoji: 'ðŸ“ˆ', label: 'تقدم' },
-  { emoji: 'ðŸ—‚ï¸', label: 'تصنيف' },
-  { emoji: 'ðŸ’»', label: 'تقنية' },
-  { emoji: 'â˜ï¸', label: 'سحابة' },
+  { emoji: '💡', label: 'فكرة' },
+  { emoji: '🪄', label: 'إبداع' },
+  { emoji: '🎯', label: 'هدف' },
+  { emoji: '🧠', label: 'تفكير' },
+  { emoji: '🧩', label: 'حل' },
+  { emoji: '🧭', label: 'اتجاه' },
+  { emoji: '🗺️', label: 'خريطة' },
+  { emoji: '📚', label: 'تعلم' },
+  { emoji: '📖', label: 'قراءة' },
+  { emoji: '📝', label: 'ملاحظة' },
+  { emoji: '🔍', label: 'بحث' },
+  { emoji: '🔬', label: 'استكشاف' },
+  { emoji: '🧪', label: 'تجربة علمية' },
+  { emoji: '🧬', label: 'علوم' },
+  { emoji: '⭐', label: 'مهم' },
+  { emoji: '💎', label: 'قيمة' },
+  { emoji: '🌱', label: 'نمو' },
+  { emoji: '✅', label: 'مكتمل' },
+  { emoji: '⚡', label: 'سريع' },
+  { emoji: '💬', label: 'نقاش' },
+  { emoji: '🤝', label: 'تعاون' },
+  { emoji: '👥', label: 'فريق' },
+  { emoji: '🎨', label: 'إبداع' },
+  { emoji: '⚙️', label: 'إعداد' },
+  { emoji: '🛠️', label: 'عمل' },
+  { emoji: '📌', label: 'تثبيت' },
+  { emoji: '🚀', label: 'انطلاق' },
+  { emoji: '💭', label: 'خواطر' },
+  { emoji: '🔗', label: 'رابط' },
+  { emoji: '📊', label: 'بيانات' },
+  { emoji: '📅', label: 'موعد' },
+  { emoji: '🗓️', label: 'خطة زمنية' },
+  { emoji: '⏳', label: 'مدة' },
+  { emoji: '🔔', label: 'تنبيه' },
+  { emoji: '🏆', label: 'إنجاز' },
+  { emoji: '🏁', label: 'مرحلة' },
+  { emoji: '⚠️', label: 'تحذير' },
+  { emoji: '⛔', label: 'متوقف' },
+  { emoji: '📈', label: 'تقدم' },
+  { emoji: '🗂️', label: 'تصنيف' },
+  { emoji: '💻', label: 'تقنية' },
+  { emoji: '☁️', label: 'سحابة' },
 ]
 function EmojiGlyph({ emoji }) {
   const assetUrl = emojiDataUrl(emoji)
@@ -816,7 +816,7 @@ function MapNode({ data, selected, width }) {
     if (!['task', 'note'].includes(labelMentionPicker.kind) && !container) return
     const itemTitle = labelMentionPicker.kind === 'task' ? item.title || 'مهمة بدون عنوان' : labelMentionPicker.kind === 'note' ? item.title || 'ملاحظة بدون عنوان' : item.data?.label || 'بدون عنوان'
     const containerTitle = container?.title || ''
-    const prefix = labelMentionPicker.kind === 'mind-map' ? 'ðŸ§ ' : labelMentionPicker.kind === 'task' ? 'âœ“' : labelMentionPicker.kind === 'note' ? 'ðŸ“' : 'â†—'
+    const prefix = labelMentionPicker.kind === 'mind-map' ? '🧠' : labelMentionPicker.kind === 'task' ? '✓' : labelMentionPicker.kind === 'note' ? '📝' : '↗'
     const mentionText = `@${prefix} ${containerTitle ? `${containerTitle} / ` : ''}${itemTitle}`
     const nextLabel = `${label.slice(0, labelMentionPicker.start)}${mentionText}${label.slice(labelMentionPicker.end)}`
     const mention = labelMentionPicker.kind === 'mind-map'
@@ -1559,7 +1559,7 @@ function App() {
           <button type="button" className={`settings-theme-option${theme === 'light' ? ' is-active' : ''}`} onClick={() => { setTheme('light'); localStorage.setItem('waraqa-theme', 'light') }}><Sun size={16} /> نهاري</button>
           <button type="button" className={`settings-theme-option${theme === 'dark' ? ' is-active' : ''}`} onClick={() => { setTheme('dark'); localStorage.setItem('waraqa-theme', 'dark') }}><Moon size={16} /> ليلي</button>
         </div>
-        <p className="settings-version">ورقة Â· الإصدار {pkg.version}</p>
+        <p className="settings-version">ورقة · الإصدار {pkg.version}</p>
       </section>
     </div>
   )
@@ -1595,7 +1595,7 @@ function App() {
           <div className="help-shortcut"><kbd>Del</kbd><span>حذف المحدد</span></div>
           <div className="help-shortcut"><kbd>Esc</kbd><span>إغلاق القوائم والحوارات</span></div>
         </div>
-        <p className="settings-version">ورقة Â· الإصدار {pkg.version}</p>
+        <p className="settings-version">ورقة · الإصدار {pkg.version}</p>
       </section>
     </div>
   )
@@ -2757,7 +2757,7 @@ function App() {
     if (!['task', 'note'].includes(picker.kind) && !container) return
     const itemTitle = picker.kind === 'task' ? (item.title || 'مهمة بدون عنوان') : picker.kind === 'note' ? (item.title || 'ملاحظة بدون عنوان') : (item.data?.label || 'بدون عنوان')
     const containerTitle = container?.title || ''
-    const prefix = picker.kind === 'mind-map' ? 'ðŸ§ ' : picker.kind === 'task' ? 'âœ“' : picker.kind === 'note' ? 'ðŸ“' : 'â†—'
+    const prefix = picker.kind === 'mind-map' ? '🧠' : picker.kind === 'task' ? '✓' : picker.kind === 'note' ? '📝' : '↗'
     const mentionText = `@${prefix} ${containerTitle ? `${containerTitle} / ` : ''}${itemTitle}`
     const note = selectedNode.data.note || ''
     const nextNote = `${note.slice(0, picker.start)}${mentionText}${note.slice(picker.end)}`
@@ -3942,7 +3942,7 @@ function App() {
               <button type="button" className="workspace-document-open" onClick={() => openProject(project)}>
                 <span className="project-art"><Workflow size={25} /></span>
                 <strong>{project.title || 'خريطة بدون عنوان'}</strong>
-                <small>{project.nodes?.length || 0} عقدة Â· {project.edges?.length || 0} رابط</small>
+                <small>{project.nodes?.length || 0} عقدة · {project.edges?.length || 0} رابط</small>
               </button>
               <button type="button" className="project-delete" aria-label={`حذف ${project.title || 'الخريطة'}`} onClick={() => requestDeleteProject(project.id)}><Trash2 size={15} /></button>
             </article>
@@ -4145,7 +4145,7 @@ function App() {
            const mapCount = projects.filter((project) => project.workspaceId === workspace.id).length
            const noteCount = standaloneNotes.filter((note) => note.workspaceId === workspace.id).length
            const taskCount = tasks.filter((task) => task.workspaceId === workspace.id).length
-           return <article className="project-card" key={workspace.id}><button className="project-open" onClick={() => openWorkspace(workspace)}><span className="project-art"><Workflow size={28} /></span><strong>{workspace.title || 'مشروع بدون عنوان'}</strong><small>{mapCount} خريطة ذهنية Â· {noteCount} ملاحظة Â· {taskCount} مهمة</small><small>آخر تعديل: {workspace.updatedAt ? new Date(workspace.updatedAt).toLocaleDateString(appLanguage === 'en' ? 'en-GB' : 'ar-EG') : 'â€”'}</small></button><button className="project-export" title={appLanguage === 'en' ? 'Export AI-ready project' : 'تصدير حزمة المشروع'} disabled={exportingWorkspace} onClick={(event) => { event.stopPropagation(); exportWorkspaceArchive(workspace) }}><ArrowDownToLine size={15} /></button><button className="project-delete" aria-label="حذف المشروع" onClick={() => setPendingDeleteWorkspace(workspace)}><Trash2 size={16} /></button></article>
+           return <article className="project-card" key={workspace.id}><button className="project-open" onClick={() => openWorkspace(workspace)}><span className="project-art"><Workflow size={28} /></span><strong>{workspace.title || 'مشروع بدون عنوان'}</strong><small>{mapCount} خريطة ذهنية · {noteCount} ملاحظة · {taskCount} مهمة</small><small>آخر تعديل: {workspace.updatedAt ? new Date(workspace.updatedAt).toLocaleDateString(appLanguage === 'en' ? 'en-GB' : 'ar-EG') : '—'}</small></button><button className="project-export" title={appLanguage === 'en' ? 'Export AI-ready project' : 'تصدير حزمة المشروع'} disabled={exportingWorkspace} onClick={(event) => { event.stopPropagation(); exportWorkspaceArchive(workspace) }}><ArrowDownToLine size={15} /></button><button className="project-delete" aria-label="حذف المشروع" onClick={() => setPendingDeleteWorkspace(workspace)}><Trash2 size={16} /></button></article>
          })}</div> : <div className="library-empty"><span className="empty-bulb"><Lightbulb size={28} /></span><h2>ابدأ أول مشروع لك</h2><p>أنشئ مشروعًا يجمع خرائطك الذهنية وملاحظاتك.</p><button className="library-button primary" onClick={createWorkspace}><Plus size={18} /> إنشاء مشروع</button></div>}
       </section>
       {pendingDeleteWorkspace && <div className="confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setPendingDeleteWorkspace(null) }}>
@@ -4405,7 +4405,7 @@ function App() {
           <div className="panel-footer">
             <span className="footer-mark"><Workflow size={15} /></span>
             <span>{nodes.length} عقدة</span>
-            <span className="footer-separator">Â·</span>
+            <span className="footer-separator">·</span>
             <span>{edges.length} رابط</span>
             <button type="button" className="footer-clear" title="مسح التحديد" aria-label="مسح التحديد" onClick={() => setNodes((current) => current.map((node) => ({ ...node, selected: false })))}><Minus size={15} /></button>
           </div>
@@ -4518,14 +4518,14 @@ function App() {
           </ReactFlow>
           {!nodes.length && (
             <div className="empty-state" dir="rtl">
-              <div className="empty-illustration"><span className="orbit orbit-one" /><span className="orbit orbit-two" /><span className="empty-bulb"><Lightbulb size={25} /></span><span className="spark spark-a">âœ³</span><span className="spark spark-b">âœ¦</span></div>
+              <div className="empty-illustration"><span className="orbit orbit-one" /><span className="orbit orbit-two" /><span className="empty-bulb"><Lightbulb size={25} /></span><span className="spark spark-a">✳</span><span className="spark spark-b">✦</span></div>
               <span className="empty-kicker">كل فكرة تبدأ من هنا</span>
               <h2>مساحة أفكارك مفتوحة</h2>
               <p>أضف فكرتك الأولى، ثم دع الأفكار تتفرع وتتصل ببعضها.</p>
               <button type="button" className="empty-add-button" onClick={() => addNode('idea')}><Plus size={17} /> أضف أول فكرة</button>
             </div>
           )}
-          <div className="canvas-caption"><span className="canvas-live-dot" /> مساحة الرسم <span>Â·</span> {selectMode ? 'اضغط العقد لتحديدها أو اسحب مربعًا' : 'اسحب العقد لترتيبها'}</div>
+          <div className="canvas-caption"><span className="canvas-live-dot" /> مساحة الرسم <span>·</span> {selectMode ? 'اضغط العقد لتحديدها أو اسحب مربعًا' : 'اسحب العقد لترتيبها'}</div>
         </div>
 
         {notesMounted && selectedNode && (
@@ -4579,7 +4579,7 @@ function App() {
               </div>
             </div>}
             {!!selectedNode.data.mentions?.length && <div className="node-note-mention-links" aria-label="العناصر المرتبطة بهذه العقدة">
-              {selectedNode.data.mentions.map((mention, index) => <button type="button" key={`${mention.type}-${mention.text}-${index}`} onClick={() => openMention(mention)}>{mention.type === 'task' ? 'âœ“' : mention.type === 'note' ? 'ðŸ“' : mention.type === 'flowchart-node' ? 'â†—' : 'ðŸ§ '} {mention.taskTitle || mention.noteTitle || mention.nodeTitle}</button>)}
+              {selectedNode.data.mentions.map((mention, index) => <button type="button" key={`${mention.type}-${mention.text}-${index}`} onClick={() => openMention(mention)}>{mention.type === 'task' ? '✓' : mention.type === 'note' ? '📝' : mention.type === 'flowchart-node' ? '↗' : '🧠'} {mention.taskTitle || mention.noteTitle || mention.nodeTitle}</button>)}
             </div>}
             <div className="notes-settings">
               <div className="emoji-picker-heading">
@@ -4591,7 +4591,7 @@ function App() {
               <div id="notes-emoji-picker" hidden={!emojiPickerOpen}>
                 {emojiPickerOpen && <>
                   <div className="notes-emoji-picker" role="group" aria-label="اختيار إيموجي للعقدة">
-                    <button type="button" className={`notes-emoji-choice emoji-none${!selectedNode.data.emoji ? ' is-active' : ''}`} aria-label="بدون إيموجي" aria-pressed={!selectedNode.data.emoji} onClick={() => updateSelected({ emoji: '' })}>Ã—</button>
+                    <button type="button" className={`notes-emoji-choice emoji-none${!selectedNode.data.emoji ? ' is-active' : ''}`} aria-label="بدون إيموجي" aria-pressed={!selectedNode.data.emoji} onClick={() => updateSelected({ emoji: '' })}>×</button>
                     {nodeEmojis.map(({ emoji, label }) => <button key={emoji} type="button" className={`notes-emoji-choice${selectedNode.data.emoji === emoji ? ' is-active' : ''}`} aria-label={label} title={label} aria-pressed={selectedNode.data.emoji === emoji} onClick={() => updateSelected({ emoji })}><EmojiGlyph emoji={emoji} /></button>)}
                   </div>
                   <a className="emoji-credit" href="https://github.com/jdecked/twemoji" target="_blank" rel="noreferrer">الرسومات من Twemoji</a>
